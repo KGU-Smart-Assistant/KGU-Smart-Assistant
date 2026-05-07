@@ -91,6 +91,7 @@ def query_embedded_chunks(
                 "distance": distances[index] if index < len(distances) else None,
                 "category": metadata.get("category"),
                 "department": metadata.get("department"),
+                "published_at": metadata.get("published_at"),
             }
         )
     return rows
