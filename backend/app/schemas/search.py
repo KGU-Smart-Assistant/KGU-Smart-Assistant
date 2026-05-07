@@ -1,4 +1,4 @@
-from typing import List, Literal, Optional
+from typing import Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -11,9 +11,13 @@ class SearchRequest(BaseModel):
             "notice",
             "academic",
             "scholarship",
+            "support",
             "faq",
             "materials",
             "academic_schedule",
+            "graduation",
+            "career",
+            "student_life",
         ]
     ] = None
 
@@ -25,6 +29,10 @@ class SearchResult(BaseModel):
     text: str
     title: str
     source_url: str
+    category: Optional[str] = None
+    department: Optional[str] = None
+    published_at: Optional[str] = None
+    score_breakdown: Dict[str, float] = Field(default_factory=dict)
 
 
 class SearchResponse(BaseModel):

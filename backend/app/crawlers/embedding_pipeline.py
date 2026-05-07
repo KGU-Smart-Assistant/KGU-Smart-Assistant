@@ -1,18 +1,31 @@
+import time
 from typing import List
 
 from app.core.config import settings
 from app.schemas import DocumentChunk, EmbeddedChunk
 
 DEFAULT_EMBEDDING_MODEL = "gemini-embedding-001"
+DEFAULT_EMBEDDING_RETRIES = 3
 
 
-def embed_text(text: str, model: str = DEFAULT_EMBEDDING_MODEL) -> List[float]:
+def embed_text(
+    text: str,
+    model: str = DEFAULT_EMBEDDING_MODEL,
+    max_retries: int = DEFAULT_EMBEDDING_RETRIES,
+) -> List[float]:
     """Embed a single text string with Gemini embeddings."""
     client = _create_client()
-    response = client.models.embed_content(
-        model=model,
-        contents=text,
-    )
+    for attempt in range(max_retries + 1):
+        try:
+            response = client.models.embed_content(
+                model=model,
+                contents=text,
+            )
+            break
+        except Exception as exc:
+            if attempt >= max_retries or not _is_retryable_embedding_error(exc):
+                raise
+            time.sleep(min(2**attempt, 30))
 
     embeddings = getattr(response, "embeddings", None)
     if not embeddings:
@@ -61,3 +74,17 @@ def _create_client():
         ) from exc
 
     return genai.Client(api_key=settings.google_api_key)
+
+
+def _is_retryable_embedding_error(exc: Exception) -> bool:
+    message = str(exc).casefold()
+    retryable_markers = (
+        "429",
+        "quota",
+        "rate",
+        "timeout",
+        "temporarily",
+        "unavailable",
+        "resource exhausted",
+    )
+    return any(marker in message for marker in retryable_markers)

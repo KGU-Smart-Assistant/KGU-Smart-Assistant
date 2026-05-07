@@ -49,8 +49,9 @@ _PHONE_KEYWORDS = (
     "전화번호",
     "연락처",
     "문의처",
-    "사무실 번호",
-    "행정실 번호",
+    "사무실",
+    "행정실",
+    "학과사무실",
 )
 _MAP_KEYWORDS = (
     "어디",
@@ -82,11 +83,9 @@ _WEATHER_KEYWORDS = (
     "예보",
 )
 
-# Sources in app/crawlers/sources.yaml are grouped into these user-question domains.
 _RAG_KEYWORD_GROUPS: dict[str, tuple[str, ...]] = {
     "academic_schedule": (
         "학사일정",
-        "학사 일정",
         "수강신청",
         "수강 정정",
         "수강취소",
@@ -132,7 +131,7 @@ _RAG_KEYWORD_GROUPS: dict[str, tuple[str, ...]] = {
         "장학금",
         "국가장학금",
         "교내장학",
-        "성적향상장학금",
+        "성적우수장학금",
         "학자금",
         "등록금",
         "수혜",
@@ -195,11 +194,6 @@ _RAG_KEYWORD_GROUPS: dict[str, tuple[str, ...]] = {
         "애니메이션",
     ),
 }
-_RAG_KEYWORDS = tuple(
-    keyword
-    for keywords in _RAG_KEYWORD_GROUPS.values()
-    for keyword in keywords
-)
 _RAG_GROUP_PRIORITY = {
     "academic_schedule": 3,
     "graduation_requirements": 3,
@@ -211,7 +205,7 @@ _RAG_GROUP_PRIORITY = {
     "university_notices": 1,
 }
 _RAG_FORCE_GROUP_KEYWORDS = (
-    ("scholarship_support", ("장학", "장학금", "국가장학금", "성적향상장학금")),
+    ("scholarship_support", ("장학", "장학금", "국가장학금", "성적우수장학금")),
     ("graduation_requirements", ("졸업", "졸업요건", "졸업학점")),
     ("materials", ("자료실", "첨부파일", "첨부 파일", "양식", "서식", "신청서")),
     ("academic_schedule", ("학사일정", "수강신청", "휴학", "복학", "개강", "종강")),
@@ -225,18 +219,12 @@ def answer_chat(user_input: str, db: Session) -> ChatResult:
 
     if decision.route == "relational_db":
         return _answer_from_relational_db(user_input, decision, db)
-
     if decision.route == "rag":
         return _answer_from_rag(user_input)
-
     if decision.route == "weather":
         return _answer_from_weather(user_input)
 
-    return ChatResult(
-        reply=get_gemini_response(user_input),
-        intent="일반",
-        route="llm",
-    )
+    return ChatResult(reply=get_gemini_response(user_input), intent="일반", route="llm")
 
 
 def decide_chat_route(user_input: str) -> ChatDecision:
@@ -284,8 +272,8 @@ def _answer_from_relational_db(
         intent = "지도"
     else:
         reply = (
-            "정확한 DB 정보가 필요한 질문으로 판단되지만, 어떤 DB에서 찾을지 "
-            "결정하지 못했습니다. 장소 위치나 전화번호처럼 더 구체적으로 질문해 주세요."
+            "정확한 DB 정보가 필요한 질문으로 판단했지만 어느 DB에서 찾을지 결정하지 못했습니다. "
+            "장소 위치나 전화번호처럼 더 구체적으로 질문해 주세요."
         )
         source_title = "relational_db"
         intent = "DB"
@@ -303,10 +291,7 @@ def _answer_from_rag(user_input: str) -> ChatResult:
         results = search_documents(query=user_input, top_k=5)
     except NotImplementedError:
         return ChatResult(
-            reply=(
-                "이 질문은 문서 기반 검색(RAG)으로 답해야 하지만, 현재 검색 파이프라인이 "
-                "연결되어 있지 않습니다."
-            ),
+            reply="문서 기반 검색 파이프라인이 아직 연결되어 있지 않습니다.",
             intent="RAG",
             route="rag",
         )
@@ -374,11 +359,11 @@ def _infer_db_intent(user_input: str) -> DbIntent:
 
 
 def _normalize_query(user_input: str) -> str:
-    return re.sub(r"\s+", " ", user_input.strip().lower())
+    return re.sub(r"\s+", " ", user_input.strip().casefold())
 
 
 def _contains_any(normalized_text: str, keywords: tuple[str, ...]) -> bool:
-    return any(keyword.lower() in normalized_text for keyword in keywords)
+    return any(keyword.casefold() in normalized_text for keyword in keywords)
 
 
 def _matched_rag_group(normalized_text: str) -> str | None:
@@ -389,7 +374,7 @@ def _matched_rag_group(normalized_text: str) -> str | None:
     matches = [
         (
             group,
-            sum(keyword.lower() in normalized_text for keyword in keywords),
+            sum(keyword.casefold() in normalized_text for keyword in keywords),
             _RAG_GROUP_PRIORITY.get(group, 0),
         )
         for group, keywords in _RAG_KEYWORD_GROUPS.items()
@@ -428,14 +413,17 @@ def _parse_decision(raw: str) -> ChatDecision | None:
 def _format_rag_context(results: list[SearchResult]) -> str:
     blocks = []
     for index, result in enumerate(results, start=1):
-        blocks.append(
-            "\n".join(
-                [
-                    f"[{index}] {result.title}",
-                    f"source_url: {result.source_url}",
-                    f"score: {result.score}",
-                    result.text,
-                ]
-            )
-        )
+        metadata_lines = [
+            f"[{index}] {result.title}",
+            f"source_url: {result.source_url}",
+            f"score: {result.score}",
+        ]
+        if result.category:
+            metadata_lines.append(f"category: {result.category}")
+        if result.department:
+            metadata_lines.append(f"department: {result.department}")
+        if result.published_at:
+            metadata_lines.append(f"published_at: {result.published_at}")
+        metadata_lines.append(result.text)
+        blocks.append("\n".join(metadata_lines))
     return "\n\n".join(blocks)

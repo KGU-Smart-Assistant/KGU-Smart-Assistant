@@ -29,6 +29,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--batch-size", type=int, default=10)
     parser.add_argument("--model", default=DEFAULT_EMBEDDING_MODEL)
     parser.add_argument("--source-name", default=None)
+    parser.add_argument("--reset-collection", action="store_true")
     return parser.parse_args(argv)
 
 
@@ -40,6 +41,12 @@ def main(argv: list[str] | None = None) -> None:
 
     init_db()
     collection = get_vector_collection()
+    if args.reset_collection:
+        existing = collection.get(include=[])
+        ids = existing.get("ids") or []
+        if ids:
+            collection.delete(ids=ids)
+        print(f"reset_collection deleted={len(ids)}", flush=True)
     selected = 0
     embedded = 0
     skipped_existing = 0
@@ -47,7 +54,12 @@ def main(argv: list[str] | None = None) -> None:
 
     with SessionLocal() as db:
         stmt = (
-            select(CrawlerDocumentChunk, CrawlerDocument.published_at)
+            select(
+                CrawlerDocumentChunk,
+                CrawlerDocument.published_at,
+                CrawlerDocument.category,
+                CrawlerDocument.department,
+            )
             .join(CrawlerDocument, CrawlerDocument.doc_id == CrawlerDocumentChunk.doc_id)
             .where(CrawlerDocumentChunk.status == "active")
             .order_by(CrawlerDocumentChunk.last_seen_at.desc(), CrawlerDocumentChunk.chunk_id)
@@ -62,9 +74,10 @@ def main(argv: list[str] | None = None) -> None:
                 break
             offset += len(rows)
 
-            existing_ids = _existing_ids(collection, [chunk.chunk_id for chunk, _ in rows])
+            existing_ids = _existing_ids(collection, [chunk.chunk_id for chunk, *_ in rows])
             embedded_batch: list[EmbeddedChunk] = []
-            for chunk, published_at in rows:
+            metadata_batch: list[dict[str, object]] = []
+            for chunk, published_at, category, department in rows:
                 if chunk.chunk_id in existing_ids:
                     skipped_existing += 1
                     continue
@@ -103,13 +116,20 @@ def main(argv: list[str] | None = None) -> None:
                         embedding_model=args.model,
                     )
                 )
+                metadata_batch.append(
+                    _metadata(
+                        embedded_batch[-1],
+                        category=category,
+                        department=department,
+                    )
+                )
 
             if embedded_batch:
                 collection.upsert(
                     ids=[chunk.chunk_id for chunk in embedded_batch],
                     embeddings=[chunk.embedding for chunk in embedded_batch],
                     documents=[chunk.text for chunk in embedded_batch],
-                    metadatas=[_metadata(chunk) for chunk in embedded_batch],
+                    metadatas=metadata_batch,
                 )
                 embedded += len(embedded_batch)
                 print(
@@ -137,7 +157,12 @@ def _existing_ids(collection, chunk_ids: Iterable[str]) -> set[str]:
     return set(result.get("ids") or [])
 
 
-def _metadata(chunk: EmbeddedChunk) -> dict[str, object]:
+def _metadata(
+    chunk: EmbeddedChunk,
+    *,
+    category: str | None,
+    department: str | None,
+) -> dict[str, object]:
     metadata: dict[str, object] = {
         "chunk_id": chunk.chunk_id,
         "doc_id": chunk.doc_id,
@@ -149,6 +174,10 @@ def _metadata(chunk: EmbeddedChunk) -> dict[str, object]:
     }
     if chunk.published_at:
         metadata["published_at"] = chunk.published_at.isoformat()
+    if category:
+        metadata["category"] = category
+    if department:
+        metadata["department"] = department
     return metadata
 
 

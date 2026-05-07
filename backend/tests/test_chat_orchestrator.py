@@ -29,7 +29,7 @@ def test_decide_chat_route_uses_rag_for_notice_question() -> None:
 
 
 def test_decide_chat_route_uses_rag_for_department_question() -> None:
-    decision = chat_orchestrator.decide_chat_route("청소년학과 전공이수자격원 접수 안내 알려줘")
+    decision = chat_orchestrator.decide_chat_route("청소년학과 전공이수자격 접수 안내 알려줘")
 
     assert decision.route == "rag"
 
@@ -98,6 +98,8 @@ def test_answer_chat_uses_rag_results_as_context(monkeypatch) -> None:
         text="장학 신청 기간은 5월 1일부터 5월 10일까지입니다.",
         title="장학 신청 안내",
         source_url="https://example.com/scholarship",
+        category="scholarship",
+        published_at="2026-05-01T00:00:00",
     )
     monkeypatch.setattr(chat_orchestrator, "search_documents", lambda query, top_k: [search_result])
 
@@ -113,6 +115,7 @@ def test_answer_chat_uses_rag_results_as_context(monkeypatch) -> None:
     assert result.intent == "RAG"
     assert "장학 신청 안내" in captured["context"]
     assert "5월 1일부터 5월 10일" in captured["context"]
+    assert "category: scholarship" in captured["context"]
     assert result.sources[0].source_url == "https://example.com/scholarship"
 
 

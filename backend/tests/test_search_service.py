@@ -5,6 +5,7 @@ def test_search_documents_embeds_query_and_maps_vector_results(monkeypatch) -> N
     captured = {}
 
     monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])
 
     def _query_embedded_chunks(*, query_embedding, top_k, category):
         captured["query_embedding"] = query_embedding
@@ -41,6 +42,11 @@ def test_search_documents_embeds_query_and_maps_vector_results(monkeypatch) -> N
     assert results[0].text == "Document chunk text"
     assert results[0].title == "Document title"
     assert results[0].source_url == "https://example.com/source"
+    assert results[0].score_breakdown == {
+        "similarity": 0.8,
+        "freshness": 0.0,
+        "title": 0.0,
+    }
 
 
 def test_search_wraps_results_in_response(monkeypatch) -> None:
@@ -58,6 +64,7 @@ def test_search_wraps_results_in_response(monkeypatch) -> None:
 
 def test_search_documents_reranks_by_category_weights(monkeypatch) -> None:
     monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])
 
     def _query_embedded_chunks(*, query_embedding, top_k, category):
         return [
@@ -90,3 +97,40 @@ def test_search_documents_reranks_by_category_weights(monkeypatch) -> None:
     )
 
     assert [result.chunk_id for result in results] == ["recent-title", "similar-old"]
+
+
+def test_search_documents_merges_keyword_candidates(monkeypatch) -> None:
+    monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+
+    monkeypatch.setattr(
+        search_service,
+        "query_embedded_chunks",
+        lambda **kwargs: [
+            {
+                "chunk_id": "vector-only",
+                "doc_id": "doc-1",
+                "distance": 0.2,
+                "text": "공지 본문",
+                "title": "공지",
+                "source_url": "https://example.com/vector",
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        search_service,
+        "_query_keyword_chunks",
+        lambda **kwargs: [
+            {
+                "chunk_id": "keyword-only",
+                "doc_id": "doc-2",
+                "distance": 0.0,
+                "text": "졸업요건 본문",
+                "title": "졸업요건 안내",
+                "source_url": "https://example.com/keyword",
+            }
+        ],
+    )
+
+    results = search_service.search_documents(query="졸업요건", top_k=2)
+
+    assert {result.chunk_id for result in results} == {"vector-only", "keyword-only"}
