@@ -1,0 +1,143 @@
+{
+  "map": {
+    "campus": {
+      "name": "京畿大学水原校区",
+      "address": "京畿道水原市灵通区光教山路154-42",
+      "description": "这是根据京畿大学官方水原校区介绍页面和 Kakao Maps 地点信息整理的校园地图。点击地图标记或建筑列表，即可快速查看位置和说明。",
+      "sourceLabel": "查看京畿大学水原校区介绍",
+      "coordinateSourceLabel": "Kakao Maps 地点搜索",
+      "coordinateNote": "建筑介绍文字基于京畿大学官方页面，纬度和经度基于 Kakao Maps 登记的地点坐标。"
+    },
+    "tag": {
+      "study": "学习空间",
+      "college": "学院楼",
+      "welfare": "福利空间",
+      "lecture": "授课空间",
+      "research": "研究空间",
+      "engineering": "工学楼",
+      "convenience": "便利设施空间"
+    },
+    "filter": {
+      "all": "全部"
+    },
+    "building": {
+      "centralLibrary": {
+        "shortName": "中央图书馆",
+        "name": "中央图书馆",
+        "summary": "主要学习空间",
+        "officialGuide": "从正门直行120米",
+        "description": "这是从正门进入后较先到达的主要学习空间之一，以阅览室和资料室为中心，是学生使用频率较高的代表性建筑。",
+        "searchKeyword": "京畿大学水原校区中央图书馆",
+        "kakaoPlaceName": "京畿大学水原校区中央图书馆"
+      },
+      "yejiHall": {
+        "shortName": "睿智馆",
+        "name": "睿智馆（人文学院/经商学院）",
+        "summary": "人文学院 · 经商学院",
+        "officialGuide": "从正门直行250米",
+        "description": "这是人文学院和经商学院课程集中的建筑，从正门直行即可到达，是较容易找到的核心教学楼。",
+        "searchKeyword": "京畿大学水原校区睿智馆",
+        "kakaoPlaceName": "京畿大学睿智馆4号教学楼"
+      },
+      "eSquare": {
+        "shortName": "E-Square",
+        "name": "E-Square（第二福利馆）",
+        "summary": "学生食堂 · 学生福利空间",
+        "officialGuide": "从正门直行320米",
+        "description": "这里聚集了学生食堂和生活便利设施，是校园内的福利中心空间，也是课前课后学生经常前往的校园枢纽。",
+        "searchKeyword": "京畿大学水原校区E-Square",
+        "kakaoPlaceName": "京畿大学水原校区E-Square"
+      },
+      "lectureHall": {
+        "shortName": "综合教学楼",
+        "name": "综合教学楼",
+        "summary": "主要授课建筑",
+        "officialGuide": "从正门直行350米后向左走50米，或从中央图书馆后方道路步行450米",
+        "description": "这是多种专业课程进行的中心教学楼，可通过中央图书馆后方路线或正门直行路线到达。",
+        "searchKeyword": "京畿大学水原校区综合教学楼",
+        "kakaoPlaceName": "京畿大学水原校区综合教学楼"
+      },
+      "facultyResearchHall": {
+        "shortName": "教授研究楼",
+        "name": "教授研究楼",
+        "summary": "教师研究空间",
+        "officialGuide": "从正门经中央图书馆后方道路步行300米",
+        "description": "这是一座位于中央图书馆后方学术区域的研究型建筑，集中有教授研究室和学术活动空间。",
+        "searchKeyword": "京畿大学水原校区教授研究楼",
+        "kakaoPlaceName": "京畿大学教授研究楼"
+      },
+      "gwanggyoHall": {
+        "shortName": "光教馆",
+        "name": "光教馆（自然科学学院）",
+        "summary": "自然科学学院",
+        "officialGuide": "从正门直行450米，或从中央图书馆后方道路步行550米",
+        "description": "这是自然科学类课程集中的建筑，位于综合教学楼和工学区域之间，是较容易找到的主要教学楼。",
+        "searchKeyword": "京畿大学水原校区光教馆",
+        "kakaoPlaceName": "京畿大学光教馆6号教学楼"
+      },
+      "jiphyeonHall": {
+        "shortName": "集贤馆",
+        "name": "集贤馆（工学馆）",
+        "summary": "工学馆",
+        "officialGuide": "从正门直行500米，或从中央图书馆后方道路步行500米",
+        "description": "这是工学类课程、实验实习和项目活动集中的建筑，是校园东侧教学区域的核心据点。",
+        "searchKeyword": "京畿大学水原校区集贤馆",
+        "kakaoPlaceName": "京畿大学水原校区集贤馆7号教学楼"
+      },
+      "studentCenter": {
+        "shortName": "学生会馆",
+        "name": "学生会馆",
+        "summary": "学生活动 · 生活便利设施",
+        "officialGuide": "从正门经中央图书馆后方道路步行250米，或从正门向左200米后再向右100米",
+        "description": "这是学生便利功能集中的生活中心空间，支持休息和学生自治活动，是校园内的代表性建筑。",
+        "searchKeyword": "京畿大学水原校区学生会馆",
+        "kakaoPlaceName": "京畿大学水原校区学生会馆"
+      }
+      
+    },
+    "ui": {
+  "badge": "移动 / PC 校园地图",
+  "mobileDescription": "可快速查看水原校区建筑位置和说明。",
+  "buildingCount": "建筑",
+  "coordinate": "基于真实坐标",
+  "campusInfo": "校园信息",
+  "official": "查看官方指南",
+
+  "search": "搜索",
+  "showingBuildings": "个显示中",
+  "coordinateApplied": "已应用真实坐标",
+  "searchPlaceholder": "按名称或用途搜索",
+  "categoryFilter": "分类筛选",
+
+  "campusMap": "校园地图",
+  "markerGuide": "点击标记选择建筑。",
+  "selectedBuilding": "已选建筑",
+  "filter": "筛选",
+  "none": "无",
+  "coordinateNotice": "为减少误差使用真实坐标。",
+
+  "noMatchingBuilding": "没有匹配的建筑。",
+  "locating": "正在定位...",
+  "currentLocation": "当前位置",
+  "loading": "地图加载中...",
+
+  "officialLocationGuide": "官方位置指南",
+  "latitude": "纬度",
+  "longitude": "经度",
+  "viewOnMap": "地图查看",
+  "openKakao": "打开 Kakao 地图",
+
+  "buildingList": "建筑列表",
+  "searchResult": "搜索结果",
+  "realCoordinateBuildings": "建筑",
+  "countUnit": "个",
+  "noResult": "没有结果。",
+
+  "dataSource": "数据来源",
+
+  "selected": "已选建筑",
+"list": "建筑列表",
+"source": "数据来源"
+}
+  }
+}

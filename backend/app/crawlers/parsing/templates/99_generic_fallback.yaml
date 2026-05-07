@@ -1,0 +1,6 @@
+registry:
+  - name: generic_markdown
+    priority: 99
+    url_patterns: []
+    categories: []
+    parser: generic_markdown

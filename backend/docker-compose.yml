@@ -1,0 +1,68 @@
+services:
+  frontend:
+    build:
+      context: ../frontend/frontend-app
+      dockerfile: Dockerfile
+    container_name: next-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+      NEXT_PUBLIC_KAKAOMAP_KEY: ${NEXT_PUBLIC_KAKAOMAP_KEY:-replace_with_your_kakao_javascript_key}
+      NEXT_TELEMETRY_DISABLED: 1
+      WATCHPACK_POLLING: true
+    volumes:
+      - ../frontend/frontend-app:/app
+      - frontend_node_modules:/app/node_modules
+      - frontend_next:/app/.next
+    depends_on:
+      - backend
+
+  backend:
+    build: .
+    container_name: fastapi-app
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      VECTOR_STORE_MODE: http
+      VECTOR_STORE_HOST: chroma
+      VECTOR_STORE_PORT: 8000
+    depends_on:
+      - db
+      - chroma
+    command: >
+      sh -c "alembic upgrade head &&
+      uvicorn app.main:app
+      --host 0.0.0.0
+      --port 8000"
+  db:
+    image: postgres:15
+    container_name: postgres-db
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  chroma:
+    image: chromadb/chroma:1.5.3
+    container_name: chroma-db
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma_data:/data
+      - ./chroma.docker.yaml:/chroma/config.yaml:ro
+    environment:
+      CONFIG_PATH: /chroma/config.yaml
+
+volumes:
+  postgres_data:
+  chroma_data:
+  frontend_node_modules:
+  frontend_next:

@@ -1,0 +1,139 @@
+{
+  "phone": {
+    "page": {
+      "eyebrow": "Campus Contacts",
+      "title": "电话号码指南",
+      "description": "按校区快速查找主要部门联系电话，并可直接拨打。",
+      "allCategory": "全部",
+      "categoryStat": "分类",
+      "contactsStat": "联系方式",
+      "searchPlaceholder": "搜索部门名称或电话号码",
+      "clearSearchAria": "清除搜索词",
+      "callAction": "拨打电话",
+      "noResultsTitle": "没有找到结果",
+      "noResultsDescription": "请按部门名称、电话号码或分类重新搜索。"
+    },
+    "units": {
+      "departments": " 个部门"
+    },
+    "campuses": {
+      "suwon": {
+        "label": "水原校区",
+        "address": "京畿道水原市灵通区光教山路154-42",
+        "description": "整理了从总机到行政、学生支援等常用联系方式。"
+      },
+      "seoul": {
+        "label": "首尔校区",
+        "address": "首尔特别市钟路区大学路57",
+        "description": "可一览教务、招生、学生支援和设施相关部门联系方式。"
+      }
+    },
+    "categories": {
+      "all": "全部",
+      "mainLine": "总机",
+      "administration": "行政",
+      "academics": "学事",
+      "admissions": "招生",
+      "studentSupport": "学生支援",
+      "facilities": "设施管理"
+    },
+    "departments": {
+      "suwon-main-switchboard": {
+        "name": "总机",
+        "description": "校区总机转接及基本咨询。"
+      },
+      "suwon-info-center": {
+        "name": "综合问询中心",
+        "description": "提供访客引导、位置咨询和一般咨询受理。"
+      },
+      "suwon-general-affairs": {
+        "name": "总务组",
+        "description": "负责总务、文书和校内行政支援。"
+      },
+      "suwon-finance": {
+        "name": "财务会计组",
+        "description": "注册费、会计和预算相关咨询。"
+      },
+      "suwon-academic-affairs": {
+        "name": "教务处",
+        "description": "课程运营、学事日程和选课相关咨询。"
+      },
+      "suwon-academic-support": {
+        "name": "学事支援组",
+        "description": "休学、复学、成绩和毕业手续咨询。"
+      },
+      "suwon-admissions-office": {
+        "name": "招生处",
+        "description": "新生入学、插班入学和招生日程咨询。"
+      },
+      "suwon-admissions-center": {
+        "name": "招生咨询中心",
+        "description": "各类招生咨询和提交材料相关咨询。"
+      },
+      "suwon-student-support": {
+        "name": "学生支援组",
+        "description": "学生咨询、证明书和校园生活相关咨询。"
+      },
+      "suwon-scholarship": {
+        "name": "奖学福利组",
+        "description": "奖学金、福利和学生福利制度咨询。"
+      },
+      "suwon-facility-management": {
+        "name": "设施管理组",
+        "description": "教室、建筑和设施维护咨询。"
+      },
+      "suwon-facility-center": {
+        "name": "设施服务中心",
+        "description": "制冷供暖、照明和设备问题受理。"
+      },
+      "seoul-main-switchboard": {
+        "name": "总机",
+        "description": "首尔校区总机转接及基本咨询。"
+      },
+      "seoul-info-desk": {
+        "name": "校区问询台",
+        "description": "访客引导及主要部门转接。"
+      },
+      "seoul-admin-support": {
+        "name": "行政支援室",
+        "description": "一般行政、文书和校内支援业务。"
+      },
+      "seoul-human-resources": {
+        "name": "人事总务组",
+        "description": "人事、总务和教职员行政咨询。"
+      },
+      "seoul-academic-support": {
+        "name": "教务支援组",
+        "description": "学事运营、课程和学籍相关咨询。"
+      },
+      "seoul-curriculum": {
+        "name": "课程支援室",
+        "description": "课程、修读体系和毕业要求咨询。"
+      },
+      "seoul-admissions-office": {
+        "name": "招生管理组",
+        "description": "招生选拔、报名和日程咨询。"
+      },
+      "seoul-transfer-center": {
+        "name": "插班入学咨询室",
+        "description": "插班入学、学士插班和材料咨询。"
+      },
+      "seoul-student-service": {
+        "name": "学生服务中心",
+        "description": "学生咨询、休复学和证明书相关咨询。"
+      },
+      "seoul-scholarship-center": {
+        "name": "奖学支援中心",
+        "description": "奖学选拔、国家奖学和生活支援咨询。"
+      },
+      "seoul-facility-support": {
+        "name": "设施支援组",
+        "description": "建筑、空间和教室设施维护。"
+      },
+      "seoul-control-room": {
+        "name": "综合管制室",
+        "description": "安保、出入和紧急设施情况受理。"
+      }
+    }
+  }
+}

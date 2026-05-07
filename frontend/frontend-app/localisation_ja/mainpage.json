@@ -1,0 +1,16 @@
+{
+  "header": {
+    "title": "KGU Smart Assistant"
+  },
+  "quickActions": {
+    "academicCalendar": "学年暦",
+    "exchangeStudent": "交換留学生",
+    "tuition": "学費/奨学金"
+  },
+  "chatInput": {
+    "placeholder": "メッセージを入力してください..."
+  },
+  "chat": {
+    "initialMessage": "こんにちは！京畿大学チャットボットです。🏫\n水原キャンパス・ソウルキャンパスの学年暦、交換留学（SEP）、学費納入、教室案内などについてご質問ください！\n\n💡 下のボタンを押してすばやく質問することもできます。"
+  }
+}

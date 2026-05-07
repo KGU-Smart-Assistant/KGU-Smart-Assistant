@@ -1,0 +1,253 @@
+registry:
+  - name: open_major_notice_detail
+    priority: 5
+    url_patterns:
+      - "open_major/selectbbsnttview.do"
+    categories:
+      - "notice"
+      - "materials"
+    parser: notice_detail
+
+  - name: open_major_faq
+    priority: 5
+    url_patterns:
+      - "open_major/selectbbsnttlist.do"
+    categories:
+      - "faq"
+    parser: faq
+
+  - name: open_major_schedule
+    priority: 5
+    url_patterns:
+      - "open_major/selecttnschafsschdullistus.do"
+    categories:
+      - "academic_schedule"
+    parser: schedule
+
+  - name: open_major_seoul_notice_detail
+    priority: 5
+    url_patterns:
+      - "open_major_seoul/selectbbsnttview.do"
+    categories:
+      - "notice"
+      - "materials"
+    parser: notice_detail
+
+  - name: open_major_seoul_faq
+    priority: 5
+    url_patterns:
+      - "open_major_seoul/selectbbsnttlist.do"
+    categories:
+      - "faq"
+    parser: faq
+
+  - name: open_major_seoul_schedule
+    priority: 5
+    url_patterns:
+      - "open_major_seoul/selecttnschafsschdullistus.do"
+    categories:
+      - "academic_schedule"
+    parser: schedule
+
+  - name: humanities_college_notice_detail
+    priority: 5
+    url_patterns:
+      - "hcc/selectbbsnttview.do"
+    categories:
+      - "notice"
+      - "materials"
+    parser: notice_detail
+
+  - name: humanities_college_faq
+    priority: 5
+    url_patterns:
+      - "hcc/selectbbsnttlist.do"
+    categories:
+      - "faq"
+    parser: faq
+
+  - name: humanities_college_schedule
+    priority: 5
+    url_patterns:
+      - "hcc/selecttnschafsschdullistus.do"
+    categories:
+      - "academic_schedule"
+    parser: schedule
+
+  - name: english_notice_detail
+    priority: 5
+    url_patterns:
+      - "u_english/selectbbsnttview.do"
+    categories:
+      - "notice"
+      - "materials"
+    parser: notice_detail
+
+  - name: english_faq
+    priority: 5
+    url_patterns:
+      - "u_english/selectbbsnttlist.do"
+    categories:
+      - "faq"
+    parser: faq
+
+  - name: english_schedule
+    priority: 5
+    url_patterns:
+      - "u_english/selecttnschafsschdullistus.do"
+    categories:
+      - "academic_schedule"
+    parser: schedule
+
+  - name: computer_engineering_notice_detail
+    priority: 5
+    url_patterns:
+      - "u_computer/selectbbsnttview.do"
+    categories:
+      - "notice"
+      - "materials"
+    parser: notice_detail
+
+  - name: computer_engineering_faq
+    priority: 5
+    url_patterns:
+      - "u_computer/selectbbsnttlist.do"
+    categories:
+      - "faq"
+    parser: faq
+
+  - name: computer_engineering_schedule
+    priority: 5
+    url_patterns:
+      - "u_computer/selecttnschafsschdullistus.do"
+    categories:
+      - "academic_schedule"
+    parser: schedule
+
+  - name: artificial_intelligence_notice_detail
+    priority: 5
+    url_patterns:
+      - "u_ai/selectbbsnttview.do"
+    categories:
+      - "notice"
+      - "materials"
+    parser: notice_detail
+
+  - name: artificial_intelligence_faq
+    priority: 5
+    url_patterns:
+      - "u_ai/selectbbsnttlist.do"
+    categories:
+      - "faq"
+    parser: faq
+
+  - name: artificial_intelligence_schedule
+    priority: 5
+    url_patterns:
+      - "u_ai/selecttnschafsschdullistus.do"
+    categories:
+      - "academic_schedule"
+    parser: schedule
+
+  - name: software_management_notice_detail
+    priority: 5
+    url_patterns:
+      - "u_swm/selectbbsnttview.do"
+    categories:
+      - "notice"
+      - "materials"
+    parser: notice_detail
+
+  - name: software_management_faq
+    priority: 5
+    url_patterns:
+      - "u_swm/selectbbsnttlist.do"
+    categories:
+      - "faq"
+    parser: faq
+
+  - name: software_management_schedule
+    priority: 5
+    url_patterns:
+      - "u_swm/selecttnschafsschdullistus.do"
+    categories:
+      - "academic_schedule"
+    parser: schedule
+
+  - name: tourism_culture_college_notice_detail
+    priority: 5
+    url_patterns:
+      - "u_tour/selectbbsnttview.do"
+    categories:
+      - "notice"
+      - "materials"
+    parser: notice_detail
+    options:
+      blocked_title_prefixes:
+        - "* 경기대학교"
+
+  - name: tourism_culture_college_faq
+    priority: 5
+    url_patterns:
+      - "u_tour/selectbbsnttlist.do"
+    categories:
+      - "faq"
+    parser: faq
+
+  - name: tourism_culture_college_schedule
+    priority: 5
+    url_patterns:
+      - "u_tour/selecttnschafsschdullistus.do"
+    categories:
+      - "academic_schedule"
+    parser: schedule
+
+  - name: social_college_notice_detail
+    priority: 5
+    url_patterns:
+      - "u_social/selectbbsnttview.do"
+    categories:
+      - "notice"
+      - "materials"
+    parser: notice_detail
+
+  - name: social_college_faq
+    priority: 5
+    url_patterns:
+      - "u_social/selectbbsnttlist.do"
+    categories:
+      - "faq"
+    parser: faq
+
+  - name: social_college_schedule
+    priority: 5
+    url_patterns:
+      - "u_social/selecttnschafsschdullistus.do"
+    categories:
+      - "academic_schedule"
+    parser: schedule
+
+  - name: convergence_science_college_notice_detail
+    priority: 5
+    url_patterns:
+      - "fsbt/selectbbsnttview.do"
+    categories:
+      - "notice"
+      - "materials"
+    parser: notice_detail
+
+  - name: convergence_science_college_faq
+    priority: 5
+    url_patterns:
+      - "fsbt/selectbbsnttlist.do"
+    categories:
+      - "faq"
+    parser: faq
+
+  - name: convergence_science_college_schedule
+    priority: 5
+    url_patterns:
+      - "fsbt/selecttnschafsschdullistus.do"
+    categories:
+      - "academic_schedule"
+    parser: schedule

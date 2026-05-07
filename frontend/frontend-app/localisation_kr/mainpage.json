@@ -1,0 +1,16 @@
+{
+  "header": {
+    "title": "KGU Smart Assistant"
+  },
+  "quickActions": {
+    "academicCalendar": "학사일정",
+    "exchangeStudent": "교환학생",
+    "tuition": "등록금/장학"
+  },
+  "chatInput": {
+    "placeholder": "메시지를 입력하세요..."
+  },
+  "chat": {
+    "initialMessage": "안녕하세요! 경기대학교 챗봇입니다. 🏫\n수원캠퍼스·서울캠퍼스의 학사일정, 교환학생(SEP), 등록금 납부, 강의실 안내 등 궁금한 점을 물어보세요!\n\n💡 아래 버튼을 눌러 빠르게 질문할 수도 있어요."
+  }
+}

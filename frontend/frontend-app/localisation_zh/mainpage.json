@@ -1,0 +1,16 @@
+{
+  "header": {
+    "title": "KGU Smart Assistant"
+  },
+  "quickActions": {
+    "academicCalendar": "校历",
+    "exchangeStudent": "交换生",
+    "tuition": "学费/奖学金"
+  },
+  "chatInput": {
+    "placeholder": "输入消息..."
+  },
+  "chat": {
+    "initialMessage": "你好！我是京畿大学聊天机器人。🏫\n可以向我询问水原校区和首尔校区的校历、交换生（SEP）、学费缴纳、教室指南等问题！\n\n💡 您也可以通过点击下方按钮快速提问。"
+  }
+}

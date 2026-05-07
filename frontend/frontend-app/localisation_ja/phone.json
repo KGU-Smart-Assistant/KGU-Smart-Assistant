@@ -1,0 +1,139 @@
+{
+  "phone": {
+    "page": {
+      "eyebrow": "Campus Contacts",
+      "title": "電話番号案内",
+      "description": "キャンパス別の主要部署の電話番号をすばやく探し、そのまま発信できます。",
+      "allCategory": "すべて",
+      "categoryStat": "カテゴリ",
+      "contactsStat": "連絡先",
+      "searchPlaceholder": "部署名または電話番号を検索してください",
+      "clearSearchAria": "検索語を消去",
+      "callAction": "電話する",
+      "noResultsTitle": "検索結果がありません",
+      "noResultsDescription": "部署名、電話番号、カテゴリで再検索してください。"
+    },
+    "units": {
+      "departments": " 部署"
+    },
+    "campuses": {
+      "suwon": {
+        "label": "水原キャンパス",
+        "address": "京畿道水原市霊通区光教山路154-42",
+        "description": "代表番号から行政、学生支援まで、よく使う連絡先を整理しました。"
+      },
+      "seoul": {
+        "label": "ソウルキャンパス",
+        "address": "ソウル特別市鍾路区大学路57",
+        "description": "教学、入学、学生支援、施設関連部署を一覧で確認できます。"
+      }
+    },
+    "categories": {
+      "all": "すべて",
+      "mainLine": "代表番号",
+      "administration": "行政",
+      "academics": "学事",
+      "admissions": "入学",
+      "studentSupport": "学生支援",
+      "facilities": "施設管理"
+    },
+    "departments": {
+      "suwon-main-switchboard": {
+        "name": "代表番号",
+        "description": "キャンパス代表番号への接続と基本案内。"
+      },
+      "suwon-info-center": {
+        "name": "総合案内センター",
+        "description": "来訪案内、場所の問い合わせ、代表窓口対応。"
+      },
+      "suwon-general-affairs": {
+        "name": "総務チーム",
+        "description": "総務、文書、学内行政支援。"
+      },
+      "suwon-finance": {
+        "name": "財務会計チーム",
+        "description": "授業料、会計、予算に関する問い合わせ。"
+      },
+      "suwon-academic-affairs": {
+        "name": "教務処",
+        "description": "授業運営、学事日程、履修登録に関する問い合わせ。"
+      },
+      "suwon-academic-support": {
+        "name": "学事支援チーム",
+        "description": "休学、復学、成績、卒業手続きの案内。"
+      },
+      "suwon-admissions-office": {
+        "name": "入学処",
+        "description": "新入学、編入学、選考日程の案内。"
+      },
+      "suwon-admissions-center": {
+        "name": "入学相談センター",
+        "description": "選考別相談および提出書類に関する問い合わせ。"
+      },
+      "suwon-student-support": {
+        "name": "学生支援チーム",
+        "description": "学生相談、証明書、学生生活全般の問い合わせ。"
+      },
+      "suwon-scholarship": {
+        "name": "奨学福祉チーム",
+        "description": "奨学金、福祉、学生福祉制度の案内。"
+      },
+      "suwon-facility-management": {
+        "name": "施設管理チーム",
+        "description": "講義室、建物、施設の維持補修に関する問い合わせ。"
+      },
+      "suwon-facility-center": {
+        "name": "施設相談センター",
+        "description": "冷暖房、照明、設備に関する相談受付。"
+      },
+      "seoul-main-switchboard": {
+        "name": "代表番号",
+        "description": "ソウルキャンパス代表番号への接続と基本案内。"
+      },
+      "seoul-info-desk": {
+        "name": "キャンパス案内デスク",
+        "description": "来訪者案内および主要部署への取次。"
+      },
+      "seoul-admin-support": {
+        "name": "行政支援室",
+        "description": "一般行政、文書、学内支援業務。"
+      },
+      "seoul-human-resources": {
+        "name": "人事総務チーム",
+        "description": "人事、総務、教職員行政に関する問い合わせ。"
+      },
+      "seoul-academic-support": {
+        "name": "教学支援チーム",
+        "description": "学事運営、授業、学籍に関する問い合わせ。"
+      },
+      "seoul-curriculum": {
+        "name": "教育課程支援室",
+        "description": "教育課程、履修体系、卒業要件の案内。"
+      },
+      "seoul-admissions-office": {
+        "name": "入学管理チーム",
+        "description": "入学選考、願書受付、日程に関する問い合わせ。"
+      },
+      "seoul-transfer-center": {
+        "name": "編入学相談室",
+        "description": "編入学、学士編入、書類の案内。"
+      },
+      "seoul-student-service": {
+        "name": "学生サービスセンター",
+        "description": "学生相談、休復学、各種証明に関する問い合わせ。"
+      },
+      "seoul-scholarship-center": {
+        "name": "奨学支援センター",
+        "description": "奨学選抜、国家奨学、生活支援の相談。"
+      },
+      "seoul-facility-support": {
+        "name": "施設支援チーム",
+        "description": "建物、スペース、講義室施設の維持補修。"
+      },
+      "seoul-control-room": {
+        "name": "統合管制室",
+        "description": "警備、出入り、緊急施設状況の受付。"
+      }
+    }
+  }
+}

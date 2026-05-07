@@ -1,0 +1,139 @@
+{
+  "phone": {
+    "page": {
+      "eyebrow": "Campus Contacts",
+      "title": "전화번호 안내",
+      "description": "캠퍼스별 주요 부서 연락처를 빠르게 찾고 바로 전화 연결할 수 있습니다.",
+      "allCategory": "전체",
+      "categoryStat": "카테고리",
+      "contactsStat": "연락처",
+      "searchPlaceholder": "부서명 또는 전화번호를 검색하세요",
+      "clearSearchAria": "검색어 지우기",
+      "callAction": "전화걸기",
+      "noResultsTitle": "검색 결과가 없습니다",
+      "noResultsDescription": "부서명, 전화번호, 카테고리 기준으로 다시 검색해보세요."
+    },
+    "units": {
+      "departments": "개 부서"
+    },
+    "campuses": {
+      "suwon": {
+        "label": "수원캠퍼스",
+        "address": "경기도 수원시 영통구 광교산로 154-42",
+        "description": "대표번호부터 행정, 학생지원까지 자주 찾는 연락처를 정리했습니다."
+      },
+      "seoul": {
+        "label": "서울캠퍼스",
+        "address": "서울특별시 종로구 대학로 57",
+        "description": "교학, 입학, 학생지원, 시설 관련 부서를 한눈에 볼 수 있습니다."
+      }
+    },
+    "categories": {
+      "all": "전체",
+      "mainLine": "대표번호",
+      "administration": "행정",
+      "academics": "학사",
+      "admissions": "입학",
+      "studentSupport": "학생지원",
+      "facilities": "시설관리"
+    },
+    "departments": {
+      "suwon-main-switchboard": {
+        "name": "대표번호",
+        "description": "캠퍼스 대표 연결 및 기본 안내"
+      },
+      "suwon-info-center": {
+        "name": "종합안내센터",
+        "description": "방문 안내, 위치 문의, 대표 민원 접수"
+      },
+      "suwon-general-affairs": {
+        "name": "총무팀",
+        "description": "총무, 문서, 교내 행정 지원"
+      },
+      "suwon-finance": {
+        "name": "재무회계팀",
+        "description": "등록금, 회계, 예산 관련 문의"
+      },
+      "suwon-academic-affairs": {
+        "name": "교무처",
+        "description": "수업 운영, 학사 일정, 수강 관련 문의"
+      },
+      "suwon-academic-support": {
+        "name": "학사지원팀",
+        "description": "휴학, 복학, 성적, 졸업 업무 안내"
+      },
+      "suwon-admissions-office": {
+        "name": "입학처",
+        "description": "신입학, 편입학, 전형 일정 안내"
+      },
+      "suwon-admissions-center": {
+        "name": "입학상담센터",
+        "description": "전형별 상담 및 제출서류 문의"
+      },
+      "suwon-student-support": {
+        "name": "학생지원팀",
+        "description": "학생 민원, 증명서, 학교생활 전반 문의"
+      },
+      "suwon-scholarship": {
+        "name": "장학복지팀",
+        "description": "장학금, 복지, 학생 복지제도 안내"
+      },
+      "suwon-facility-management": {
+        "name": "시설관리팀",
+        "description": "강의실, 건물, 시설 유지보수 문의"
+      },
+      "suwon-facility-center": {
+        "name": "시설민원센터",
+        "description": "냉난방, 조명, 설비 민원 접수"
+      },
+      "seoul-main-switchboard": {
+        "name": "대표번호",
+        "description": "서울캠퍼스 대표 연결 및 기본 안내"
+      },
+      "seoul-info-desk": {
+        "name": "캠퍼스안내데스크",
+        "description": "방문객 안내 및 주요 부서 연결"
+      },
+      "seoul-admin-support": {
+        "name": "행정지원실",
+        "description": "일반 행정, 문서, 교내 지원 업무"
+      },
+      "seoul-human-resources": {
+        "name": "인사총무팀",
+        "description": "인사, 총무, 교직원 행정 문의"
+      },
+      "seoul-academic-support": {
+        "name": "교학지원팀",
+        "description": "학사 운영, 수업, 학적 관련 문의"
+      },
+      "seoul-curriculum": {
+        "name": "교육과정지원실",
+        "description": "교육과정, 이수 체계, 졸업 요건 안내"
+      },
+      "seoul-admissions-office": {
+        "name": "입학관리팀",
+        "description": "입학 전형, 원서접수, 일정 문의"
+      },
+      "seoul-transfer-center": {
+        "name": "편입학상담실",
+        "description": "편입학, 학사편입, 서류 안내"
+      },
+      "seoul-student-service": {
+        "name": "학생서비스센터",
+        "description": "학생 민원, 휴복학, 제증명 문의"
+      },
+      "seoul-scholarship-center": {
+        "name": "장학지원센터",
+        "description": "장학 선발, 국가장학, 생활지원 상담"
+      },
+      "seoul-facility-support": {
+        "name": "시설지원팀",
+        "description": "건물, 공간, 강의실 시설 유지보수"
+      },
+      "seoul-control-room": {
+        "name": "통합관제실",
+        "description": "보안, 출입, 긴급 시설 상황 접수"
+      }
+    }
+  }
+}

@@ -1,0 +1,143 @@
+{
+  "map": {
+    "campus": {
+      "name": "Kyonggi University Suwon Campus",
+      "address": "154-42 Gwanggyosan-ro, Yeongtong-gu, Suwon-si, Gyeonggi-do",
+      "description": "This campus map is based on Kyonggi University's official Suwon Campus guide and Kakao Maps place information. You can quickly check building locations and descriptions by selecting markers or items from the building list.",
+      "sourceLabel": "View Kyonggi University Suwon Campus Guide",
+      "coordinateSourceLabel": "Kakao Maps Place Search",
+      "coordinateNote": "Building descriptions are based on Kyonggi University's official page, and coordinates are based on places registered on Kakao Maps."
+    },
+    "tag": {
+      "study": "Study Space",
+      "college": "College Building",
+      "welfare": "Welfare Space",
+      "lecture": "Lecture Space",
+      "research": "Research Space",
+      "engineering": "Engineering Building",
+      "convenience": "Convenience Space"
+    },
+    "filter": {
+      "all": "All"
+    },
+    "building": {
+      "centralLibrary": {
+        "shortName": "Central Library",
+        "name": "Central Library",
+        "summary": "Main study space",
+        "officialGuide": "120m straight from the main gate",
+        "description": "One of the main study spaces near the main gate, frequently used by students for reading rooms and library resources.",
+        "searchKeyword": "Kyonggi University Suwon Campus Central Library",
+        "kakaoPlaceName": "Kyonggi University Suwon Campus Central Library"
+      },
+      "yejiHall": {
+        "shortName": "Yeji Hall",
+        "name": "Yeji Hall (College of Humanities / College of Business)",
+        "summary": "College of Humanities · College of Business",
+        "officialGuide": "250m straight from the main gate",
+        "description": "A key lecture building where classes for the College of Humanities and College of Business are held, easily accessible by walking straight from the main gate.",
+        "searchKeyword": "Kyonggi University Suwon Campus Yeji Hall",
+        "kakaoPlaceName": "Kyonggi University Yeji Hall Building 4"
+      },
+      "eSquare": {
+        "shortName": "E-Square",
+        "name": "E-Square (Welfare Center 2)",
+        "summary": "Student cafeteria · Student welfare space",
+        "officialGuide": "320m straight from the main gate",
+        "description": "A central welfare space with student dining and convenience facilities, often used before and after classes.",
+        "searchKeyword": "Kyonggi University Suwon Campus E-Square",
+        "kakaoPlaceName": "Kyonggi University Suwon Campus E-Square"
+      },
+      "lectureHall": {
+        "shortName": "Lecture Hall",
+        "name": "General Lecture Hall",
+        "summary": "Main lecture building",
+        "officialGuide": "350m straight from the main gate, then 50m to the left, or 450m via the path behind the Central Library",
+        "description": "A central lecture building where many major classes are held, accessible from both the path behind the Central Library and the main gate route.",
+        "searchKeyword": "Kyonggi University Suwon Campus General Lecture Hall",
+        "kakaoPlaceName": "Kyonggi University Suwon Campus General Lecture Hall"
+      },
+      "facultyResearchHall": {
+        "shortName": "Faculty Research Hall",
+        "name": "Faculty Research Hall",
+        "summary": "Faculty research space",
+        "officialGuide": "300m via the path behind the Central Library from the main gate",
+        "description": "A research-focused building located behind the Central Library, with faculty offices and academic activity spaces.",
+        "searchKeyword": "Kyonggi University Suwon Campus Faculty Research Hall",
+        "kakaoPlaceName": "Kyonggi University Faculty Research Hall"
+      },
+      "gwanggyoHall": {
+        "shortName": "Gwanggyo Hall",
+        "name": "Gwanggyo Hall (College of Natural Sciences)",
+        "summary": "College of Natural Sciences",
+        "officialGuide": "450m straight from the main gate, or 550m via the path behind the Central Library",
+        "description": "A main lecture building for natural science classes, located between the General Lecture Hall and the engineering area.",
+        "searchKeyword": "Kyonggi University Suwon Campus Gwanggyo Hall",
+        "kakaoPlaceName": "Kyonggi University Gwanggyo Hall Building 6"
+      },
+      "jiphyeonHall": {
+        "shortName": "Jiphyeon Hall",
+        "name": "Jiphyeon Hall (Engineering Hall)",
+        "summary": "Engineering Hall",
+        "officialGuide": "500m straight from the main gate, or 500m via the path behind the Central Library",
+        "description": "A key building in the eastern academic area where engineering classes, labs, and projects are held.",
+        "searchKeyword": "Kyonggi University Suwon Campus Jiphyeon Hall",
+        "kakaoPlaceName": "Kyonggi University Suwon Campus Jiphyeon Hall Building 7"
+      },
+      "studentCenter": {
+        "shortName": "Student Center",
+        "name": "Student Center",
+        "summary": "Student activities · Convenience facilities",
+        "officialGuide": "250m via the path behind the Central Library, or 200m left from the main gate and then 100m right",
+        "description": "A central student life space that supports rest, convenience, and student activities.",
+        "searchKeyword": "Kyonggi University Suwon Campus Student Center",
+        "kakaoPlaceName": "Kyonggi University Suwon Campus Student Center"
+      }
+      
+    },
+    "ui": {
+  "badge": "Responsive Campus Map",
+  "mobileDescription": "Quickly check building locations and descriptions on the Suwon campus.",
+  "buildingCount": "Buildings",
+  "coordinate": "Based on real coordinates",
+  "campusInfo": "Campus Info",
+  "official": "View Official Guide",
+
+  "search": "Search",
+  "showingBuildings": " buildings shown",
+  "coordinateApplied": "Real coordinates applied",
+  "searchPlaceholder": "Search by building name or purpose",
+  "categoryFilter": "Category Filter",
+
+  "campusMap": "Campus Map",
+  "markerGuide": "Click a marker to select a building and move the map.",
+  "selectedBuilding": "Selected Building",
+  "filter": "Filter",
+  "none": "None",
+  "coordinateNotice": "Real coordinates applied to reduce mismatch.",
+
+  "noMatchingBuilding": "No matching buildings found.",
+  "locating": "Locating...",
+  "currentLocation": "Current Location",
+  "loading": "Loading map...",
+
+  "officialLocationGuide": "Official Location Guide",
+  "latitude": "Lat",
+  "longitude": "Lng",
+  "viewOnMap": "View on Map",
+  "openKakao": "Open Kakao Map",
+
+  "buildingList": "Building List",
+  "searchResult": "Results",
+  "realCoordinateBuildings": "Buildings",
+  "countUnit": "",
+  "noResult": "No results found.",
+
+  "dataSource": "Data Source",
+
+  "selected": "Selected Building",
+"list": "Building List",
+"source": "Data Source"
+}
+  }
+}

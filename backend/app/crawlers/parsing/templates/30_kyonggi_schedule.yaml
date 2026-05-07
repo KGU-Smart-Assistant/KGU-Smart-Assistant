@@ -1,0 +1,8 @@
+registry:
+  - name: kyonggi_schedule
+    priority: 30
+    url_patterns:
+      - "selecttnschafsschdullistus.do"
+    categories:
+      - "academic_schedule"
+    parser: schedule

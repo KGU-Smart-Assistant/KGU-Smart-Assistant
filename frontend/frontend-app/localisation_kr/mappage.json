@@ -1,0 +1,155 @@
+{
+  "map": {
+    "campus": {
+      "name": "경기대학교 수원캠퍼스",
+      "address": "경기도 수원시 영통구 광교산로 154-42",
+      "description": "경기대학교 공식 수원캠퍼스 안내 페이지와 카카오맵 장소 정보를 바탕으로 정리한 캠퍼스 지도입니다. 마커나 건물 목록을 눌러 위치와 설명을 빠르게 확인할 수 있습니다.",
+      "sourceLabel": "경기대학교 수원캠퍼스 둘러보기",
+      "coordinateSourceLabel": "카카오맵 장소 검색",
+      "coordinateNote": "건물 소개 문구는 경기대학교 공식 페이지를, 위경도는 카카오맵에 등록된 장소 좌표를 기준으로 사용했습니다."
+    },
+
+    "tag": {
+      "study": "학습 공간",
+      "college": "단과대 건물",
+      "welfare": "복지 공간",
+      "lecture": "강의 공간",
+      "research": "연구 공간",
+      "engineering": "공학 건물",
+      "convenience": "편의 공간"
+    },
+
+    "filter": {
+      "all": "전체"
+    },
+
+    "building": {
+      "centralLibrary": {
+        "shortName": "중앙도서관",
+        "name": "중앙도서관",
+        "summary": "대표 학습 공간",
+        "officialGuide": "정문에서 정면으로 120m",
+        "description": "정문에서 가장 먼저 만나는 주요 학습 공간 중 하나로, 열람실과 자료실을 중심으로 학생 이용이 많은 대표 건물입니다.",
+        "searchKeyword": "경기대학교 수원캠퍼스 중앙도서관",
+        "kakaoPlaceName": "경기대학교 수원캠퍼스 중앙도서관"
+      },
+
+      "yejiHall": {
+        "shortName": "예지관",
+        "name": "예지관(인문대학/경상대학)",
+        "summary": "인문대학 · 경상대학",
+        "officialGuide": "정문에서 정면으로 250m",
+        "description": "인문대학과 경상대학 수업이 모여 있는 건물로, 정문에서 직진 동선으로 접근하기 쉬운 핵심 강의동입니다.",
+        "searchKeyword": "경기대학교 수원캠퍼스 예지관",
+        "kakaoPlaceName": "경기대학교 예지관 4강의동"
+      },
+
+      "eSquare": {
+        "shortName": "E-스퀘어",
+        "name": "E-스퀘어(2복지관)",
+        "summary": "학생식당 · 학생복지공간",
+        "officialGuide": "정문에서 정면으로 320m",
+        "description": "학생식당과 생활 편의시설이 모여 있는 복지 중심 공간으로, 수업 전후에 가장 자주 들르게 되는 캠퍼스 허브입니다.",
+        "searchKeyword": "경기대학교 수원캠퍼스 E스퀘어",
+        "kakaoPlaceName": "경기대학교 수원캠퍼스 E스퀘어(2복지관)"
+      },
+
+      "lectureHall": {
+        "shortName": "종합강의동",
+        "name": "종합강의동",
+        "summary": "수업 중심 건물",
+        "officialGuide": "정문에서 정면으로 350m 후 좌측길로 50m, 혹은 중앙도서관 뒷길로 450m",
+        "description": "다양한 전공 수업이 열리는 중심 강의동으로, 중앙도서관 뒤쪽 동선과 정문 직진 동선 모두에서 접근할 수 있습니다.",
+        "searchKeyword": "경기대학교 수원캠퍼스 종합강의동",
+        "kakaoPlaceName": "경기대학교 수원캠퍼스 종합강의동"
+      },
+
+      "facultyResearchHall": {
+        "shortName": "교수연구동",
+        "name": "교수연구동",
+        "summary": "교원 연구 공간",
+        "officialGuide": "정문에서 중앙도서관 뒷길로 300m",
+        "description": "중앙도서관 뒤편 학술 구역에 위치한 연구 중심 건물로, 교수 연구실과 학술 활동 공간이 모여 있습니다.",
+        "searchKeyword": "경기대학교 수원캠퍼스 교수연구동",
+        "kakaoPlaceName": "경기대학교 교수연구동"
+      },
+
+      "gwanggyoHall": {
+        "shortName": "광교관",
+        "name": "광교관(자연과학대학)",
+        "summary": "자연과학대학",
+        "officialGuide": "정문에서 정면으로 450m, 혹은 중앙도서관 뒷길로 550m",
+        "description": "자연과학대학 계열 수업이 모여 있는 건물로, 종합강의동과 공학 계열 구역 사이에서 찾기 쉬운 주요 강의동입니다.",
+        "searchKeyword": "경기대학교 수원캠퍼스 광교관",
+        "kakaoPlaceName": "경기대학교 광교관 6강의동"
+      },
+
+      "jiphyeonHall": {
+        "shortName": "집현관",
+        "name": "집현관(공학관)",
+        "summary": "공학관",
+        "officialGuide": "정문에서 정면으로 500m, 혹은 중앙도서관 뒷길로 500m",
+        "description": "공학 계열 수업과 실습, 프로젝트가 모여 있는 건물로, 캠퍼스 동측 학사 구역의 핵심 거점입니다.",
+        "searchKeyword": "경기대학교 수원캠퍼스 집현관",
+        "kakaoPlaceName": "경기대학교 수원캠퍼스 집현관 7강의동"
+      },
+
+      "studentCenter": {
+        "shortName": "학생회관",
+        "name": "학생회관",
+        "summary": "학생 활동 · 생활 편의시설",
+        "officialGuide": "정문에서 중앙도서관 뒷길로 250m, 혹은 정문에서 좌측으로 200m 후 우측으로 100m",
+        "description": "학생 편의 기능이 모여 있는 생활 중심 공간으로, 휴식과 학생 자치 활동을 함께 지원하는 대표 건물입니다.",
+        "searchKeyword": "경기대학교 수원캠퍼스 학생회관",
+        "kakaoPlaceName": "경기대학교 수원캠퍼스 학생회관"
+      }
+      
+    },
+    "ui": {
+  "badge": "모바일 / PC 반응형 캠퍼스 지도",
+  "mobileDescription": "수원캠퍼스 주요 건물 위치와 설명을 빠르게 확인할 수 있는 지도입니다.",
+  "buildingCount": "건물",
+  "coordinate": "실제 장소 좌표 기준",
+  "campusInfo": "캠퍼스 정보",
+  "official": "공식 안내 보기",
+
+  "search": "검색",
+  "showingBuildings": "개 건물 표시 중",
+  "coordinateApplied": "실제 장소 좌표 반영",
+  "searchPlaceholder": "건물명 또는 용도로 검색해보세요",
+  "categoryFilter": "카테고리 필터",
+
+  "campusMap": "캠퍼스 지도",
+  "markerGuide": "마커를 누르면 해당 건물을 선택하고 지도 위치를 이동합니다.",
+  "selectedBuilding": "선택 건물",
+  "filter": "필터",
+  "none": "없음",
+  "coordinateNotice": "좌표 불일치 문제를 줄이기 위해 실제 장소 좌표를 반영했습니다.",
+
+  "noMatchingBuilding": "조건에 맞는 건물이 없습니다.",
+  "locating": "현재 위치 확인 중...",
+  "currentLocation": "현재 위치",
+  "loading": "지도를 불러오는 중입니다...",
+
+  "officialLocationGuide": "공식 위치 안내",
+  "latitude": "위도",
+  "longitude": "경도",
+  "viewOnMap": "지도에서 보기",
+  "openKakao": "카카오맵 열기",
+
+  "buildingList": "건물 목록",
+  "searchResult": "검색 결과",
+  "realCoordinateBuildings": "실제 좌표 기준 건물",
+  "countUnit": "개",
+  "noResult": "검색 결과가 없습니다.",
+
+  "dataSource": "데이터 기준",
+
+  "selected": "선택 건물",
+"list": "건물 목록",
+"source": "데이터 기준"
+
+
+}
+  }
+}
