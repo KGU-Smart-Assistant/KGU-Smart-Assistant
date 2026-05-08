@@ -1,10 +1,17 @@
 import os
 from types import SimpleNamespace
 
+import pytest
+
 os.environ.setdefault("GOOGLE_API_KEY", "test-key")
 
 from app.schemas.search import SearchResult
 from app.services import chat_orchestrator
+
+
+@pytest.fixture(autouse=True)
+def disable_configured_intent_classifier(monkeypatch) -> None:
+    monkeypatch.setattr(chat_orchestrator.settings, "intent_classifier_model_name", None)
 
 
 def test_decide_chat_route_uses_relational_db_for_phone_question() -> None:
@@ -72,6 +79,54 @@ def test_decide_chat_route_parses_llm_json_when_heuristic_is_general(monkeypatch
 
     assert decision.route == "rag"
     assert decision.db_intent == "unknown"
+
+
+def test_decide_chat_route_uses_high_confidence_klue_bert_prediction(monkeypatch) -> None:
+    monkeypatch.setattr(chat_orchestrator.settings, "intent_classifier_model_name", "test-model")
+    monkeypatch.setattr(chat_orchestrator.settings, "intent_classifier_confidence_threshold", 0.7)
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_with_klue_bert",
+        lambda _: SimpleNamespace(
+            route="relational_db",
+            db_intent="map",
+            confidence=0.93,
+            label="map",
+        ),
+    )
+
+    decision = chat_orchestrator.decide_chat_route("8강의동은 어디야?")
+
+    assert decision.route == "relational_db"
+    assert decision.db_intent == "map"
+    assert decision.reason.startswith("klue-bert:map")
+
+
+def test_decide_chat_route_falls_back_to_llm_for_low_confidence_klue_bert(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(chat_orchestrator.settings, "intent_classifier_model_name", "test-model")
+    monkeypatch.setattr(chat_orchestrator.settings, "intent_classifier_confidence_threshold", 0.7)
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_with_klue_bert",
+        lambda _: SimpleNamespace(
+            route="llm",
+            db_intent="unknown",
+            confidence=0.42,
+            label="general",
+        ),
+    )
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "get_gemini_response",
+        lambda _: '{"route":"rag","db_intent":"unknown","reason":"low confidence fallback"}',
+    )
+
+    decision = chat_orchestrator.decide_chat_route("성적향상 장학금은 어디에서 정보를 찾을 수 있어?")
+
+    assert decision.route == "rag"
+    assert decision.reason == "low confidence fallback"
 
 
 def test_answer_chat_uses_relational_db_service(monkeypatch) -> None:
