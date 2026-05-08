@@ -19,14 +19,21 @@ from app.services.map_service import get_map_response
 from app.services.search_service import search_documents
 from app.services.weather_service import get_weather_response
 
-ChatRoute = Literal["llm", "relational_db", "rag", "weather"]
+ChatRoute = Literal["llm", "relational_db", "rag", "weather", "multi"]
+AtomicChatRoute = Literal["llm", "relational_db", "rag", "weather"]
 DbIntent = Literal["map", "phone", "unknown"]
 
 
 @dataclass(frozen=True)
 class ChatDecision:
-    route: ChatRoute
+    route: AtomicChatRoute
     db_intent: DbIntent = "unknown"
+    reason: str = ""
+
+
+@dataclass(frozen=True)
+class ChatPlan:
+    actions: tuple[ChatDecision, ...]
     reason: str = ""
 
 
@@ -70,6 +77,17 @@ _MAP_KEYWORDS = (
     "박물관",
     "정문",
     "후문",
+)
+_LOCATION_REQUEST_KEYWORDS = (
+    "위치",
+    "찾아가",
+    "가는 길",
+    "어떻게 가",
+    "길찾기",
+    "캠퍼스맵",
+    "어디야",
+    "어디 있",
+    "호실",
 )
 _WEATHER_KEYWORDS = (
     "날씨",
@@ -223,7 +241,15 @@ _RAG_FORCE_GROUP_KEYWORDS = (
 
 
 def answer_chat(user_input: str, db: Session) -> ChatResult:
-    decision = decide_chat_route(user_input)
+    plan = decide_chat_plan(user_input)
+    if len(plan.actions) > 1:
+        return _answer_from_multi(user_input, plan.actions, db)
+
+    decision = plan.actions[0]
+    return _answer_for_decision(user_input, decision, db)
+
+
+def _answer_for_decision(user_input: str, decision: ChatDecision, db: Session) -> ChatResult:
 
     if decision.route == "relational_db":
         return _answer_from_relational_db(user_input, decision, db)
@@ -242,32 +268,46 @@ def answer_chat(user_input: str, db: Session) -> ChatResult:
 
 
 def decide_chat_route(user_input: str) -> ChatDecision:
+    return decide_chat_plan(user_input).actions[0]
+
+
+def decide_chat_plan(user_input: str) -> ChatPlan:
+    compound_decisions = _compound_decisions(user_input)
+    if len(compound_decisions) > 1:
+        return ChatPlan(
+            actions=tuple(compound_decisions),
+            reason="compound keyword match",
+        )
+
     bert_decision = _klue_bert_decision(user_input)
     if bert_decision is not None:
-        return bert_decision
+        return ChatPlan(actions=(bert_decision,), reason=bert_decision.reason)
 
     heuristic = _heuristic_decision(user_input)
     if not settings.intent_classifier_model_name and heuristic.route != "llm":
-        return heuristic
+        return ChatPlan(actions=(heuristic,), reason=heuristic.reason)
 
     prompt = f"""
 You classify a user question for a university assistant.
 Return only valid JSON with this schema:
-{{"route":"llm|relational_db|rag|weather","db_intent":"map|phone|unknown","reason":"short reason"}}
+{{"actions":[{{"route":"llm|relational_db|rag|weather","db_intent":"map|phone|unknown"}}],"reason":"short reason"}}
 
 Routing rules:
 - llm: basic general knowledge or casual conversation that does not need local data.
 - relational_db: exact campus data stored in relational DB, such as place locations or phone numbers.
 - rag: information that must be grounded in crawled documents, notices, policies, schedules, or other text sources.
 - weather: current or forecast weather questions that need live weather API data.
+- If the user asks for multiple independent things, return multiple actions in the order they should be answered.
+- Use relational_db with db_intent map for campus location/path requests.
+- Use relational_db with db_intent phone for phone number/contact requests.
 
 User question:
 {user_input}
 """
     raw = get_gemini_response(prompt)
-    parsed = _parse_decision(raw)
+    parsed = _parse_decision_plan(raw)
     if parsed is None:
-        return heuristic
+        return ChatPlan(actions=(heuristic,), reason=heuristic.reason)
     return parsed
 
 
@@ -369,6 +409,32 @@ def _answer_from_weather(user_input: str) -> ChatResult:
     )
 
 
+def _answer_from_multi(
+    user_input: str,
+    actions: tuple[ChatDecision, ...],
+    db: Session,
+) -> ChatResult:
+    results = [_answer_for_decision(user_input, action, db) for action in actions]
+    replies = [result.reply.strip() for result in results if result.reply.strip()]
+    sources: list[ChatSource] = []
+    seen_sources: set[tuple[str, str, str | None]] = set()
+
+    for result in results:
+        for source in result.sources:
+            key = (source.type, source.title, source.source_url)
+            if key in seen_sources:
+                continue
+            seen_sources.add(key)
+            sources.append(source)
+
+    return ChatResult(
+        reply="\n\n".join(replies),
+        intent="복합",
+        route="multi",
+        sources=sources,
+    )
+
+
 def _heuristic_decision(user_input: str) -> ChatDecision:
     normalized = _normalize_query(user_input)
 
@@ -383,6 +449,41 @@ def _heuristic_decision(user_input: str) -> ChatDecision:
     if rag_reason:
         return ChatDecision(route="rag", reason=rag_reason)
     return ChatDecision(route="llm", reason="default")
+
+
+def _compound_decisions(user_input: str) -> list[ChatDecision]:
+    normalized = _normalize_query(user_input)
+    decisions: list[ChatDecision] = []
+
+    if _contains_any(normalized, _LOCATION_REQUEST_KEYWORDS):
+        decisions.append(
+            ChatDecision(route="relational_db", db_intent="map", reason="compound map keyword")
+        )
+    if _contains_any(normalized, _PHONE_KEYWORDS):
+        decisions.append(
+            ChatDecision(route="relational_db", db_intent="phone", reason="compound phone keyword")
+        )
+
+    rag_reason = _matched_rag_group(normalized)
+    if rag_reason:
+        decisions.append(ChatDecision(route="rag", reason=rag_reason))
+
+    if _contains_any(normalized, _WEATHER_KEYWORDS):
+        decisions.append(ChatDecision(route="weather", reason="weather keyword"))
+
+    return _dedupe_decisions(decisions)
+
+
+def _dedupe_decisions(decisions: list[ChatDecision]) -> list[ChatDecision]:
+    deduped: list[ChatDecision] = []
+    seen: set[tuple[str, str]] = set()
+    for decision in decisions:
+        key = (decision.route, decision.db_intent)
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(decision)
+    return deduped
 
 
 def _infer_db_intent(user_input: str) -> DbIntent:
@@ -444,6 +545,63 @@ def _parse_decision(raw: str) -> ChatDecision | None:
         db_intent = "unknown"
 
     return ChatDecision(route=route, db_intent=db_intent, reason=reason)
+
+
+def _parse_decision_plan(raw: str) -> ChatPlan | None:
+    if not raw:
+        return None
+
+    match = re.search(r"\{.*\}", raw, flags=re.DOTALL)
+    if not match:
+        return None
+
+    try:
+        payload = json.loads(match.group(0))
+    except json.JSONDecodeError:
+        return None
+
+    reason = str(payload.get("reason", ""))
+    raw_actions = payload.get("actions")
+    if raw_actions is None:
+        single_decision = _decision_from_payload(payload)
+        if single_decision is None:
+            return None
+        return ChatPlan(actions=(single_decision,), reason=single_decision.reason)
+
+    if not isinstance(raw_actions, list) or not raw_actions:
+        return None
+
+    actions: list[ChatDecision] = []
+    for raw_action in raw_actions:
+        if not isinstance(raw_action, dict):
+            return None
+        action = _decision_from_payload(raw_action, default_reason=reason)
+        if action is None:
+            return None
+        actions.append(action)
+
+    deduped = _dedupe_decisions(actions)
+    if not deduped:
+        return None
+    return ChatPlan(actions=tuple(deduped), reason=reason)
+
+
+def _decision_from_payload(
+    payload: dict[str, object],
+    default_reason: str = "",
+) -> ChatDecision | None:
+    route = payload.get("route")
+    db_intent = payload.get("db_intent", "unknown")
+    reason = str(payload.get("reason", default_reason))
+
+    if route not in {"llm", "relational_db", "rag", "weather"}:
+        return None
+    if db_intent not in {"map", "phone", "unknown"}:
+        db_intent = "unknown"
+    if route != "relational_db":
+        db_intent = "unknown"
+
+    return ChatDecision(route=route, db_intent=db_intent, reason=reason)  # type: ignore[arg-type]
 
 
 def _format_rag_context(results: list[SearchResult]) -> str:

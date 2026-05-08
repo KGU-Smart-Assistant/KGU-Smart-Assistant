@@ -345,6 +345,18 @@ def build_edge_case_examples() -> list[Example]:
         Example("등록금 공지 어디서 확인해?", "rag"),
         Example("수강신청 공지 어디서 확인해?", "rag"),
         Example("졸업요건 안내 어디서 확인해?", "rag"),
+        Example("취업진로처 현장실습 공지 찾아줘", "rag"),
+        Example("취업진로처 취업 프로그램 안내 알려줘", "rag"),
+        Example("취업진로처 채용 공지 어디서 확인해?", "rag"),
+        Example("취업진로처 비교과 프로그램 내용 알려줘", "rag"),
+        Example("취업진로처 인턴십 모집 공지 찾아줘", "rag"),
+        Example("자료실에 있는 신청서 양식 알려줘", "rag"),
+        Example("자료실 첨부파일 제출 서류 내용 알려줘", "rag"),
+        Example("신청서 양식은 어디에서 확인해?", "rag"),
+        Example("학사일정에서 시험 기간 찾아줘", "rag"),
+        Example("학사일정 시험 기간 공지 알려줘", "rag"),
+        Example("청소년학과 공지사항은 어디서 확인해?", "rag"),
+        Example("청소년학과 전공이수자격원 공지 찾아줘", "rag"),
     ]
 
 

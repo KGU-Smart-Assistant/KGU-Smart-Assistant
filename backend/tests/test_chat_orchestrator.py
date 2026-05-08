@@ -129,6 +129,61 @@ def test_decide_chat_route_falls_back_to_llm_for_low_confidence_klue_bert(
     assert decision.reason == "low confidence fallback"
 
 
+def test_decide_chat_plan_detects_compound_map_and_phone_before_klue_bert(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(chat_orchestrator.settings, "intent_classifier_model_name", "test-model")
+    monkeypatch.setattr(chat_orchestrator.settings, "intent_classifier_confidence_threshold", 0.7)
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_with_klue_bert",
+        lambda _: SimpleNamespace(
+            route="relational_db",
+            db_intent="map",
+            confidence=0.99,
+            label="map",
+        ),
+    )
+
+    plan = chat_orchestrator.decide_chat_plan("중앙도서관 위치랑 전화번호 알려줘")
+
+    assert [(action.route, action.db_intent) for action in plan.actions] == [
+        ("relational_db", "map"),
+        ("relational_db", "phone"),
+    ]
+
+
+def test_decide_chat_plan_parses_llm_multiple_actions(monkeypatch) -> None:
+    monkeypatch.setattr(chat_orchestrator.settings, "intent_classifier_model_name", "test-model")
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_with_klue_bert",
+        lambda _: SimpleNamespace(
+            route="llm",
+            db_intent="unknown",
+            confidence=0.2,
+            label="general",
+        ),
+    )
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "get_gemini_response",
+        lambda _: (
+            '{"actions":['
+            '{"route":"rag","db_intent":"unknown"},'
+            '{"route":"weather","db_intent":"unknown"}'
+            '],"reason":"compound fallback"}'
+        ),
+    )
+
+    plan = chat_orchestrator.decide_chat_plan("장학 신청 기간이랑 내일 날씨 알려줘")
+
+    assert [(action.route, action.db_intent) for action in plan.actions] == [
+        ("rag", "unknown"),
+        ("weather", "unknown"),
+    ]
+
+
 def test_answer_chat_uses_relational_db_service(monkeypatch) -> None:
     monkeypatch.setattr(
         chat_orchestrator,
@@ -142,6 +197,27 @@ def test_answer_chat_uses_relational_db_service(monkeypatch) -> None:
     assert result.intent == "전화"
     assert result.reply == "도서관 전화번호는 031입니다."
     assert result.sources[0].title == "kgu_contacts"
+
+
+def test_answer_chat_combines_compound_map_and_phone(monkeypatch) -> None:
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "get_map_response",
+        lambda user_input, db: "중앙도서관 위치는 위도/경도 37, 127입니다.",
+    )
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "get_phone",
+        lambda user_input, db: "중앙도서관 전화번호는 031입니다.",
+    )
+
+    result = chat_orchestrator.answer_chat("중앙도서관 위치랑 전화번호 알려줘", db=None)
+
+    assert result.route == "multi"
+    assert result.intent == "복합"
+    assert "중앙도서관 위치" in result.reply
+    assert "중앙도서관 전화번호" in result.reply
+    assert [source.title for source in result.sources] == ["kgu_places", "kgu_contacts"]
 
 
 def test_answer_chat_uses_rag_results_as_context(monkeypatch) -> None:
