@@ -145,6 +145,7 @@ celerybeat.pid
 .envrc
 .venv
 kGU-chatbot/
+KGU chatbot/
 env/
 venv/
 ENV/

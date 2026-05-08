@@ -38,14 +38,17 @@ def test_search_documents_embeds_query_and_maps_vector_results(monkeypatch) -> N
     assert len(results) == 1
     assert results[0].chunk_id == "chunk-1"
     assert results[0].doc_id == "doc-1"
-    assert results[0].score == 0.44
+    assert results[0].score == 0.36
     assert results[0].text == "Document chunk text"
     assert results[0].title == "Document title"
     assert results[0].source_url == "https://example.com/source"
     assert results[0].score_breakdown == {
-        "similarity": 0.8,
+        "semantic": 0.8,
+        "lexical": 0.0,
         "freshness": 0.0,
         "title": 0.0,
+        "category": 0.0,
+        "exact": 0.0,
     }
 
 
@@ -75,6 +78,7 @@ def test_search_documents_reranks_by_category_weights(monkeypatch) -> None:
                 "text": "장학금 안내",
                 "title": "장학금 안내",
                 "source_url": "https://example.com/old",
+                "category": "scholarship",
                 "published_at": "2018-01-01T00:00:00",
             },
             {
@@ -84,6 +88,7 @@ def test_search_documents_reranks_by_category_weights(monkeypatch) -> None:
                 "text": "신청 안내",
                 "title": "장학금 신청 안내",
                 "source_url": "https://example.com/recent",
+                "category": "scholarship",
                 "published_at": "2026-01-01T00:00:00",
             },
         ]
@@ -123,7 +128,8 @@ def test_search_documents_merges_keyword_candidates(monkeypatch) -> None:
             {
                 "chunk_id": "keyword-only",
                 "doc_id": "doc-2",
-                "distance": 0.0,
+                "lexical_score": 1.0,
+                "retrieval_sources": {"keyword"},
                 "text": "졸업요건 본문",
                 "title": "졸업요건 안내",
                 "source_url": "https://example.com/keyword",
@@ -134,3 +140,79 @@ def test_search_documents_merges_keyword_candidates(monkeypatch) -> None:
     results = search_service.search_documents(query="졸업요건", top_k=2)
 
     assert {result.chunk_id for result in results} == {"vector-only", "keyword-only"}
+
+
+def test_keyword_signal_can_beat_weak_vector_match(monkeypatch) -> None:
+    monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(
+        search_service,
+        "query_embedded_chunks",
+        lambda **kwargs: [
+            {
+                "chunk_id": "weak-vector",
+                "doc_id": "doc-1",
+                "distance": 0.7,
+                "text": "캠퍼스 일반 공지",
+                "title": "일반 안내",
+                "source_url": "https://example.com/vector",
+                "category": "notice",
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        search_service,
+        "_query_keyword_chunks",
+        lambda **kwargs: [
+            {
+                "chunk_id": "exact-keyword",
+                "doc_id": "doc-2",
+                "lexical_score": 1.0,
+                "retrieval_sources": {"keyword"},
+                "text": "졸업요건과 전공학점 기준 안내",
+                "title": "졸업요건 안내",
+                "source_url": "https://example.com/graduation",
+                "category": "graduation",
+            }
+        ],
+    )
+
+    results = search_service.search_documents(query="졸업요건", top_k=2)
+
+    assert results[0].chunk_id == "exact-keyword"
+    assert results[0].score_breakdown["lexical"] == 1.0
+    assert results[0].score_breakdown["category"] == 1.0
+
+
+def test_merge_preserves_vector_and_keyword_signals() -> None:
+    rows = search_service._merge_rows(
+        vector_rows=[
+            {
+                "chunk_id": "same",
+                "doc_id": "doc-1",
+                "distance": 0.2,
+                "text": "본문",
+                "title": "제목",
+                "source_url": "https://example.com/vector",
+                "retrieval_sources": {"vector"},
+            }
+        ],
+        keyword_rows=[
+            {
+                "chunk_id": "same",
+                "doc_id": "doc-1",
+                "lexical_score": 1.0,
+                "text": "본문",
+                "title": "제목",
+                "source_url": "https://example.com/keyword",
+                "retrieval_sources": {"keyword"},
+            }
+        ],
+    )
+
+    assert rows[0]["distance"] == 0.2
+    assert rows[0]["lexical_score"] == 1.0
+    assert rows[0]["retrieval_sources"] == {"vector", "keyword"}
+
+
+def test_tokenize_keeps_korean_words() -> None:
+    assert search_service._tokenize("졸업요건과 전공 학점") == ["졸업요건과", "전공", "학점"]

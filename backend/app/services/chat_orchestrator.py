@@ -1,24 +1,22 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from dataclasses import dataclass, field
 from typing import Literal
 
 from sqlalchemy.orm import Session
 
-from app.schemas.search import SearchResult
 from app.services.call_service import get_phone
-from app.services.gemini_service import (
-    get_gemini_response,
-    get_gemini_response_with_context,
-)
+from app.services.gemini_service import get_gemini_response
+from app.services.langchain_rag_service import answer_with_langchain_rag
 from app.services.map_service import get_map_response
-from app.services.search_service import search_documents
 from app.services.weather_service import get_weather_response
 
 ChatRoute = Literal["llm", "relational_db", "rag", "weather"]
 DbIntent = Literal["map", "phone", "unknown"]
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -54,7 +52,6 @@ _PHONE_KEYWORDS = (
     "학과사무실",
 )
 _MAP_KEYWORDS = (
-    "어디",
     "위치",
     "찾아가",
     "가는 길",
@@ -69,6 +66,14 @@ _MAP_KEYWORDS = (
     "박물관",
     "정문",
     "후문",
+)
+_INFO_SOURCE_PHRASES = (
+    "어디서 찾",
+    "어디에서 찾",
+    "어디서 확인",
+    "어디에서 확인",
+    "어디에 나와",
+    "어디에 있어",
 )
 _WEATHER_KEYWORDS = (
     "날씨",
@@ -90,8 +95,6 @@ _RAG_KEYWORD_GROUPS: dict[str, tuple[str, ...]] = {
         "수강 정정",
         "수강취소",
         "등록 기간",
-        "휴학",
-        "복학",
         "개강",
         "종강",
         "시험 기간",
@@ -134,8 +137,8 @@ _RAG_KEYWORD_GROUPS: dict[str, tuple[str, ...]] = {
         "성적우수장학금",
         "학자금",
         "등록금",
-        "수혜",
-        "중복 수혜",
+        "혜택",
+        "중복 혜택",
         "신청 불가",
     ),
     "materials": (
@@ -160,7 +163,7 @@ _RAG_KEYWORD_GROUPS: dict[str, tuple[str, ...]] = {
         "동아리",
         "상담",
         "통학",
-        "셔틀",
+        "식당",
         "기숙사",
         "복지",
     ),
@@ -177,7 +180,7 @@ _RAG_KEYWORD_GROUPS: dict[str, tuple[str, ...]] = {
     "department_sources": (
         "학과",
         "전공",
-        "단과대",
+        "학과별",
         "대학 공지",
         "학과 공지",
         "전공 공지",
@@ -208,9 +211,9 @@ _RAG_FORCE_GROUP_KEYWORDS = (
     ("scholarship_support", ("장학", "장학금", "국가장학금", "성적우수장학금")),
     ("graduation_requirements", ("졸업", "졸업요건", "졸업학점")),
     ("materials", ("자료실", "첨부파일", "첨부 파일", "양식", "서식", "신청서")),
-    ("academic_schedule", ("학사일정", "수강신청", "휴학", "복학", "개강", "종강")),
+    ("academic_schedule", ("학사일정", "수강신청", "개강", "종강")),
     ("career_support", ("취업", "진로", "현장실습", "인턴", "채용")),
-    ("student_life", ("학생생활", "학생증", "동아리", "기숙사", "셔틀")),
+    ("student_life", ("학생생활", "학생증", "동아리", "기숙사", "식당")),
 )
 
 
@@ -224,7 +227,7 @@ def answer_chat(user_input: str, db: Session) -> ChatResult:
     if decision.route == "weather":
         return _answer_from_weather(user_input)
 
-    return ChatResult(reply=get_gemini_response(user_input), intent="일반", route="llm")
+    return ChatResult(reply=_safe_llm_reply(user_input), intent="일반", route="llm")
 
 
 def decide_chat_route(user_input: str) -> ChatDecision:
@@ -246,7 +249,12 @@ Routing rules:
 User question:
 {user_input}
 """
-    raw = get_gemini_response(prompt)
+    try:
+        raw = get_gemini_response(prompt)
+    except Exception:
+        logger.exception("Failed to classify chat route with LLM")
+        return heuristic
+
     parsed = _parse_decision(raw)
     if parsed is None:
         return heuristic
@@ -272,7 +280,7 @@ def _answer_from_relational_db(
         intent = "지도"
     else:
         reply = (
-            "정확한 DB 정보가 필요한 질문으로 판단했지만 어느 DB에서 찾을지 결정하지 못했습니다. "
+            "정확한 DB 정보가 필요한 질문으로 판단했지만 어떤 DB에서 찾을지 결정하지 못했습니다. "
             "장소 위치나 전화번호처럼 더 구체적으로 질문해 주세요."
         )
         source_title = "relational_db"
@@ -288,33 +296,35 @@ def _answer_from_relational_db(
 
 def _answer_from_rag(user_input: str) -> ChatResult:
     try:
-        results = search_documents(query=user_input, top_k=5)
+        rag_result = answer_with_langchain_rag(user_input, top_k=5)
     except NotImplementedError:
+        logger.info("Document search pipeline is not implemented")
         return ChatResult(
             reply="문서 기반 검색 파이프라인이 아직 연결되어 있지 않습니다.",
             intent="RAG",
             route="rag",
         )
-
-    if not results:
+    except Exception:
+        logger.exception("LangChain RAG chain failed; falling back to LLM")
         return ChatResult(
-            reply="관련 문서를 찾지 못했습니다. 질문을 더 구체적으로 입력해 주세요.",
-            intent="RAG",
-            route="rag",
+            reply=_safe_llm_reply(user_input),
+            intent="일반",
+            route="llm",
         )
 
-    context = _format_rag_context(results)
-    reply = get_gemini_response_with_context(user_input=user_input, context=context)
+    if not rag_result.documents:
+        return ChatResult(reply=rag_result.reply, intent="RAG", route="rag")
+
     sources = [
         ChatSource(
             type="document",
-            title=result.title,
-            source_url=result.source_url,
-            score=result.score,
+            title=str(document.metadata.get("title", "Untitled")),
+            source_url=document.metadata.get("source_url"),
+            score=document.metadata.get("score"),
         )
-        for result in results
+        for document in rag_result.documents
     ]
-    return ChatResult(reply=reply, intent="RAG", route="rag", sources=sources)
+    return ChatResult(reply=rag_result.reply, intent="RAG", route="rag", sources=sources)
 
 
 def _answer_from_weather(user_input: str) -> ChatResult:
@@ -333,6 +343,14 @@ def _answer_from_weather(user_input: str) -> ChatResult:
     )
 
 
+def _safe_llm_reply(user_input: str) -> str:
+    try:
+        return get_gemini_response(user_input)
+    except Exception:
+        logger.exception("LLM answer failed")
+        return "지금은 답변을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요."
+
+
 def _heuristic_decision(user_input: str) -> ChatDecision:
     normalized = _normalize_query(user_input)
 
@@ -340,10 +358,14 @@ def _heuristic_decision(user_input: str) -> ChatDecision:
         return ChatDecision(route="weather", reason="weather keyword")
     if _contains_any(normalized, _PHONE_KEYWORDS):
         return ChatDecision(route="relational_db", db_intent="phone", reason="phone keyword")
+
+    rag_reason = _matched_rag_group(normalized)
+    if rag_reason and _contains_any(normalized, _INFO_SOURCE_PHRASES):
+        return ChatDecision(route="rag", reason=f"{rag_reason}; info source phrase")
+
     if _contains_any(normalized, _MAP_KEYWORDS):
         return ChatDecision(route="relational_db", db_intent="map", reason="map keyword")
 
-    rag_reason = _matched_rag_group(normalized)
     if rag_reason:
         return ChatDecision(route="rag", reason=rag_reason)
     return ChatDecision(route="llm", reason="default")
@@ -389,7 +411,7 @@ def _parse_decision(raw: str) -> ChatDecision | None:
     if not raw:
         return None
 
-    match = re.search(r"\{.*\}", raw, flags=re.DOTALL)
+    match = re.search(r"\{.*?\}", raw, flags=re.DOTALL)
     if not match:
         return None
 
@@ -408,22 +430,3 @@ def _parse_decision(raw: str) -> ChatDecision | None:
         db_intent = "unknown"
 
     return ChatDecision(route=route, db_intent=db_intent, reason=reason)
-
-
-def _format_rag_context(results: list[SearchResult]) -> str:
-    blocks = []
-    for index, result in enumerate(results, start=1):
-        metadata_lines = [
-            f"[{index}] {result.title}",
-            f"source_url: {result.source_url}",
-            f"score: {result.score}",
-        ]
-        if result.category:
-            metadata_lines.append(f"category: {result.category}")
-        if result.department:
-            metadata_lines.append(f"department: {result.department}")
-        if result.published_at:
-            metadata_lines.append(f"published_at: {result.published_at}")
-        metadata_lines.append(result.text)
-        blocks.append("\n".join(metadata_lines))
-    return "\n\n".join(blocks)
