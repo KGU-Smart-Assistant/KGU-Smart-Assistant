@@ -13,6 +13,8 @@ from app.services.gemini_service import (
     get_gemini_response,
     get_gemini_response_with_context,
 )
+from app.core.config import settings
+from app.services.klue_bert_intent_classifier import classify_with_klue_bert
 from app.services.map_service import get_map_response
 from app.services.search_service import search_documents
 from app.services.weather_service import get_weather_response
@@ -240,8 +242,12 @@ def answer_chat(user_input: str, db: Session) -> ChatResult:
 
 
 def decide_chat_route(user_input: str) -> ChatDecision:
+    bert_decision = _klue_bert_decision(user_input)
+    if bert_decision is not None:
+        return bert_decision
+
     heuristic = _heuristic_decision(user_input)
-    if heuristic.route != "llm":
+    if not settings.intent_classifier_model_name and heuristic.route != "llm":
         return heuristic
 
     prompt = f"""
@@ -263,6 +269,21 @@ User question:
     if parsed is None:
         return heuristic
     return parsed
+
+
+def _klue_bert_decision(user_input: str) -> ChatDecision | None:
+    prediction = classify_with_klue_bert(user_input)
+    if prediction is None:
+        return None
+
+    if prediction.confidence < settings.intent_classifier_confidence_threshold:
+        return None
+
+    return ChatDecision(
+        route=prediction.route,
+        db_intent=prediction.db_intent,
+        reason=f"klue-bert:{prediction.label}:{prediction.confidence:.3f}",
+    )
 
 
 def _answer_from_relational_db(
