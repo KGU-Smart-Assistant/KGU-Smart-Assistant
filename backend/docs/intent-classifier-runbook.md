@@ -122,3 +122,39 @@ python scripts/validate_intent_classifier.py \
 The script exits with code `1` when `--expected-route` or
 `--expected-db-intent` does not match the model prediction, so it can also be
 used in quick local regression checks.
+
+## Evaluate The Classifier
+
+Run the held-out evaluation set after training:
+
+```bash
+python scripts/evaluate_intent_classifier.py \
+  --model models/intent-klue-bert \
+  --data app/data/intent_eval.jsonl \
+  --threshold 0.7 \
+  --pretty \
+  --show-errors
+```
+
+For CI or a release check, add a minimum accuracy gate:
+
+```bash
+python scripts/evaluate_intent_classifier.py \
+  --model models/intent-klue-bert \
+  --data app/data/intent_eval.jsonl \
+  --threshold 0.7 \
+  --fail-under 0.9
+```
+
+The evaluation set intentionally includes ambiguous Korean questions such as
+`어디에서 확인해?` for RAG and `어디야?` for campus map lookup. These examples help
+catch the common failure mode where every `어디` question is misrouted to map.
+
+Use the report to tune `INTENT_CLASSIFIER_CONFIDENCE_THRESHOLD`:
+
+- Raise it, for example to `0.8`, when wrong predictions are accepted with high confidence.
+- Lower it, for example to `0.6`, only when correct predictions fall back to Gemini too often.
+
+Compound questions such as `중앙도서관 위치랑 전화번호 알려줘` are handled by the
+backend planner before KLUE-BERT. Keep those out of the single-label classifier
+training/evaluation set unless the model architecture is changed to multi-label.
