@@ -17,8 +17,9 @@ from app.db.session import SessionLocal
 from app.models import KguContact
 
 
-DEFAULT_URL = "https://www.kyonggi.ac.kr/www/searchTnTelnoListU.do"
-DEFAULT_KEY = "8816"
+DEFAULT_URL = "https://www.kyonggi.ac.kr/www/selectTnTelnoListU.do"
+DEFAULT_KEY = "5155"
+DEFAULT_CAMPUS = "수원"
 DEFAULT_OUTPUT = Path("app/data/kgu_contacts.json")
 PHONE_PATTERN = re.compile(r"\d{2,4}-\d{3,4}-\d{4}|\d{4}-\d{4}")
 
@@ -32,25 +33,25 @@ class ImportedContact:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Import Kyonggi University phone directory into kgu_contacts seed data."
+        description="Import Kyonggi University Suwon campus phone directory into kgu_contacts."
     )
-    parser.add_argument("--base-url", default=DEFAULT_URL)
+    parser.add_argument("--url", default=DEFAULT_URL)
     parser.add_argument("--key", default=DEFAULT_KEY)
+    parser.add_argument("--campus", default=DEFAULT_CAMPUS)
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT))
-    parser.add_argument("--max-pages", type=int, default=200)
     parser.add_argument("--timeout", type=int, default=20)
     parser.add_argument("--no-db", action="store_true", help="Only write JSON; do not seed DB.")
     parser.add_argument(
         "--sync-db",
         action="store_true",
-        help="Delete kgu_contacts rows that are not present in the imported official directory.",
+        help="Delete kgu_contacts rows that are not present in the imported Suwon directory.",
     )
     args = parser.parse_args()
 
-    contacts = fetch_contacts(
-        base_url=args.base_url,
+    contacts = fetch_suwon_contacts(
+        url=args.url,
         key=args.key,
-        max_pages=args.max_pages,
+        campus=args.campus,
         timeout=args.timeout,
     )
     output_path = Path(args.output)
@@ -64,53 +65,69 @@ def main() -> None:
         with SessionLocal() as db:
             seed_contacts_from_json(db)
             if args.sync_db:
-                delete_stale_contacts(db, contacts)
+                deleted = delete_stale_contacts(db, contacts)
+                print(f"Deleted stale contacts: {deleted}")
 
-    print(f"Imported contacts: {len(contacts)}")
+    print(f"Imported Suwon contacts: {len(contacts)}")
     print(f"Wrote: {output_path}")
 
 
-def fetch_contacts(
-    base_url: str,
+def fetch_suwon_contacts(
+    url: str,
     key: str,
-    max_pages: int,
+    campus: str,
     timeout: int,
 ) -> list[ImportedContact]:
-    session = requests.Session()
-    session.headers.update(
-        {
+    response = requests.get(
+        url,
+        params={"key": key, "sc1": campus},
+        headers={
             "User-Agent": (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                 "AppleWebKit/537.36 Chrome/120 Safari/537.36"
             )
-        }
+        },
+        timeout=timeout,
     )
+    response.raise_for_status()
+    return parse_suwon_contacts_page(response.text, campus=campus)
 
+
+def parse_suwon_contacts_page(html: str, campus: str = DEFAULT_CAMPUS) -> list[ImportedContact]:
+    soup = BeautifulSoup(html, "html.parser")
     contacts: list[ImportedContact] = []
     seen: set[tuple[str, str]] = set()
-    previous_first_id: str | None = None
 
-    for page in range(1, max_pages + 1):
-        response = session.get(
-            base_url,
-            params={"key": key, "cpn": page},
-            timeout=timeout,
-            allow_redirects=False,
-        )
-        response.raise_for_status()
-        page_contacts, first_id = parse_contacts_page(response.text)
-        if not page_contacts:
-            break
-        if page > 1 and first_id is not None and first_id == previous_first_id:
-            break
+    for table in soup.find_all("table"):
+        rows = table.find_all("tr")
+        if len(rows) < 2:
+            continue
 
-        previous_first_id = first_id
-        for contact in page_contacts:
-            key_pair = (contact.name, contact.phone)
+        header_cells = [cell.get_text(" ", strip=True) for cell in rows[0].find_all(["th", "td"])]
+        if len(header_cells) < 2 or "연락처" not in header_cells[-1]:
+            continue
+
+        section = _table_section(table)
+        group = _normalize_spaces(header_cells[0])
+        for row in rows[1:]:
+            cells = [cell.get_text(" ", strip=True) for cell in row.find_all(["th", "td"])]
+            if len(cells) < 2:
+                continue
+
+            role = _normalize_spaces(cells[0])
+            phone = _normalize_phone(cells[-1])
+            if not role or not phone:
+                continue
+
+            name = _normalize_spaces(f"경기대학교 {campus}캠퍼스 {section} {group} {role}")
+            description = _normalize_spaces(
+                f"경기대학교 {campus}캠퍼스 공식 전화번호, 섹션 {section}, 구분 {group}"
+            )
+            key_pair = (name, phone)
             if key_pair in seen:
                 continue
             seen.add(key_pair)
-            contacts.append(contact)
+            contacts.append(ImportedContact(name=name, phone=phone, description=description))
 
     return contacts
 
@@ -127,35 +144,11 @@ def delete_stale_contacts(db, contacts: list[ImportedContact]) -> int:
     return deleted
 
 
-def parse_contacts_page(html: str) -> tuple[list[ImportedContact], str | None]:
-    soup = BeautifulSoup(html, "html.parser")
-    table = soup.find("table")
-    if table is None:
-        return [], None
-
-    contacts: list[ImportedContact] = []
-    first_id: str | None = None
-    for row in table.find_all("tr")[1:]:
-        cells = [cell.get_text(" ", strip=True) for cell in row.find_all("td")]
-        if len(cells) < 4:
-            continue
-
-        official_id, campus, label, phone = cells[:4]
-        phone = _normalize_phone(phone)
-        if not phone:
-            continue
-        if first_id is None:
-            first_id = official_id
-
-        label = _normalize_spaces(label)
-        campus = _normalize_spaces(campus)
-        name = _normalize_spaces(f"경기대학교 {campus} {label}")
-        description = _normalize_spaces(
-            f"경기대학교 공식 전화번호검색, 공식번호 {official_id}, 캠퍼스 {campus}"
-        )
-        contacts.append(ImportedContact(name=name, phone=phone, description=description))
-
-    return contacts, first_id
+def _table_section(table) -> str:
+    heading = table.find_previous(["h2", "h3", "h4"])
+    if heading is None:
+        return "수원캠퍼스 전화번호"
+    return _normalize_spaces(heading.get_text(" ", strip=True))
 
 
 def _normalize_phone(value: str) -> str:

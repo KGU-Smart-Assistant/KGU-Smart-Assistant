@@ -128,6 +128,28 @@ def test_phone_keyword_has_priority_over_department_rag_keyword() -> None:
     assert decision.db_intent == "phone"
 
 
+def test_phone_keyword_has_priority_over_high_confidence_general_klue_bert(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(chat_orchestrator.settings, "intent_classifier_model_name", "test-model")
+    monkeypatch.setattr(chat_orchestrator.settings, "intent_classifier_confidence_threshold", 0.7)
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_with_klue_bert",
+        lambda _: SimpleNamespace(
+            route="llm",
+            db_intent="unknown",
+            confidence=0.99,
+            label="general",
+        ),
+    )
+
+    decision = chat_orchestrator.decide_chat_route("학사혁신팀 번호 알려줘")
+
+    assert decision.route == "relational_db"
+    assert decision.db_intent == "phone"
+
+
 def test_decide_chat_route_parses_llm_json_when_heuristic_is_general(monkeypatch) -> None:
     monkeypatch.setattr(
         chat_orchestrator,
