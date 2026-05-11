@@ -56,7 +56,7 @@ def collect_documents_with_docling(
 ) -> List[Document]:
     """Convert file paths or URLs into normalized documents using Docling."""
     config = config or DoclingCollectorConfig()
-    converter = _create_converter()
+    converter = None
     collected_at = datetime.now()
     documents: List[Document] = []
 
@@ -88,20 +88,21 @@ def collect_documents_with_docling(
                 content = _extract_hwp_content(Path(local_source), source_type)
             elif source_type == "pdf" and config.prefer_pdf_text_extraction:
                 content = _run_with_timeout(
-                    _extract_pdf_text,
+                    _extract_pdf_text_compat,
                     Path(local_source),
                     timeout_seconds=config.conversion_timeout_seconds,
                     max_pages=config.pdf_text_max_pages,
                 )
                 if not content and config.enable_pdf_page_ocr:
                     content = _run_with_timeout(
-                        _extract_pdf_ocr_text,
+                        _extract_pdf_ocr_text_compat,
                         Path(local_source),
                         timeout_seconds=config.conversion_timeout_seconds,
                         max_pages=config.pdf_ocr_max_pages,
                         scale=config.pdf_ocr_scale,
                     )
                 if not content:
+                    converter = converter or _create_converter()
                     result = _run_with_timeout(
                         converter.convert,
                         local_source,
@@ -110,6 +111,7 @@ def collect_documents_with_docling(
                     )
                     content = result.document.export_to_markdown().strip()
             else:
+                converter = converter or _create_converter()
                 result = _run_with_timeout(
                     converter.convert,
                     local_source,
@@ -602,6 +604,13 @@ def _extract_pdf_text(path: Path, max_pages: int) -> str:
     return "\n\n".join(lines)
 
 
+def _extract_pdf_text_compat(path: Path, max_pages: int) -> str:
+    try:
+        return _extract_pdf_text(path, max_pages)
+    except TypeError:
+        return _extract_pdf_text(path)  # type: ignore[call-arg]
+
+
 def _extract_pdf_ocr_text(path: Path, max_pages: int, scale: float) -> str:
     try:
         import pypdfium2 as pdfium
@@ -642,6 +651,13 @@ def _extract_pdf_ocr_text(path: Path, max_pages: int, scale: float) -> str:
             pass
 
     return "\n\n".join(lines)
+
+
+def _extract_pdf_ocr_text_compat(path: Path, max_pages: int, scale: float) -> str:
+    try:
+        return _extract_pdf_ocr_text(path, max_pages, scale)
+    except TypeError:
+        return _extract_pdf_ocr_text(path, max_pages)  # type: ignore[call-arg]
 
 
 @lru_cache(maxsize=1)
