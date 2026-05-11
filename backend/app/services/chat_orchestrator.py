@@ -29,6 +29,7 @@ class ChatDecision:
     route: AtomicChatRoute
     db_intent: DbIntent = "unknown"
     reason: str = ""
+    query: str | None = None
 
 
 @dataclass(frozen=True)
@@ -60,6 +61,15 @@ _PHONE_KEYWORDS = (
     "문의처",
     "사무실 번호",
     "행정실 번호",
+    "문의 번호",
+    "대표 번호",
+    "담당 부서 번호",
+    "통화 가능한 번호",
+    "상담 번호",
+    "어느 번호",
+    "번호 알려",
+    "번호가",
+    "번호로",
 )
 _MAP_KEYWORDS = (
     "어디",
@@ -69,6 +79,10 @@ _MAP_KEYWORDS = (
     "어떻게 가",
     "길찾기",
     "캠퍼스맵",
+    "지도",
+    "근처 건물",
+    "캠퍼스 안",
+    "현재 위치",
     "강의실",
     "도서관",
     "학생회관",
@@ -85,6 +99,10 @@ _LOCATION_REQUEST_KEYWORDS = (
     "어떻게 가",
     "길찾기",
     "캠퍼스맵",
+    "지도",
+    "근처 건물",
+    "캠퍼스 안",
+    "현재 위치",
     "어디야",
     "어디 있",
     "호실",
@@ -93,13 +111,69 @@ _WEATHER_KEYWORDS = (
     "날씨",
     "기온",
     "강수",
+    "우산",
+    "비 올",
     "비 와",
     "비가",
     "비올",
     "눈 와",
     "더워",
+    "더운",
     "추워",
+    "춥",
+    "겉옷",
+    "야외 행사",
+    "걸어다니기 괜찮",
+    "학교 갈 때",
     "예보",
+)
+_DB_LOOKUP_KEYWORDS = (
+    "db",
+    "데이터베이스",
+    "내부 db",
+    "서비스 db",
+    "백엔드 db",
+    "내부 데이터",
+    "저장된",
+    "등록된",
+    "레코드",
+    "저장 데이터",
+    "캠퍼스 데이터",
+    "학교 데이터",
+    "학교 항목",
+    "학내 데이터",
+    "관리 중인",
+    "기본 데이터",
+)
+_INFORMATION_LOOKUP_KEYWORDS = (
+    "정보",
+    "공지",
+    "공지사항",
+    "안내",
+    "내용",
+    "자료",
+    "문서",
+    "홈페이지",
+    "확인",
+    "찾을 수",
+    "볼 수",
+    "볼수",
+    "조회",
+    "열람",
+    "게시",
+    "나와",
+    "다운로드",
+    "받을 수",
+    "파일",
+    "기준",
+    "조건",
+    "기간",
+    "서류",
+    "대상",
+    "자격",
+    "절차",
+    "요건",
+    "신청",
 )
 
 # Sources in app/crawlers/sources.yaml are grouped into these user-question domains.
@@ -250,18 +324,19 @@ def answer_chat(user_input: str, db: Session) -> ChatResult:
 
 
 def _answer_for_decision(user_input: str, decision: ChatDecision, db: Session) -> ChatResult:
+    atomic_input = decision.query or user_input
 
     if decision.route == "relational_db":
-        return _answer_from_relational_db(user_input, decision, db)
+        return _answer_from_relational_db(atomic_input, decision, db)
 
     if decision.route == "rag":
-        return _answer_from_rag(user_input)
+        return _answer_from_rag(atomic_input)
 
     if decision.route == "weather":
-        return _answer_from_weather(user_input)
+        return _answer_from_weather(atomic_input)
 
     return ChatResult(
-        reply=get_gemini_response(user_input),
+        reply=get_gemini_response(atomic_input),
         intent="일반",
         route="llm",
     )
@@ -290,14 +365,14 @@ def decide_chat_plan(user_input: str) -> ChatPlan:
     prompt = f"""
 You classify a user question for a university assistant.
 Return only valid JSON with this schema:
-{{"actions":[{{"route":"llm|relational_db|rag|weather","db_intent":"map|phone|unknown"}}],"reason":"short reason"}}
+{{"actions":[{{"query":"atomic user question","route":"llm|relational_db|rag|weather","db_intent":"map|phone|unknown"}}],"reason":"short reason"}}
 
 Routing rules:
 - llm: basic general knowledge or casual conversation that does not need local data.
 - relational_db: exact campus data stored in relational DB, such as place locations or phone numbers.
 - rag: information that must be grounded in crawled documents, notices, policies, schedules, or other text sources.
 - weather: current or forecast weather questions that need live weather API data.
-- If the user asks for multiple independent things, return multiple actions in the order they should be answered.
+- If the user asks for multiple independent things, split them into atomic queries and return multiple actions in the order they should be answered.
 - Use relational_db with db_intent map for campus location/path requests.
 - Use relational_db with db_intent phone for phone number/contact requests.
 
@@ -437,48 +512,89 @@ def _answer_from_multi(
 
 def _heuristic_decision(user_input: str) -> ChatDecision:
     normalized = _normalize_query(user_input)
+    rag_reason = _matched_rag_group(normalized)
 
     if _contains_any(normalized, _WEATHER_KEYWORDS):
         return ChatDecision(route="weather", reason="weather keyword")
     if _contains_any(normalized, _PHONE_KEYWORDS):
         return ChatDecision(route="relational_db", db_intent="phone", reason="phone keyword")
+    if _looks_like_db_lookup(normalized):
+        return ChatDecision(route="relational_db", reason="db lookup keyword")
+    if rag_reason and _looks_like_information_lookup(normalized):
+        return ChatDecision(route="rag", reason=rag_reason)
     if _contains_any(normalized, _MAP_KEYWORDS):
         return ChatDecision(route="relational_db", db_intent="map", reason="map keyword")
 
-    rag_reason = _matched_rag_group(normalized)
     if rag_reason:
         return ChatDecision(route="rag", reason=rag_reason)
     return ChatDecision(route="llm", reason="default")
 
 
 def _compound_decisions(user_input: str) -> list[ChatDecision]:
-    normalized = _normalize_query(user_input)
+    segmented_decisions: list[ChatDecision] = []
+    for atomic_query in _split_atomic_queries(user_input):
+        segmented_decisions.extend(
+            _compound_decisions_for_atomic_query(
+                atomic_query,
+                reason_prefix="compound segment",
+            )
+        )
+
+    deduped_segmented_decisions = _dedupe_decisions(segmented_decisions)
+    if len(deduped_segmented_decisions) > 1:
+        return deduped_segmented_decisions
+
+    return _dedupe_decisions(
+        _compound_decisions_for_atomic_query(
+            user_input,
+            reason_prefix="compound",
+        )
+    )
+
+
+def _compound_decisions_for_atomic_query(
+    query: str,
+    reason_prefix: str,
+) -> list[ChatDecision]:
+    normalized = _normalize_query(query)
     decisions: list[ChatDecision] = []
 
     if _contains_any(normalized, _LOCATION_REQUEST_KEYWORDS):
         decisions.append(
-            ChatDecision(route="relational_db", db_intent="map", reason="compound map keyword")
+            ChatDecision(
+                route="relational_db",
+                db_intent="map",
+                reason=f"{reason_prefix} map keyword",
+                query=query,
+            )
         )
     if _contains_any(normalized, _PHONE_KEYWORDS):
         decisions.append(
-            ChatDecision(route="relational_db", db_intent="phone", reason="compound phone keyword")
+            ChatDecision(
+                route="relational_db",
+                db_intent="phone",
+                reason=f"{reason_prefix} phone keyword",
+                query=query,
+            )
         )
 
     rag_reason = _matched_rag_group(normalized)
     if rag_reason:
-        decisions.append(ChatDecision(route="rag", reason=rag_reason))
+        decisions.append(ChatDecision(route="rag", reason=rag_reason, query=query))
 
     if _contains_any(normalized, _WEATHER_KEYWORDS):
-        decisions.append(ChatDecision(route="weather", reason="weather keyword"))
+        decisions.append(
+            ChatDecision(route="weather", reason=f"{reason_prefix} weather keyword", query=query)
+        )
 
-    return _dedupe_decisions(decisions)
+    return decisions
 
 
 def _dedupe_decisions(decisions: list[ChatDecision]) -> list[ChatDecision]:
     deduped: list[ChatDecision] = []
-    seen: set[tuple[str, str]] = set()
+    seen: set[tuple[str, str, str]] = set()
     for decision in decisions:
-        key = (decision.route, decision.db_intent)
+        key = (decision.route, decision.db_intent, _normalize_query(decision.query or ""))
         if key in seen:
             continue
         seen.add(key)
@@ -499,8 +615,28 @@ def _normalize_query(user_input: str) -> str:
     return re.sub(r"\s+", " ", user_input.strip().lower())
 
 
+def _split_atomic_queries(user_input: str) -> list[str]:
+    chunks = [
+        chunk.strip()
+        for chunk in re.split(
+            r"(?:[?？!！]+|[,，;；]+|\s+(?:그리고|또|또한|및|겸|하고)\s+)",
+            user_input,
+        )
+        if chunk.strip()
+    ]
+    return chunks or [user_input.strip()]
+
+
 def _contains_any(normalized_text: str, keywords: tuple[str, ...]) -> bool:
     return any(keyword.lower() in normalized_text for keyword in keywords)
+
+
+def _looks_like_information_lookup(normalized_text: str) -> bool:
+    return _contains_any(normalized_text, _INFORMATION_LOOKUP_KEYWORDS)
+
+
+def _looks_like_db_lookup(normalized_text: str) -> bool:
+    return _contains_any(normalized_text, _DB_LOOKUP_KEYWORDS)
 
 
 def _matched_rag_group(normalized_text: str) -> str | None:
@@ -544,7 +680,11 @@ def _parse_decision(raw: str) -> ChatDecision | None:
     if db_intent not in {"map", "phone", "unknown"}:
         db_intent = "unknown"
 
-    return ChatDecision(route=route, db_intent=db_intent, reason=reason)
+    query = payload.get("query")
+    if not isinstance(query, str) or not query.strip():
+        query = None
+
+    return ChatDecision(route=route, db_intent=db_intent, reason=reason, query=query)
 
 
 def _parse_decision_plan(raw: str) -> ChatPlan | None:
@@ -593,6 +733,7 @@ def _decision_from_payload(
     route = payload.get("route")
     db_intent = payload.get("db_intent", "unknown")
     reason = str(payload.get("reason", default_reason))
+    query = payload.get("query")
 
     if route not in {"llm", "relational_db", "rag", "weather"}:
         return None
@@ -600,8 +741,10 @@ def _decision_from_payload(
         db_intent = "unknown"
     if route != "relational_db":
         db_intent = "unknown"
+    if not isinstance(query, str) or not query.strip():
+        query = None
 
-    return ChatDecision(route=route, db_intent=db_intent, reason=reason)  # type: ignore[arg-type]
+    return ChatDecision(route=route, db_intent=db_intent, reason=reason, query=query)  # type: ignore[arg-type]
 
 
 def _format_rag_context(results: list[SearchResult]) -> str:

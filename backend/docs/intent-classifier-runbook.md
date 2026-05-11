@@ -94,6 +94,12 @@ The backend uses the KLUE-BERT classifier only when `INTENT_CLASSIFIER_MODEL_NAM
 
 Otherwise it falls back to the existing LLM-based routing flow.
 
+Compound questions are planned before KLUE-BERT is used. The planner first
+splits obvious multi-part questions into atomic queries, routes each query, and
+then executes the resulting actions in order. Keep KLUE-BERT focused on
+single-query intent classification unless the model architecture is changed to
+multi-label classification.
+
 ## Validate One Input
 
 Use the validation script to check how the trained model classifies a specific
@@ -122,6 +128,34 @@ python scripts/validate_intent_classifier.py \
 The script exits with code `1` when `--expected-route` or
 `--expected-db-intent` does not match the model prediction, so it can also be
 used in quick local regression checks.
+
+## Validate The Chat Planner
+
+Use the planner validation script to check how one user question is decomposed
+into executable actions. This does not require the KLUE-BERT model unless your
+environment enables `INTENT_CLASSIFIER_MODEL_NAME`.
+
+```bash
+python scripts/validate_chat_planner.py \
+  --text "학생회관 위치랑 전화번호 알려줘" \
+  --expected-action relational_db:map \
+  --expected-action relational_db:phone \
+  --pretty
+```
+
+For questions that mix document search and live services:
+
+```bash
+python scripts/validate_chat_planner.py \
+  --text "장학금 신청 기간하고 내일 수원 날씨 알려줘" \
+  --expected-action rag \
+  --expected-action weather \
+  --pretty
+```
+
+The script exits with code `1` when the planned actions do not match the
+expected actions. Inspect the `query` field in the output to confirm that each
+downstream service receives the right atomic question.
 
 ## Evaluate The Classifier
 
