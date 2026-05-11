@@ -35,6 +35,35 @@ def test_decide_chat_route_uses_rag_for_notice_question() -> None:
     assert "scholarship_support" in decision.reason
 
 
+def test_information_lookup_where_question_uses_rag_not_map() -> None:
+    decision = chat_orchestrator.decide_chat_route("장학금 정보는 어디에서 찾을 수 있어?")
+
+    assert decision.route == "rag"
+    assert decision.db_intent == "unknown"
+    assert "scholarship_support" in decision.reason
+
+
+@pytest.mark.parametrize(
+    "question,reason_keyword",
+    [
+        ("졸업요건은 어디에서 볼 수 있어?", "graduation_requirements"),
+        ("수강신청 공지는 어디서 확인해?", "academic_schedule"),
+        ("신청서 양식은 어디에서 다운로드해?", "materials"),
+        ("청소년학과 공지사항은 어디서 확인해?", "department_sources"),
+        ("등록금 납부 기준은 어디에 나와 있어?", "scholarship_support"),
+    ],
+)
+def test_information_lookup_exceptions_use_rag_not_map(
+    question: str,
+    reason_keyword: str,
+) -> None:
+    decision = chat_orchestrator.decide_chat_route(question)
+
+    assert decision.route == "rag"
+    assert decision.db_intent == "unknown"
+    assert reason_keyword in decision.reason
+
+
 def test_decide_chat_route_uses_rag_for_department_question() -> None:
     decision = chat_orchestrator.decide_chat_route("청소년학과 전공이수자격원 접수 안내 알려줘")
 
@@ -59,6 +88,37 @@ def test_decide_chat_route_uses_weather_for_forecast_question() -> None:
     decision = chat_orchestrator.decide_chat_route("내일 수원 날씨 알려줘")
 
     assert decision.route == "weather"
+
+
+@pytest.mark.parametrize(
+    "question",
+    [
+        "오늘 우산 가져가야 해?",
+        "오늘 비 올 가능성 있어?",
+        "오늘 학교 갈 때 겉옷 필요해?",
+        "내일 야외 행사하기 괜찮을까?",
+    ],
+)
+def test_lifestyle_weather_questions_use_weather(question: str) -> None:
+    decision = chat_orchestrator.decide_chat_route(question)
+
+    assert decision.route == "weather"
+    assert decision.db_intent == "unknown"
+
+
+@pytest.mark.parametrize(
+    "question",
+    [
+        "내부 DB에 있는 학교 데이터 조회해줘",
+        "저장된 캠퍼스 장소 데이터 목록을 확인해줘",
+        "서비스 DB의 캠퍼스 레코드 검색해줘",
+    ],
+)
+def test_explicit_db_lookup_uses_relational_db_unknown(question: str) -> None:
+    decision = chat_orchestrator.decide_chat_route(question)
+
+    assert decision.route == "relational_db"
+    assert decision.db_intent == "unknown"
 
 
 def test_phone_keyword_has_priority_over_department_rag_keyword() -> None:
@@ -182,6 +242,69 @@ def test_decide_chat_plan_parses_llm_multiple_actions(monkeypatch) -> None:
         ("rag", "unknown"),
         ("weather", "unknown"),
     ]
+
+
+def test_decide_chat_plan_splits_compound_question_into_atomic_queries(monkeypatch) -> None:
+    monkeypatch.setattr(chat_orchestrator, "_WEATHER_KEYWORDS", ("weather",))
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "_RAG_FORCE_GROUP_KEYWORDS",
+        (("scholarship_support", ("scholarship",)),),
+    )
+
+    plan = chat_orchestrator.decide_chat_plan("weather tomorrow, scholarship deadline")
+
+    assert [(action.route, action.db_intent, action.query) for action in plan.actions] == [
+        ("weather", "unknown", "weather tomorrow"),
+        ("rag", "unknown", "scholarship deadline"),
+    ]
+
+
+def test_answer_chat_uses_atomic_queries_for_compound_actions(monkeypatch) -> None:
+    captured = {}
+    search_result = SearchResult(
+        chunk_id="chunk-1",
+        doc_id="doc-1",
+        score=0.91,
+        text="Scholarship deadline is May 10.",
+        title="Scholarship notice",
+        source_url="https://example.com/scholarship",
+    )
+    monkeypatch.setattr(chat_orchestrator, "_WEATHER_KEYWORDS", ("weather",))
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "_RAG_FORCE_GROUP_KEYWORDS",
+        (("scholarship_support", ("scholarship",)),),
+    )
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "get_weather_response",
+        lambda user_input: captured.setdefault(
+            "weather",
+            SimpleNamespace(
+                reply=f"weather query: {user_input}",
+                location_name="Suwon",
+                source_url="https://api.open-meteo.com/v1/forecast",
+            ),
+        ),
+    )
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "search_documents",
+        lambda query, top_k: captured.setdefault("rag_query", query) and [search_result],
+    )
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "get_gemini_response_with_context",
+        lambda user_input, context: f"rag query: {user_input}",
+    )
+
+    result = chat_orchestrator.answer_chat("weather tomorrow, scholarship deadline", db=None)
+
+    assert result.route == "multi"
+    assert "weather query: weather tomorrow" in result.reply
+    assert "rag query: scholarship deadline" in result.reply
+    assert captured["rag_query"] == "scholarship deadline"
 
 
 def test_answer_chat_uses_relational_db_service(monkeypatch) -> None:
