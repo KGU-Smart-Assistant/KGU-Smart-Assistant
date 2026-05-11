@@ -17,9 +17,19 @@ def _session_with_contacts() -> Session:
                 description="교육혁신처, 학사혁신팀, 수업, 성적, 수강신청",
             ),
             KguContact(
+                name="경기대학교 수원캠퍼스 학사혁신팀 팀장",
+                phone="031-249-8750",
+                description="교육혁신처, 학사혁신팀",
+            ),
+            KguContact(
                 name="경기대학교 수원캠퍼스 학사혁신팀 졸업/복수전공",
                 phone="031-249-9099",
                 description="교육혁신처, 학사혁신팀, 졸업, 복수전공",
+            ),
+            KguContact(
+                name="경기대학교 수원캠퍼스 학사혁신팀 1강사실(2강의동)",
+                phone="031-249-8741",
+                description="교육혁신처, 학사혁신팀, 강사실",
             ),
         ]
     )
@@ -39,6 +49,7 @@ def test_get_phone_returns_multiple_department_matches() -> None:
     assert "031-249-8732" in reply
     assert "학사혁신팀 졸업/복수전공" in reply
     assert "031-249-9099" in reply
+    assert reply.index("학사혁신팀 팀장") < reply.index("학사혁신팀 1강사실")
 
 
 def test_get_phone_uses_task_keyword_to_pick_specific_contact() -> None:

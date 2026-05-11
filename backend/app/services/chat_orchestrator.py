@@ -354,11 +354,14 @@ def decide_chat_plan(user_input: str) -> ChatPlan:
             reason="compound keyword match",
         )
 
+    heuristic = _heuristic_decision(user_input)
+    if heuristic.route == "relational_db" and heuristic.db_intent == "phone":
+        return ChatPlan(actions=(heuristic,), reason=heuristic.reason)
+
     bert_decision = _klue_bert_decision(user_input)
     if bert_decision is not None:
         return ChatPlan(actions=(bert_decision,), reason=bert_decision.reason)
 
-    heuristic = _heuristic_decision(user_input)
     if not settings.intent_classifier_model_name and heuristic.route != "llm":
         return ChatPlan(actions=(heuristic,), reason=heuristic.reason)
 

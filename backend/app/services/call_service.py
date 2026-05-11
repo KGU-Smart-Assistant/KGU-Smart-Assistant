@@ -113,7 +113,29 @@ def _rank_contacts(
         if score > 0:
             ranked.append((score, name, phone))
 
-    return sorted(ranked, key=lambda item: (-item[0], item[1]))
+    return sorted(
+        ranked,
+        key=lambda item: (-item[0], -_contact_priority(item[1], user_norm), item[1]),
+    )
+
+
+def _contact_priority(name: str, user_norm: str) -> int:
+    name_norm = _normalize_text(name)
+    priority = 0
+
+    if "팀장" in name_norm:
+        priority += 30
+    if "행정실" in name_norm:
+        priority += 20
+    if any(keyword in name_norm for keyword in ("수업", "성적", "졸업", "학적", "증명", "교육과정", "교직")):
+        priority += 10
+
+    if "강사실" in name_norm and "강사실" not in user_norm:
+        priority -= 30
+    if "fax" in name_norm and "fax" not in user_norm and "팩스" not in user_norm:
+        priority -= 30
+
+    return priority
 
 
 def get_phone(user_input: str, db: Session) -> str:
