@@ -31,12 +31,20 @@ async def get_campus_navigation(
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
-@router.get("/contacts", response_model=DepartmentContactListResponse)
+@router.get(
+    "/contacts",
+    response_model=DepartmentContactListResponse,
+    response_model_exclude_none=True,
+)
 async def get_department_contacts(db: Session = Depends(get_db)) -> DepartmentContactListResponse:
     return DepartmentContactListResponse(contacts=list_department_contacts(db))
 
 
-@router.get("/contacts/{department_id}", response_model=DepartmentContact)
+@router.get(
+    "/contacts/{department_id}",
+    response_model=DepartmentContact,
+    response_model_exclude_none=True,
+)
 async def get_department_contact_by_id(
     department_id: str,
     db: Session = Depends(get_db),

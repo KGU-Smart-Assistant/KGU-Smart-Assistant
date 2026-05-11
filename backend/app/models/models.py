@@ -22,6 +22,7 @@ class KguPlace(Base):
 
 class KguContact(Base):
     __tablename__ = "kgu_contacts"
+    __table_args__ = (UniqueConstraint("name", "phone", name="uq_kgu_contacts_name_phone"),)
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
