@@ -13,6 +13,10 @@ PostgreSQL(DB)에 테이블 생성 + JSON 시드 데이터를 채웁니다.
 from __future__ import annotations
 
 import argparse
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.db.seed import seed_contacts_from_json, seed_places_from_json
 from app.db.session import SessionLocal, init_db

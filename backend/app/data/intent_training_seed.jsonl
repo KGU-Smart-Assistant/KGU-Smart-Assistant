@@ -1,0 +1,830 @@
+{"text": "성적향상 장학금은 어디에서 정보를 찾을 수 있어?", "route": "rag", "db_intent": "unknown"}
+{"text": "성적향상 장학금은 공지 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "성적향상 장학금은 공지 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "성적향상 장학금은 안내 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "성적향상 장학금은 정보 어디서 찾아?", "route": "rag", "db_intent": "unknown"}
+{"text": "성적향상 장학금은 관련 내용 어디에 있어?", "route": "rag", "db_intent": "unknown"}
+{"text": "성적향상 장학금은 신청 조건 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "성적향상 장학금은 신청 기간 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "성적향상 장학금은 제출 서류 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "성적향상 장학금은 안내문 내용 요약해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "성적향상 장학금은 학교 문서 기준으로 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "성적향상 장학금은 관련 공지 링크 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "성적향상 장학금은 자격 기준 설명해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "성적향상 장학금은 최신 안내 확인해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "성적향상 장학금은 담당 부서 안내가 있는지 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "성적향상 장학금은 지원 대상 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "성적향상 장학금은 신청 절차 정리해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "성적향상 장학금은 공지사항 기준으로 답해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "성적향상 장학금은 학교 홈페이지에서 확인할 수 있는 내용 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "국가장학금은 어디에서 정보를 찾을 수 있어?", "route": "rag", "db_intent": "unknown"}
+{"text": "국가장학금은 공지 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "국가장학금은 공지 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "국가장학금은 안내 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "국가장학금은 정보 어디서 찾아?", "route": "rag", "db_intent": "unknown"}
+{"text": "국가장학금은 관련 내용 어디에 있어?", "route": "rag", "db_intent": "unknown"}
+{"text": "국가장학금은 신청 조건 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "국가장학금은 신청 기간 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "국가장학금은 제출 서류 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "국가장학금은 안내문 내용 요약해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "국가장학금은 학교 문서 기준으로 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "국가장학금은 관련 공지 링크 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "국가장학금은 자격 기준 설명해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "국가장학금은 최신 안내 확인해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "국가장학금은 담당 부서 안내가 있는지 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "국가장학금은 지원 대상 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "국가장학금은 신청 절차 정리해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "국가장학금은 공지사항 기준으로 답해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "국가장학금은 학교 홈페이지에서 확인할 수 있는 내용 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "교내 장학금은 어디에서 정보를 찾을 수 있어?", "route": "rag", "db_intent": "unknown"}
+{"text": "교내 장학금은 공지 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "교내 장학금은 공지 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "교내 장학금은 안내 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "교내 장학금은 정보 어디서 찾아?", "route": "rag", "db_intent": "unknown"}
+{"text": "교내 장학금은 관련 내용 어디에 있어?", "route": "rag", "db_intent": "unknown"}
+{"text": "교내 장학금은 신청 조건 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "교내 장학금은 신청 기간 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "교내 장학금은 제출 서류 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "교내 장학금은 안내문 내용 요약해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "교내 장학금은 학교 문서 기준으로 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "교내 장학금은 관련 공지 링크 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "교내 장학금은 자격 기준 설명해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "교내 장학금은 최신 안내 확인해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "교내 장학금은 담당 부서 안내가 있는지 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "교내 장학금은 지원 대상 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "교내 장학금은 신청 절차 정리해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "교내 장학금은 공지사항 기준으로 답해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "교내 장학금은 학교 홈페이지에서 확인할 수 있는 내용 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "학업장려 장학금은 어디에서 정보를 찾을 수 있어?", "route": "rag", "db_intent": "unknown"}
+{"text": "학업장려 장학금은 공지 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "학업장려 장학금은 공지 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "학업장려 장학금은 안내 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "학업장려 장학금은 정보 어디서 찾아?", "route": "rag", "db_intent": "unknown"}
+{"text": "학업장려 장학금은 관련 내용 어디에 있어?", "route": "rag", "db_intent": "unknown"}
+{"text": "학업장려 장학금은 신청 조건 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "학업장려 장학금은 신청 기간 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "학업장려 장학금은 제출 서류 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "학업장려 장학금은 안내문 내용 요약해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "학업장려 장학금은 학교 문서 기준으로 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "학업장려 장학금은 관련 공지 링크 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "학업장려 장학금은 자격 기준 설명해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "학업장려 장학금은 최신 안내 확인해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "학업장려 장학금은 담당 부서 안내가 있는지 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "학업장려 장학금은 지원 대상 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "학업장려 장학금은 신청 절차 정리해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "학업장려 장학금은 공지사항 기준으로 답해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "학업장려 장학금은 학교 홈페이지에서 확인할 수 있는 내용 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "근로장학금은 어디에서 정보를 찾을 수 있어?", "route": "rag", "db_intent": "unknown"}
+{"text": "근로장학금은 공지 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "근로장학금은 공지 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "근로장학금은 안내 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "근로장학금은 정보 어디서 찾아?", "route": "rag", "db_intent": "unknown"}
+{"text": "근로장학금은 관련 내용 어디에 있어?", "route": "rag", "db_intent": "unknown"}
+{"text": "근로장학금은 신청 조건 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "근로장학금은 신청 기간 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "근로장학금은 제출 서류 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "근로장학금은 안내문 내용 요약해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "근로장학금은 학교 문서 기준으로 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "근로장학금은 관련 공지 링크 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "근로장학금은 자격 기준 설명해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "근로장학금은 최신 안내 확인해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "근로장학금은 담당 부서 안내가 있는지 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "근로장학금은 지원 대상 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "근로장학금은 신청 절차 정리해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "근로장학금은 공지사항 기준으로 답해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "근로장학금은 학교 홈페이지에서 확인할 수 있는 내용 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "성적우수 장학금은 어디에서 정보를 찾을 수 있어?", "route": "rag", "db_intent": "unknown"}
+{"text": "성적우수 장학금은 공지 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "성적우수 장학금은 공지 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "성적우수 장학금은 안내 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "성적우수 장학금은 정보 어디서 찾아?", "route": "rag", "db_intent": "unknown"}
+{"text": "성적우수 장학금은 관련 내용 어디에 있어?", "route": "rag", "db_intent": "unknown"}
+{"text": "성적우수 장학금은 신청 조건 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "성적우수 장학금은 신청 기간 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "성적우수 장학금은 제출 서류 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "성적우수 장학금은 안내문 내용 요약해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "성적우수 장학금은 학교 문서 기준으로 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "성적우수 장학금은 관련 공지 링크 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "성적우수 장학금은 자격 기준 설명해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "성적우수 장학금은 최신 안내 확인해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "성적우수 장학금은 담당 부서 안내가 있는지 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "성적우수 장학금은 지원 대상 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "성적우수 장학금은 신청 절차 정리해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "성적우수 장학금은 공지사항 기준으로 답해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "성적우수 장학금은 학교 홈페이지에서 확인할 수 있는 내용 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "복지장학금은 어디에서 정보를 찾을 수 있어?", "route": "rag", "db_intent": "unknown"}
+{"text": "복지장학금은 공지 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "복지장학금은 공지 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "복지장학금은 안내 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "복지장학금은 정보 어디서 찾아?", "route": "rag", "db_intent": "unknown"}
+{"text": "복지장학금은 관련 내용 어디에 있어?", "route": "rag", "db_intent": "unknown"}
+{"text": "복지장학금은 신청 조건 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "복지장학금은 신청 기간 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "복지장학금은 제출 서류 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "복지장학금은 안내문 내용 요약해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "복지장학금은 학교 문서 기준으로 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "복지장학금은 관련 공지 링크 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "복지장학금은 자격 기준 설명해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "복지장학금은 최신 안내 확인해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "복지장학금은 담당 부서 안내가 있는지 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "복지장학금은 지원 대상 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "복지장학금은 신청 절차 정리해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "복지장학금은 공지사항 기준으로 답해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "복지장학금은 학교 홈페이지에서 확인할 수 있는 내용 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 납부은 어디에서 정보를 찾을 수 있어?", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 납부은 공지 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 납부은 공지 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 납부은 안내 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 납부은 정보 어디서 찾아?", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 납부은 관련 내용 어디에 있어?", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 납부은 신청 조건 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 납부은 신청 기간 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 납부은 제출 서류 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 납부은 안내문 내용 요약해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 납부은 학교 문서 기준으로 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 납부은 관련 공지 링크 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 납부은 자격 기준 설명해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 납부은 최신 안내 확인해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 납부은 담당 부서 안내가 있는지 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 납부은 지원 대상 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 납부은 신청 절차 정리해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 납부은 공지사항 기준으로 답해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 납부은 학교 홈페이지에서 확인할 수 있는 내용 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 분할납부은 어디에서 정보를 찾을 수 있어?", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 분할납부은 공지 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 분할납부은 공지 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 분할납부은 안내 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 분할납부은 정보 어디서 찾아?", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 분할납부은 관련 내용 어디에 있어?", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 분할납부은 신청 조건 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 분할납부은 신청 기간 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 분할납부은 제출 서류 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 분할납부은 안내문 내용 요약해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 분할납부은 학교 문서 기준으로 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 분할납부은 관련 공지 링크 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 분할납부은 자격 기준 설명해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 분할납부은 최신 안내 확인해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 분할납부은 담당 부서 안내가 있는지 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 분할납부은 지원 대상 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 분할납부은 신청 절차 정리해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 분할납부은 공지사항 기준으로 답해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 분할납부은 학교 홈페이지에서 확인할 수 있는 내용 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 고지서 출력은 어디에서 정보를 찾을 수 있어?", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 고지서 출력은 공지 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 고지서 출력은 공지 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 고지서 출력은 안내 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 고지서 출력은 정보 어디서 찾아?", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 고지서 출력은 관련 내용 어디에 있어?", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 고지서 출력은 신청 조건 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 고지서 출력은 신청 기간 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 고지서 출력은 제출 서류 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "8강의동은 어디야?", "route": "relational_db", "db_intent": "map"}
+{"text": "8강의동은 위치 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "8강의동은 가는 길 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "8강의동은 지도에서 보여줘", "route": "relational_db", "db_intent": "map"}
+{"text": "8강의동은 어디에 있어?", "route": "relational_db", "db_intent": "map"}
+{"text": "8강의동은 찾아가는 방법 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "8강의동은 캠퍼스맵에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "8강의동은 근처 건물 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "8강의동은 가려면 어디로 가야 해?", "route": "relational_db", "db_intent": "map"}
+{"text": "8강의동은 캠퍼스 안에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "8강의동은 현재 위치에서 가까워?", "route": "relational_db", "db_intent": "map"}
+{"text": "1강의동은 어디야?", "route": "relational_db", "db_intent": "map"}
+{"text": "1강의동은 위치 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "1강의동은 가는 길 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "1강의동은 지도에서 보여줘", "route": "relational_db", "db_intent": "map"}
+{"text": "1강의동은 어디에 있어?", "route": "relational_db", "db_intent": "map"}
+{"text": "1강의동은 찾아가는 방법 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "1강의동은 캠퍼스맵에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "1강의동은 근처 건물 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "1강의동은 가려면 어디로 가야 해?", "route": "relational_db", "db_intent": "map"}
+{"text": "1강의동은 캠퍼스 안에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "1강의동은 현재 위치에서 가까워?", "route": "relational_db", "db_intent": "map"}
+{"text": "2강의동은 어디야?", "route": "relational_db", "db_intent": "map"}
+{"text": "2강의동은 위치 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "2강의동은 가는 길 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "2강의동은 지도에서 보여줘", "route": "relational_db", "db_intent": "map"}
+{"text": "2강의동은 어디에 있어?", "route": "relational_db", "db_intent": "map"}
+{"text": "2강의동은 찾아가는 방법 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "2강의동은 캠퍼스맵에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "2강의동은 근처 건물 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "2강의동은 가려면 어디로 가야 해?", "route": "relational_db", "db_intent": "map"}
+{"text": "2강의동은 캠퍼스 안에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "2강의동은 현재 위치에서 가까워?", "route": "relational_db", "db_intent": "map"}
+{"text": "3강의동은 어디야?", "route": "relational_db", "db_intent": "map"}
+{"text": "3강의동은 위치 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "3강의동은 가는 길 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "3강의동은 지도에서 보여줘", "route": "relational_db", "db_intent": "map"}
+{"text": "3강의동은 어디에 있어?", "route": "relational_db", "db_intent": "map"}
+{"text": "3강의동은 찾아가는 방법 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "3강의동은 캠퍼스맵에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "3강의동은 근처 건물 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "3강의동은 가려면 어디로 가야 해?", "route": "relational_db", "db_intent": "map"}
+{"text": "3강의동은 캠퍼스 안에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "3강의동은 현재 위치에서 가까워?", "route": "relational_db", "db_intent": "map"}
+{"text": "4강의동은 어디야?", "route": "relational_db", "db_intent": "map"}
+{"text": "4강의동은 위치 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "4강의동은 가는 길 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "4강의동은 지도에서 보여줘", "route": "relational_db", "db_intent": "map"}
+{"text": "4강의동은 어디에 있어?", "route": "relational_db", "db_intent": "map"}
+{"text": "4강의동은 찾아가는 방법 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "4강의동은 캠퍼스맵에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "4강의동은 근처 건물 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "4강의동은 가려면 어디로 가야 해?", "route": "relational_db", "db_intent": "map"}
+{"text": "4강의동은 캠퍼스 안에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "4강의동은 현재 위치에서 가까워?", "route": "relational_db", "db_intent": "map"}
+{"text": "5강의동은 어디야?", "route": "relational_db", "db_intent": "map"}
+{"text": "5강의동은 위치 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "5강의동은 가는 길 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "5강의동은 지도에서 보여줘", "route": "relational_db", "db_intent": "map"}
+{"text": "5강의동은 어디에 있어?", "route": "relational_db", "db_intent": "map"}
+{"text": "5강의동은 찾아가는 방법 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "5강의동은 캠퍼스맵에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "5강의동은 근처 건물 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "5강의동은 가려면 어디로 가야 해?", "route": "relational_db", "db_intent": "map"}
+{"text": "5강의동은 캠퍼스 안에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "5강의동은 현재 위치에서 가까워?", "route": "relational_db", "db_intent": "map"}
+{"text": "6강의동은 어디야?", "route": "relational_db", "db_intent": "map"}
+{"text": "6강의동은 위치 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "6강의동은 가는 길 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "6강의동은 지도에서 보여줘", "route": "relational_db", "db_intent": "map"}
+{"text": "6강의동은 어디에 있어?", "route": "relational_db", "db_intent": "map"}
+{"text": "6강의동은 찾아가는 방법 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "6강의동은 캠퍼스맵에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "6강의동은 근처 건물 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "6강의동은 가려면 어디로 가야 해?", "route": "relational_db", "db_intent": "map"}
+{"text": "6강의동은 캠퍼스 안에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "6강의동은 현재 위치에서 가까워?", "route": "relational_db", "db_intent": "map"}
+{"text": "7강의동은 어디야?", "route": "relational_db", "db_intent": "map"}
+{"text": "7강의동은 위치 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "7강의동은 가는 길 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "7강의동은 지도에서 보여줘", "route": "relational_db", "db_intent": "map"}
+{"text": "7강의동은 어디에 있어?", "route": "relational_db", "db_intent": "map"}
+{"text": "7강의동은 찾아가는 방법 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "7강의동은 캠퍼스맵에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "7강의동은 근처 건물 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "7강의동은 가려면 어디로 가야 해?", "route": "relational_db", "db_intent": "map"}
+{"text": "7강의동은 캠퍼스 안에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "7강의동은 현재 위치에서 가까워?", "route": "relational_db", "db_intent": "map"}
+{"text": "학생회관은 어디야?", "route": "relational_db", "db_intent": "map"}
+{"text": "학생회관은 위치 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "학생회관은 가는 길 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "학생회관은 지도에서 보여줘", "route": "relational_db", "db_intent": "map"}
+{"text": "학생회관은 어디에 있어?", "route": "relational_db", "db_intent": "map"}
+{"text": "학생회관은 찾아가는 방법 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "학생회관은 캠퍼스맵에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "학생회관은 근처 건물 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "학생회관은 가려면 어디로 가야 해?", "route": "relational_db", "db_intent": "map"}
+{"text": "학생회관은 캠퍼스 안에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "학생회관은 현재 위치에서 가까워?", "route": "relational_db", "db_intent": "map"}
+{"text": "중앙도서관은 어디야?", "route": "relational_db", "db_intent": "map"}
+{"text": "중앙도서관은 위치 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "중앙도서관은 가는 길 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "중앙도서관은 지도에서 보여줘", "route": "relational_db", "db_intent": "map"}
+{"text": "중앙도서관은 어디에 있어?", "route": "relational_db", "db_intent": "map"}
+{"text": "중앙도서관은 찾아가는 방법 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "중앙도서관은 캠퍼스맵에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "중앙도서관은 근처 건물 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "중앙도서관은 가려면 어디로 가야 해?", "route": "relational_db", "db_intent": "map"}
+{"text": "중앙도서관은 캠퍼스 안에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "중앙도서관은 현재 위치에서 가까워?", "route": "relational_db", "db_intent": "map"}
+{"text": "복지관은 어디야?", "route": "relational_db", "db_intent": "map"}
+{"text": "복지관은 위치 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "복지관은 가는 길 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "복지관은 지도에서 보여줘", "route": "relational_db", "db_intent": "map"}
+{"text": "복지관은 어디에 있어?", "route": "relational_db", "db_intent": "map"}
+{"text": "복지관은 찾아가는 방법 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "복지관은 캠퍼스맵에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "복지관은 근처 건물 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "복지관은 가려면 어디로 가야 해?", "route": "relational_db", "db_intent": "map"}
+{"text": "복지관은 캠퍼스 안에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "복지관은 현재 위치에서 가까워?", "route": "relational_db", "db_intent": "map"}
+{"text": "공학관은 어디야?", "route": "relational_db", "db_intent": "map"}
+{"text": "공학관은 위치 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "공학관은 가는 길 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "공학관은 지도에서 보여줘", "route": "relational_db", "db_intent": "map"}
+{"text": "공학관은 어디에 있어?", "route": "relational_db", "db_intent": "map"}
+{"text": "공학관은 찾아가는 방법 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "공학관은 캠퍼스맵에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "공학관은 근처 건물 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "공학관은 가려면 어디로 가야 해?", "route": "relational_db", "db_intent": "map"}
+{"text": "공학관은 캠퍼스 안에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "공학관은 현재 위치에서 가까워?", "route": "relational_db", "db_intent": "map"}
+{"text": "진리관은 어디야?", "route": "relational_db", "db_intent": "map"}
+{"text": "진리관은 위치 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "진리관은 가는 길 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "진리관은 지도에서 보여줘", "route": "relational_db", "db_intent": "map"}
+{"text": "진리관은 어디에 있어?", "route": "relational_db", "db_intent": "map"}
+{"text": "진리관은 찾아가는 방법 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "진리관은 캠퍼스맵에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "진리관은 근처 건물 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "진리관은 가려면 어디로 가야 해?", "route": "relational_db", "db_intent": "map"}
+{"text": "진리관은 캠퍼스 안에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "진리관은 현재 위치에서 가까워?", "route": "relational_db", "db_intent": "map"}
+{"text": "덕문관은 어디야?", "route": "relational_db", "db_intent": "map"}
+{"text": "덕문관은 위치 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "덕문관은 가는 길 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "덕문관은 지도에서 보여줘", "route": "relational_db", "db_intent": "map"}
+{"text": "덕문관은 어디에 있어?", "route": "relational_db", "db_intent": "map"}
+{"text": "덕문관은 찾아가는 방법 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "덕문관은 캠퍼스맵에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "덕문관은 근처 건물 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "덕문관은 가려면 어디로 가야 해?", "route": "relational_db", "db_intent": "map"}
+{"text": "덕문관은 캠퍼스 안에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "덕문관은 현재 위치에서 가까워?", "route": "relational_db", "db_intent": "map"}
+{"text": "호연관은 어디야?", "route": "relational_db", "db_intent": "map"}
+{"text": "호연관은 위치 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "호연관은 가는 길 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "호연관은 지도에서 보여줘", "route": "relational_db", "db_intent": "map"}
+{"text": "호연관은 어디에 있어?", "route": "relational_db", "db_intent": "map"}
+{"text": "호연관은 찾아가는 방법 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "호연관은 캠퍼스맵에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "호연관은 근처 건물 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "호연관은 가려면 어디로 가야 해?", "route": "relational_db", "db_intent": "map"}
+{"text": "호연관은 캠퍼스 안에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "호연관은 현재 위치에서 가까워?", "route": "relational_db", "db_intent": "map"}
+{"text": "정문은 어디야?", "route": "relational_db", "db_intent": "map"}
+{"text": "정문은 위치 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "정문은 가는 길 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "정문은 지도에서 보여줘", "route": "relational_db", "db_intent": "map"}
+{"text": "정문은 어디에 있어?", "route": "relational_db", "db_intent": "map"}
+{"text": "정문은 찾아가는 방법 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "정문은 캠퍼스맵에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "정문은 근처 건물 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "정문은 가려면 어디로 가야 해?", "route": "relational_db", "db_intent": "map"}
+{"text": "정문은 캠퍼스 안에서 찾아줘", "route": "relational_db", "db_intent": "map"}
+{"text": "정문은 현재 위치에서 가까워?", "route": "relational_db", "db_intent": "map"}
+{"text": "후문은 어디야?", "route": "relational_db", "db_intent": "map"}
+{"text": "후문은 위치 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "후문은 가는 길 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "후문은 지도에서 보여줘", "route": "relational_db", "db_intent": "map"}
+{"text": "도서관 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "도서관 연락처 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "도서관 문의 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "도서관 대표 번호가 뭐야?", "route": "relational_db", "db_intent": "phone"}
+{"text": "도서관 전화 문의는 어느 번호로 하면 돼?", "route": "relational_db", "db_intent": "phone"}
+{"text": "도서관 사무실 번호 찾아줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "도서관 통화 가능한 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "도서관 담당 부서 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "도서관 연결 가능한 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "도서관 문의하려면 어디로 전화해?", "route": "relational_db", "db_intent": "phone"}
+{"text": "도서관 상담 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "학생지원팀 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "학생지원팀 연락처 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "학생지원팀 문의 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "학생지원팀 대표 번호가 뭐야?", "route": "relational_db", "db_intent": "phone"}
+{"text": "학생지원팀 전화 문의는 어느 번호로 하면 돼?", "route": "relational_db", "db_intent": "phone"}
+{"text": "학생지원팀 사무실 번호 찾아줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "학생지원팀 통화 가능한 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "학생지원팀 담당 부서 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "학생지원팀 연결 가능한 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "학생지원팀 문의하려면 어디로 전화해?", "route": "relational_db", "db_intent": "phone"}
+{"text": "학생지원팀 상담 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "청소년학과 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "청소년학과 연락처 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "청소년학과 문의 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "청소년학과 대표 번호가 뭐야?", "route": "relational_db", "db_intent": "phone"}
+{"text": "청소년학과 전화 문의는 어느 번호로 하면 돼?", "route": "relational_db", "db_intent": "phone"}
+{"text": "청소년학과 사무실 번호 찾아줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "청소년학과 통화 가능한 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "청소년학과 담당 부서 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "청소년학과 연결 가능한 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "청소년학과 문의하려면 어디로 전화해?", "route": "relational_db", "db_intent": "phone"}
+{"text": "청소년학과 상담 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "장학 담당 부서 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "장학 담당 부서 연락처 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "장학 담당 부서 문의 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "장학 담당 부서 대표 번호가 뭐야?", "route": "relational_db", "db_intent": "phone"}
+{"text": "장학 담당 부서 전화 문의는 어느 번호로 하면 돼?", "route": "relational_db", "db_intent": "phone"}
+{"text": "장학 담당 부서 사무실 번호 찾아줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "장학 담당 부서 통화 가능한 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "장학 담당 부서 담당 부서 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "장학 담당 부서 연결 가능한 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "장학 담당 부서 문의하려면 어디로 전화해?", "route": "relational_db", "db_intent": "phone"}
+{"text": "장학 담당 부서 상담 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "입학처 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "입학처 연락처 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "입학처 문의 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "입학처 대표 번호가 뭐야?", "route": "relational_db", "db_intent": "phone"}
+{"text": "입학처 전화 문의는 어느 번호로 하면 돼?", "route": "relational_db", "db_intent": "phone"}
+{"text": "입학처 사무실 번호 찾아줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "입학처 통화 가능한 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "입학처 담당 부서 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "입학처 연결 가능한 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "입학처 문의하려면 어디로 전화해?", "route": "relational_db", "db_intent": "phone"}
+{"text": "입학처 상담 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "교무처 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "교무처 연락처 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "교무처 문의 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "교무처 대표 번호가 뭐야?", "route": "relational_db", "db_intent": "phone"}
+{"text": "교무처 전화 문의는 어느 번호로 하면 돼?", "route": "relational_db", "db_intent": "phone"}
+{"text": "교무처 사무실 번호 찾아줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "교무처 통화 가능한 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "교무처 담당 부서 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "교무처 연결 가능한 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "교무처 문의하려면 어디로 전화해?", "route": "relational_db", "db_intent": "phone"}
+{"text": "교무처 상담 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "시설관리팀 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "시설관리팀 연락처 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "시설관리팀 문의 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "시설관리팀 대표 번호가 뭐야?", "route": "relational_db", "db_intent": "phone"}
+{"text": "시설관리팀 전화 문의는 어느 번호로 하면 돼?", "route": "relational_db", "db_intent": "phone"}
+{"text": "시설관리팀 사무실 번호 찾아줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "시설관리팀 통화 가능한 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "시설관리팀 담당 부서 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "시설관리팀 연결 가능한 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "시설관리팀 문의하려면 어디로 전화해?", "route": "relational_db", "db_intent": "phone"}
+{"text": "시설관리팀 상담 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "학생상담센터 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "학생상담센터 연락처 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "학생상담센터 문의 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "학생상담센터 대표 번호가 뭐야?", "route": "relational_db", "db_intent": "phone"}
+{"text": "학생상담센터 전화 문의는 어느 번호로 하면 돼?", "route": "relational_db", "db_intent": "phone"}
+{"text": "학생상담센터 사무실 번호 찾아줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "학생상담센터 통화 가능한 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "학생상담센터 담당 부서 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "학생상담센터 연결 가능한 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "학생상담센터 문의하려면 어디로 전화해?", "route": "relational_db", "db_intent": "phone"}
+{"text": "학생상담센터 상담 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "기숙사 사무실 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "기숙사 사무실 연락처 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "기숙사 사무실 문의 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "기숙사 사무실 대표 번호가 뭐야?", "route": "relational_db", "db_intent": "phone"}
+{"text": "기숙사 사무실 전화 문의는 어느 번호로 하면 돼?", "route": "relational_db", "db_intent": "phone"}
+{"text": "기숙사 사무실 사무실 번호 찾아줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "기숙사 사무실 통화 가능한 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "기숙사 사무실 담당 부서 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "기숙사 사무실 연결 가능한 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "기숙사 사무실 문의하려면 어디로 전화해?", "route": "relational_db", "db_intent": "phone"}
+{"text": "기숙사 사무실 상담 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "학과 사무실 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "학과 사무실 연락처 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "학과 사무실 문의 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "학과 사무실 대표 번호가 뭐야?", "route": "relational_db", "db_intent": "phone"}
+{"text": "학과 사무실 전화 문의는 어느 번호로 하면 돼?", "route": "relational_db", "db_intent": "phone"}
+{"text": "학과 사무실 사무실 번호 찾아줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "학과 사무실 통화 가능한 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "학과 사무실 담당 부서 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "학과 사무실 연결 가능한 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "학과 사무실 문의하려면 어디로 전화해?", "route": "relational_db", "db_intent": "phone"}
+{"text": "학과 사무실 상담 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "국제교류팀 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "국제교류팀 연락처 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "국제교류팀 문의 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "국제교류팀 대표 번호가 뭐야?", "route": "relational_db", "db_intent": "phone"}
+{"text": "국제교류팀 전화 문의는 어느 번호로 하면 돼?", "route": "relational_db", "db_intent": "phone"}
+{"text": "국제교류팀 사무실 번호 찾아줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "국제교류팀 통화 가능한 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "국제교류팀 담당 부서 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "국제교류팀 연결 가능한 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "국제교류팀 문의하려면 어디로 전화해?", "route": "relational_db", "db_intent": "phone"}
+{"text": "국제교류팀 상담 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "행정실 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "행정실 연락처 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "행정실 문의 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "행정실 대표 번호가 뭐야?", "route": "relational_db", "db_intent": "phone"}
+{"text": "행정실 전화 문의는 어느 번호로 하면 돼?", "route": "relational_db", "db_intent": "phone"}
+{"text": "행정실 사무실 번호 찾아줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "행정실 통화 가능한 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "행정실 담당 부서 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "행정실 연결 가능한 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "행정실 문의하려면 어디로 전화해?", "route": "relational_db", "db_intent": "phone"}
+{"text": "행정실 상담 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "취업지원팀 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "취업지원팀 연락처 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "취업지원팀 문의 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "취업지원팀 대표 번호가 뭐야?", "route": "relational_db", "db_intent": "phone"}
+{"text": "취업지원팀 전화 문의는 어느 번호로 하면 돼?", "route": "relational_db", "db_intent": "phone"}
+{"text": "취업지원팀 사무실 번호 찾아줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "취업지원팀 통화 가능한 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "취업지원팀 담당 부서 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "취업지원팀 연결 가능한 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "취업지원팀 문의하려면 어디로 전화해?", "route": "relational_db", "db_intent": "phone"}
+{"text": "취업지원팀 상담 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "총무팀 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "총무팀 연락처 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "총무팀 문의 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "총무팀 대표 번호가 뭐야?", "route": "relational_db", "db_intent": "phone"}
+{"text": "총무팀 전화 문의는 어느 번호로 하면 돼?", "route": "relational_db", "db_intent": "phone"}
+{"text": "총무팀 사무실 번호 찾아줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "총무팀 통화 가능한 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "학교에 저장된 캠퍼스 기본 정보 조회해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "학교에 저장된 캠퍼스 기본 정보 기준으로 답해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "학교에 저장된 캠퍼스 기본 정보 관련 항목 있는지 확인해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "학교에 저장된 캠퍼스 기본 정보 검색해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "학교에 저장된 캠퍼스 기본 정보 목록을 확인해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "학교에 저장된 캠퍼스 기본 정보 어떤 데이터가 있는지 알려줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "학교에 저장된 캠퍼스 기본 정보 DB 기준으로 분류해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "학교에 저장된 캠퍼스 기본 정보 정확한 저장 데이터로 답해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "학교에 저장된 캠퍼스 기본 정보 내부 데이터에서 확인 가능한지 봐줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "캠퍼스 데이터베이스의 기본 항목 조회해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "캠퍼스 데이터베이스의 기본 항목 기준으로 답해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "캠퍼스 데이터베이스의 기본 항목 관련 항목 있는지 확인해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "캠퍼스 데이터베이스의 기본 항목 검색해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "캠퍼스 데이터베이스의 기본 항목 목록을 확인해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "캠퍼스 데이터베이스의 기본 항목 어떤 데이터가 있는지 알려줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "캠퍼스 데이터베이스의 기본 항목 DB 기준으로 분류해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "캠퍼스 데이터베이스의 기본 항목 정확한 저장 데이터로 답해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "캠퍼스 데이터베이스의 기본 항목 내부 데이터에서 확인 가능한지 봐줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "내부 DB에 있는 학교 데이터 조회해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "내부 DB에 있는 학교 데이터 기준으로 답해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "내부 DB에 있는 학교 데이터 관련 항목 있는지 확인해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "내부 DB에 있는 학교 데이터 검색해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "내부 DB에 있는 학교 데이터 목록을 확인해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "내부 DB에 있는 학교 데이터 어떤 데이터가 있는지 알려줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "내부 DB에 있는 학교 데이터 DB 기준으로 분류해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "내부 DB에 있는 학교 데이터 정확한 저장 데이터로 답해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "내부 DB에 있는 학교 데이터 내부 데이터에서 확인 가능한지 봐줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "저장된 캠퍼스 장소 데이터 조회해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "저장된 캠퍼스 장소 데이터 기준으로 답해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "저장된 캠퍼스 장소 데이터 관련 항목 있는지 확인해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "저장된 캠퍼스 장소 데이터 검색해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "저장된 캠퍼스 장소 데이터 목록을 확인해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "저장된 캠퍼스 장소 데이터 어떤 데이터가 있는지 알려줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "저장된 캠퍼스 장소 데이터 DB 기준으로 분류해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "저장된 캠퍼스 장소 데이터 정확한 저장 데이터로 답해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "저장된 캠퍼스 장소 데이터 내부 데이터에서 확인 가능한지 봐줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "학교 DB 기준 정보 조회해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "학교 DB 기준 정보 기준으로 답해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "학교 DB 기준 정보 관련 항목 있는지 확인해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "학교 DB 기준 정보 검색해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "학교 DB 기준 정보 목록을 확인해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "학교 DB 기준 정보 어떤 데이터가 있는지 알려줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "학교 DB 기준 정보 DB 기준으로 분류해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "학교 DB 기준 정보 정확한 저장 데이터로 답해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "학교 DB 기준 정보 내부 데이터에서 확인 가능한지 봐줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "시스템에 등록된 학교 항목 조회해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "시스템에 등록된 학교 항목 기준으로 답해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "시스템에 등록된 학교 항목 관련 항목 있는지 확인해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "시스템에 등록된 학교 항목 검색해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "시스템에 등록된 학교 항목 목록을 확인해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "시스템에 등록된 학교 항목 어떤 데이터가 있는지 알려줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "시스템에 등록된 학교 항목 DB 기준으로 분류해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "시스템에 등록된 학교 항목 정확한 저장 데이터로 답해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "시스템에 등록된 학교 항목 내부 데이터에서 확인 가능한지 봐줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "백엔드 DB에 저장된 캠퍼스 정보 조회해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "백엔드 DB에 저장된 캠퍼스 정보 기준으로 답해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "백엔드 DB에 저장된 캠퍼스 정보 관련 항목 있는지 확인해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "백엔드 DB에 저장된 캠퍼스 정보 검색해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "백엔드 DB에 저장된 캠퍼스 정보 목록을 확인해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "백엔드 DB에 저장된 캠퍼스 정보 어떤 데이터가 있는지 알려줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "백엔드 DB에 저장된 캠퍼스 정보 DB 기준으로 분류해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "백엔드 DB에 저장된 캠퍼스 정보 정확한 저장 데이터로 답해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "백엔드 DB에 저장된 캠퍼스 정보 내부 데이터에서 확인 가능한지 봐줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "관리 중인 학교 기본 데이터 조회해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "관리 중인 학교 기본 데이터 기준으로 답해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "관리 중인 학교 기본 데이터 관련 항목 있는지 확인해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "관리 중인 학교 기본 데이터 검색해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "관리 중인 학교 기본 데이터 목록을 확인해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "관리 중인 학교 기본 데이터 어떤 데이터가 있는지 알려줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "관리 중인 학교 기본 데이터 DB 기준으로 분류해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "관리 중인 학교 기본 데이터 정확한 저장 데이터로 답해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "관리 중인 학교 기본 데이터 내부 데이터에서 확인 가능한지 봐줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "저장된 학내 데이터 조회해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "저장된 학내 데이터 기준으로 답해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "저장된 학내 데이터 관련 항목 있는지 확인해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "저장된 학내 데이터 검색해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "저장된 학내 데이터 목록을 확인해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "저장된 학내 데이터 어떤 데이터가 있는지 알려줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "저장된 학내 데이터 DB 기준으로 분류해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "저장된 학내 데이터 정확한 저장 데이터로 답해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "저장된 학내 데이터 내부 데이터에서 확인 가능한지 봐줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "서비스 DB의 캠퍼스 레코드 조회해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "서비스 DB의 캠퍼스 레코드 기준으로 답해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "서비스 DB의 캠퍼스 레코드 관련 항목 있는지 확인해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "서비스 DB의 캠퍼스 레코드 검색해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "서비스 DB의 캠퍼스 레코드 목록을 확인해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "서비스 DB의 캠퍼스 레코드 어떤 데이터가 있는지 알려줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "서비스 DB의 캠퍼스 레코드 DB 기준으로 분류해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "서비스 DB의 캠퍼스 레코드 정확한 저장 데이터로 답해줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "서비스 DB의 캠퍼스 레코드 내부 데이터에서 확인 가능한지 봐줘", "route": "relational_db", "db_intent": "unknown"}
+{"text": "오늘 수원 날씨 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "오늘 경기대 근처 비 와?", "route": "weather", "db_intent": "unknown"}
+{"text": "오늘 기온 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "오늘 우산 필요해?", "route": "weather", "db_intent": "unknown"}
+{"text": "오늘 강수확률 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "오늘 춥거나 더운지 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "오늘 날씨 예보 확인해줘", "route": "weather", "db_intent": "unknown"}
+{"text": "오늘 비 올 가능성 있어?", "route": "weather", "db_intent": "unknown"}
+{"text": "오늘 학교 갈 때 겉옷 필요해?", "route": "weather", "db_intent": "unknown"}
+{"text": "오늘 캠퍼스 걸어다니기 괜찮아?", "route": "weather", "db_intent": "unknown"}
+{"text": "오늘 야외 행사하기 괜찮을까?", "route": "weather", "db_intent": "unknown"}
+{"text": "내일 수원 날씨 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "내일 경기대 근처 비 와?", "route": "weather", "db_intent": "unknown"}
+{"text": "내일 기온 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "내일 우산 필요해?", "route": "weather", "db_intent": "unknown"}
+{"text": "내일 강수확률 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "내일 춥거나 더운지 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "내일 날씨 예보 확인해줘", "route": "weather", "db_intent": "unknown"}
+{"text": "내일 비 올 가능성 있어?", "route": "weather", "db_intent": "unknown"}
+{"text": "내일 학교 갈 때 겉옷 필요해?", "route": "weather", "db_intent": "unknown"}
+{"text": "내일 캠퍼스 걸어다니기 괜찮아?", "route": "weather", "db_intent": "unknown"}
+{"text": "내일 야외 행사하기 괜찮을까?", "route": "weather", "db_intent": "unknown"}
+{"text": "모레 수원 날씨 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "모레 경기대 근처 비 와?", "route": "weather", "db_intent": "unknown"}
+{"text": "모레 기온 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "모레 우산 필요해?", "route": "weather", "db_intent": "unknown"}
+{"text": "모레 강수확률 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "모레 춥거나 더운지 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "모레 날씨 예보 확인해줘", "route": "weather", "db_intent": "unknown"}
+{"text": "모레 비 올 가능성 있어?", "route": "weather", "db_intent": "unknown"}
+{"text": "모레 학교 갈 때 겉옷 필요해?", "route": "weather", "db_intent": "unknown"}
+{"text": "모레 캠퍼스 걸어다니기 괜찮아?", "route": "weather", "db_intent": "unknown"}
+{"text": "모레 야외 행사하기 괜찮을까?", "route": "weather", "db_intent": "unknown"}
+{"text": "이번 주 수원 날씨 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "이번 주 경기대 근처 비 와?", "route": "weather", "db_intent": "unknown"}
+{"text": "이번 주 기온 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "이번 주 우산 필요해?", "route": "weather", "db_intent": "unknown"}
+{"text": "이번 주 강수확률 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "이번 주 춥거나 더운지 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "이번 주 날씨 예보 확인해줘", "route": "weather", "db_intent": "unknown"}
+{"text": "이번 주 비 올 가능성 있어?", "route": "weather", "db_intent": "unknown"}
+{"text": "이번 주 학교 갈 때 겉옷 필요해?", "route": "weather", "db_intent": "unknown"}
+{"text": "이번 주 캠퍼스 걸어다니기 괜찮아?", "route": "weather", "db_intent": "unknown"}
+{"text": "이번 주 야외 행사하기 괜찮을까?", "route": "weather", "db_intent": "unknown"}
+{"text": "주말 수원 날씨 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "주말 경기대 근처 비 와?", "route": "weather", "db_intent": "unknown"}
+{"text": "주말 기온 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "주말 우산 필요해?", "route": "weather", "db_intent": "unknown"}
+{"text": "주말 강수확률 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "주말 춥거나 더운지 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "주말 날씨 예보 확인해줘", "route": "weather", "db_intent": "unknown"}
+{"text": "주말 비 올 가능성 있어?", "route": "weather", "db_intent": "unknown"}
+{"text": "주말 학교 갈 때 겉옷 필요해?", "route": "weather", "db_intent": "unknown"}
+{"text": "주말 캠퍼스 걸어다니기 괜찮아?", "route": "weather", "db_intent": "unknown"}
+{"text": "주말 야외 행사하기 괜찮을까?", "route": "weather", "db_intent": "unknown"}
+{"text": "오후 수원 날씨 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "오후 경기대 근처 비 와?", "route": "weather", "db_intent": "unknown"}
+{"text": "오후 기온 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "오후 우산 필요해?", "route": "weather", "db_intent": "unknown"}
+{"text": "오후 강수확률 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "오후 춥거나 더운지 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "오후 날씨 예보 확인해줘", "route": "weather", "db_intent": "unknown"}
+{"text": "오후 비 올 가능성 있어?", "route": "weather", "db_intent": "unknown"}
+{"text": "오후 학교 갈 때 겉옷 필요해?", "route": "weather", "db_intent": "unknown"}
+{"text": "오후 캠퍼스 걸어다니기 괜찮아?", "route": "weather", "db_intent": "unknown"}
+{"text": "오후 야외 행사하기 괜찮을까?", "route": "weather", "db_intent": "unknown"}
+{"text": "저녁 수원 날씨 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "저녁 경기대 근처 비 와?", "route": "weather", "db_intent": "unknown"}
+{"text": "저녁 기온 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "저녁 우산 필요해?", "route": "weather", "db_intent": "unknown"}
+{"text": "저녁 강수확률 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "저녁 춥거나 더운지 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "저녁 날씨 예보 확인해줘", "route": "weather", "db_intent": "unknown"}
+{"text": "저녁 비 올 가능성 있어?", "route": "weather", "db_intent": "unknown"}
+{"text": "저녁 학교 갈 때 겉옷 필요해?", "route": "weather", "db_intent": "unknown"}
+{"text": "저녁 캠퍼스 걸어다니기 괜찮아?", "route": "weather", "db_intent": "unknown"}
+{"text": "저녁 야외 행사하기 괜찮을까?", "route": "weather", "db_intent": "unknown"}
+{"text": "아침 수원 날씨 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "아침 경기대 근처 비 와?", "route": "weather", "db_intent": "unknown"}
+{"text": "아침 기온 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "아침 우산 필요해?", "route": "weather", "db_intent": "unknown"}
+{"text": "아침 강수확률 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "아침 춥거나 더운지 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "아침 날씨 예보 확인해줘", "route": "weather", "db_intent": "unknown"}
+{"text": "아침 비 올 가능성 있어?", "route": "weather", "db_intent": "unknown"}
+{"text": "아침 학교 갈 때 겉옷 필요해?", "route": "weather", "db_intent": "unknown"}
+{"text": "아침 캠퍼스 걸어다니기 괜찮아?", "route": "weather", "db_intent": "unknown"}
+{"text": "아침 야외 행사하기 괜찮을까?", "route": "weather", "db_intent": "unknown"}
+{"text": "지금 수원 날씨 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "지금 경기대 근처 비 와?", "route": "weather", "db_intent": "unknown"}
+{"text": "지금 기온 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "지금 우산 필요해?", "route": "weather", "db_intent": "unknown"}
+{"text": "지금 강수확률 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "지금 춥거나 더운지 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "지금 날씨 예보 확인해줘", "route": "weather", "db_intent": "unknown"}
+{"text": "지금 비 올 가능성 있어?", "route": "weather", "db_intent": "unknown"}
+{"text": "지금 학교 갈 때 겉옷 필요해?", "route": "weather", "db_intent": "unknown"}
+{"text": "지금 캠퍼스 걸어다니기 괜찮아?", "route": "weather", "db_intent": "unknown"}
+{"text": "지금 야외 행사하기 괜찮을까?", "route": "weather", "db_intent": "unknown"}
+{"text": "다음 주 월요일 수원 날씨 알려줘", "route": "weather", "db_intent": "unknown"}
+{"text": "안녕", "route": "llm", "db_intent": "unknown"}
+{"text": "안녕 짧게", "route": "llm", "db_intent": "unknown"}
+{"text": "안녕 자세히", "route": "llm", "db_intent": "unknown"}
+{"text": "안녕 예시도 같이", "route": "llm", "db_intent": "unknown"}
+{"text": "고마워", "route": "llm", "db_intent": "unknown"}
+{"text": "고마워 짧게", "route": "llm", "db_intent": "unknown"}
+{"text": "고마워 자세히", "route": "llm", "db_intent": "unknown"}
+{"text": "고마워 예시도 같이", "route": "llm", "db_intent": "unknown"}
+{"text": "너는 누구야?", "route": "llm", "db_intent": "unknown"}
+{"text": "너는 누구야? 짧게", "route": "llm", "db_intent": "unknown"}
+{"text": "너는 누구야? 자세히", "route": "llm", "db_intent": "unknown"}
+{"text": "너는 누구야? 예시도 같이", "route": "llm", "db_intent": "unknown"}
+{"text": "오늘 기분 어때?", "route": "llm", "db_intent": "unknown"}
+{"text": "오늘 기분 어때? 짧게", "route": "llm", "db_intent": "unknown"}
+{"text": "오늘 기분 어때? 자세히", "route": "llm", "db_intent": "unknown"}
+{"text": "오늘 기분 어때? 예시도 같이", "route": "llm", "db_intent": "unknown"}
+{"text": "간단하게 자기소개 해줘", "route": "llm", "db_intent": "unknown"}
+{"text": "간단하게 자기소개 해줘 짧게", "route": "llm", "db_intent": "unknown"}
+{"text": "간단하게 자기소개 해줘 자세히", "route": "llm", "db_intent": "unknown"}
+{"text": "간단하게 자기소개 해줘 예시도 같이", "route": "llm", "db_intent": "unknown"}
+{"text": "공부 집중하는 방법 알려줘", "route": "llm", "db_intent": "unknown"}
+{"text": "공부 집중하는 방법 알려줘 짧게", "route": "llm", "db_intent": "unknown"}
+{"text": "공부 집중하는 방법 알려줘 자세히", "route": "llm", "db_intent": "unknown"}
+{"text": "공부 집중하는 방법 알려줘 예시도 같이", "route": "llm", "db_intent": "unknown"}
+{"text": "대학교 생활 조언해줘", "route": "llm", "db_intent": "unknown"}
+{"text": "대학교 생활 조언해줘 짧게", "route": "llm", "db_intent": "unknown"}
+{"text": "대학교 생활 조언해줘 자세히", "route": "llm", "db_intent": "unknown"}
+{"text": "대학교 생활 조언해줘 예시도 같이", "route": "llm", "db_intent": "unknown"}
+{"text": "파이썬이 뭐야?", "route": "llm", "db_intent": "unknown"}
+{"text": "파이썬이 뭐야? 짧게", "route": "llm", "db_intent": "unknown"}
+{"text": "파이썬이 뭐야? 자세히", "route": "llm", "db_intent": "unknown"}
+{"text": "파이썬이 뭐야? 예시도 같이", "route": "llm", "db_intent": "unknown"}
+{"text": "좋은 하루 보내", "route": "llm", "db_intent": "unknown"}
+{"text": "좋은 하루 보내 짧게", "route": "llm", "db_intent": "unknown"}
+{"text": "좋은 하루 보내 자세히", "route": "llm", "db_intent": "unknown"}
+{"text": "좋은 하루 보내 예시도 같이", "route": "llm", "db_intent": "unknown"}
+{"text": "질문 하나 해도 돼?", "route": "llm", "db_intent": "unknown"}
+{"text": "질문 하나 해도 돼? 짧게", "route": "llm", "db_intent": "unknown"}
+{"text": "질문 하나 해도 돼? 자세히", "route": "llm", "db_intent": "unknown"}
+{"text": "질문 하나 해도 돼? 예시도 같이", "route": "llm", "db_intent": "unknown"}
+{"text": "시간 관리 방법 알려줘", "route": "llm", "db_intent": "unknown"}
+{"text": "시간 관리 방법 알려줘 짧게", "route": "llm", "db_intent": "unknown"}
+{"text": "시간 관리 방법 알려줘 자세히", "route": "llm", "db_intent": "unknown"}
+{"text": "시간 관리 방법 알려줘 예시도 같이", "route": "llm", "db_intent": "unknown"}
+{"text": "면접 준비 팁 알려줘", "route": "llm", "db_intent": "unknown"}
+{"text": "면접 준비 팁 알려줘 짧게", "route": "llm", "db_intent": "unknown"}
+{"text": "면접 준비 팁 알려줘 자세히", "route": "llm", "db_intent": "unknown"}
+{"text": "면접 준비 팁 알려줘 예시도 같이", "route": "llm", "db_intent": "unknown"}
+{"text": "리포트 잘 쓰는 법 알려줘", "route": "llm", "db_intent": "unknown"}
+{"text": "리포트 잘 쓰는 법 알려줘 짧게", "route": "llm", "db_intent": "unknown"}
+{"text": "리포트 잘 쓰는 법 알려줘 자세히", "route": "llm", "db_intent": "unknown"}
+{"text": "리포트 잘 쓰는 법 알려줘 예시도 같이", "route": "llm", "db_intent": "unknown"}
+{"text": "팀플 갈등 해결 방법 알려줘", "route": "llm", "db_intent": "unknown"}
+{"text": "팀플 갈등 해결 방법 알려줘 짧게", "route": "llm", "db_intent": "unknown"}
+{"text": "팀플 갈등 해결 방법 알려줘 자세히", "route": "llm", "db_intent": "unknown"}
+{"text": "팀플 갈등 해결 방법 알려줘 예시도 같이", "route": "llm", "db_intent": "unknown"}
+{"text": "영어 공부 방법 추천해줘", "route": "llm", "db_intent": "unknown"}
+{"text": "영어 공부 방법 추천해줘 짧게", "route": "llm", "db_intent": "unknown"}
+{"text": "영어 공부 방법 추천해줘 자세히", "route": "llm", "db_intent": "unknown"}
+{"text": "영어 공부 방법 추천해줘 예시도 같이", "route": "llm", "db_intent": "unknown"}
+{"text": "간단한 농담 해줘", "route": "llm", "db_intent": "unknown"}
+{"text": "간단한 농담 해줘 짧게", "route": "llm", "db_intent": "unknown"}
+{"text": "간단한 농담 해줘 자세히", "route": "llm", "db_intent": "unknown"}
+{"text": "간단한 농담 해줘 예시도 같이", "route": "llm", "db_intent": "unknown"}
+{"text": "오늘 할 일 정리하는 법 알려줘", "route": "llm", "db_intent": "unknown"}
+{"text": "오늘 할 일 정리하는 법 알려줘 짧게", "route": "llm", "db_intent": "unknown"}
+{"text": "오늘 할 일 정리하는 법 알려줘 자세히", "route": "llm", "db_intent": "unknown"}
+{"text": "오늘 할 일 정리하는 법 알려줘 예시도 같이", "route": "llm", "db_intent": "unknown"}
+{"text": "스트레스 줄이는 방법 알려줘", "route": "llm", "db_intent": "unknown"}
+{"text": "스트레스 줄이는 방법 알려줘 짧게", "route": "llm", "db_intent": "unknown"}
+{"text": "스트레스 줄이는 방법 알려줘 자세히", "route": "llm", "db_intent": "unknown"}
+{"text": "스트레스 줄이는 방법 알려줘 예시도 같이", "route": "llm", "db_intent": "unknown"}
+{"text": "발표 잘하는 팁 알려줘", "route": "llm", "db_intent": "unknown"}
+{"text": "발표 잘하는 팁 알려줘 짧게", "route": "llm", "db_intent": "unknown"}
+{"text": "발표 잘하는 팁 알려줘 자세히", "route": "llm", "db_intent": "unknown"}
+{"text": "발표 잘하는 팁 알려줘 예시도 같이", "route": "llm", "db_intent": "unknown"}
+{"text": "새로운 취미 추천해줘", "route": "llm", "db_intent": "unknown"}
+{"text": "새로운 취미 추천해줘 짧게", "route": "llm", "db_intent": "unknown"}
+{"text": "새로운 취미 추천해줘 자세히", "route": "llm", "db_intent": "unknown"}
+{"text": "새로운 취미 추천해줘 예시도 같이", "route": "llm", "db_intent": "unknown"}
+{"text": "학교생활 적응 팁 알려줘", "route": "llm", "db_intent": "unknown"}
+{"text": "학교생활 적응 팁 알려줘 짧게", "route": "llm", "db_intent": "unknown"}
+{"text": "학교생활 적응 팁 알려줘 자세히", "route": "llm", "db_intent": "unknown"}
+{"text": "학교생활 적응 팁 알려줘 예시도 같이", "route": "llm", "db_intent": "unknown"}
+{"text": "새내기에게 조언해줘", "route": "llm", "db_intent": "unknown"}
+{"text": "새내기에게 조언해줘 짧게", "route": "llm", "db_intent": "unknown"}
+{"text": "새내기에게 조언해줘 자세히", "route": "llm", "db_intent": "unknown"}
+{"text": "새내기에게 조언해줘 예시도 같이", "route": "llm", "db_intent": "unknown"}
+{"text": "과제 미루지 않는 방법 알려줘", "route": "llm", "db_intent": "unknown"}
+{"text": "과제 미루지 않는 방법 알려줘 짧게", "route": "llm", "db_intent": "unknown"}
+{"text": "과제 미루지 않는 방법 알려줘 자세히", "route": "llm", "db_intent": "unknown"}
+{"text": "과제 미루지 않는 방법 알려줘 예시도 같이", "route": "llm", "db_intent": "unknown"}
+{"text": "팀플 잘하는 방법 알려줘", "route": "llm", "db_intent": "unknown"}
+{"text": "팀플 잘하는 방법 알려줘 짧게", "route": "llm", "db_intent": "unknown"}
+{"text": "팀플 잘하는 방법 알려줘 자세히", "route": "llm", "db_intent": "unknown"}
+{"text": "팀플 잘하는 방법 알려줘 예시도 같이", "route": "llm", "db_intent": "unknown"}
+{"text": "시험 공부 계획 세워줘", "route": "llm", "db_intent": "unknown"}
+{"text": "시험 공부 계획 세워줘 짧게", "route": "llm", "db_intent": "unknown"}
+{"text": "시험 공부 계획 세워줘 자세히", "route": "llm", "db_intent": "unknown"}
+{"text": "시험 공부 계획 세워줘 예시도 같이", "route": "llm", "db_intent": "unknown"}
+{"text": "학생지원팀 어디야?", "route": "relational_db", "db_intent": "map"}
+{"text": "장학지원팀 어디야?", "route": "relational_db", "db_intent": "map"}
+{"text": "취업진로처 어디야?", "route": "relational_db", "db_intent": "map"}
+{"text": "국제교류팀 어디야?", "route": "relational_db", "db_intent": "map"}
+{"text": "학사지원팀 어디야?", "route": "relational_db", "db_intent": "map"}
+{"text": "등록금 담당 부서 어디야?", "route": "relational_db", "db_intent": "map"}
+{"text": "학생지원팀 위치 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "장학지원팀 위치 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "학생지원팀 찾아가는 길 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "장학지원팀 찾아가는 길 알려줘", "route": "relational_db", "db_intent": "map"}
+{"text": "장학지원팀 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "취업진로처 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "학사지원팀 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "등록금 담당 부서 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "장학금 공지 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 공지 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "수강신청 공지 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "졸업요건 안내 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "취업진로처 현장실습 공지 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "취업진로처 취업 프로그램 안내 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "취업진로처 채용 공지 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "취업진로처 비교과 프로그램 내용 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "취업진로처 인턴십 모집 공지 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "자료실에 있는 신청서 양식 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "자료실 첨부파일 제출 서류 내용 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "신청서 양식은 어디에서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "학사일정에서 시험 기간 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "학사일정 시험 기간 공지 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "청소년학과 공지사항은 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "청소년학과 전공이수자격원 공지 찾아줘", "route": "rag", "db_intent": "unknown"}

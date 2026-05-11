@@ -64,7 +64,12 @@ def seed_contacts_from_json(db) -> int:
             name = row["name"]
             phone = str(row["phone"]).strip()
             desc = row.get("description")
-            existing = db.execute(select(KguContact).where(KguContact.name == name)).scalar_one_or_none()
+            existing = db.execute(
+                select(KguContact).where(
+                    KguContact.name == name,
+                    KguContact.phone == phone,
+                )
+            ).scalar_one_or_none()
             if existing is None:
                 db.add(KguContact(name=name, phone=phone, description=desc))
             else:
