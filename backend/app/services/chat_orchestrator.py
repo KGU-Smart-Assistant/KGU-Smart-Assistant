@@ -125,10 +125,53 @@ _RAG_DOMAIN_KEYWORDS: dict[str, tuple[str, ...]] = {
         "시험 기간",
         "성적 확인",
         "성적 공시",
+    ),
+    "academic_status": (
+        "학적",
         "휴학",
         "복학",
-        "휴학 일정",
-        "복학 일정",
+        "자퇴",
+        "제적",
+        "재입학",
+        "재학",
+        "학적변동",
+        "학적 변동",
+    ),
+    "major_change": (
+        "전과",
+        "전부",
+        "전공변경",
+        "전공 변경",
+        "소속변경",
+        "소속 변경",
+    ),
+    "multi_major": (
+        "다전공",
+        "복수전공",
+        "복수 전공",
+        "부전공",
+        "연계전공",
+        "융합전공",
+        "마이크로전공",
+    ),
+    "admission_transfer": (
+        "편입",
+        "편입학",
+        "입학",
+        "신입학",
+        "모집요강",
+        "입시",
+        "입학전형",
+        "전형",
+    ),
+    "teaching_certification": (
+        "교직",
+        "교직이수",
+        "교원자격",
+        "교원 자격",
+        "교원자격증",
+        "교직과정",
+        "교직 과정",
     ),
     "graduation": (
         "졸업",
@@ -230,8 +273,13 @@ _RAG_DOMAIN_KEYWORDS: dict[str, tuple[str, ...]] = {
 _RAG_DOMAIN_PRIORITY = {
     "scholarship": 5,
     "course_registration": 5,
+    "academic_status": 5,
+    "major_change": 5,
+    "multi_major": 5,
     "graduation": 5,
     "tuition": 5,
+    "admission_transfer": 5,
+    "teaching_certification": 5,
     "document_materials": 4,
     "student_life": 4,
     "career_support": 4,
@@ -255,10 +303,14 @@ _RAG_DETAIL_KEYWORDS: dict[str, tuple[str, ...]] = {
         "서식",
     ),
     "benefit": ("금액", "혜택", "지원액", "수혜", "감면"),
-    "announcement_lookup": ("공지", "안내", "모집", "결과 발표", "확인"),
+    "announcement_lookup": ("공지", "안내", "모집", "모집요강", "결과 발표", "확인"),
     "summary": ("요약", "정리", "핵심"),
 }
-_DEPARTMENT_SCOPE_KEYWORDS = _RAG_DOMAIN_KEYWORDS["department_notice"]
+_DEPARTMENT_SCOPE_KEYWORDS = tuple(
+    keyword
+    for keyword in _RAG_DOMAIN_KEYWORDS["department_notice"]
+    if keyword != "전공"
+)
 
 
 def answer_chat(user_input: str, db: Session) -> ChatResult:

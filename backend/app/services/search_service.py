@@ -205,7 +205,7 @@ def _detail_match_score(*, detail: str | None, title: str, text: str) -> float:
         "procedure": ("신청", "절차", "방법", "접수"),
         "required_documents": ("서류", "제출", "증빙", "첨부", "신청서", "양식", "서식"),
         "benefit": ("금액", "혜택", "지원액", "감면", "수혜"),
-        "announcement_lookup": ("공지", "안내", "모집", "발표"),
+        "announcement_lookup": ("공지", "안내", "모집", "모집요강", "발표"),
         "summary": ("요약", "정리", "핵심"),
     }
     keywords = detail_keywords.get(detail)

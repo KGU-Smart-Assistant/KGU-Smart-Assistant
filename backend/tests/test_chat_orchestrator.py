@@ -102,12 +102,44 @@ def test_decide_chat_route_separates_course_registration_period_from_scholarship
     assert decision.rag_detail == "period"
 
 
-def test_decide_chat_route_keeps_leave_of_absence_in_academic_calendar_domain() -> None:
+def test_decide_chat_route_keeps_leave_of_absence_in_academic_status_domain() -> None:
     decision = chat_orchestrator.decide_chat_route("휴학 신청 절차 알려줘")
 
     assert decision.route == "rag"
-    assert decision.rag_domain == "academic_calendar"
+    assert decision.rag_domain == "academic_status"
     assert decision.rag_detail == "procedure"
+
+
+def test_decide_chat_route_uses_rag_for_major_change_question() -> None:
+    decision = chat_orchestrator.decide_chat_route("전과 지원 조건 알려줘")
+
+    assert decision.route == "rag"
+    assert decision.rag_domain == "major_change"
+    assert decision.rag_detail == "eligibility"
+
+
+def test_decide_chat_route_uses_rag_for_multi_major_question() -> None:
+    decision = chat_orchestrator.decide_chat_route("다전공 신청 방법 알려줘")
+
+    assert decision.route == "rag"
+    assert decision.rag_domain == "multi_major"
+    assert decision.rag_detail == "procedure"
+
+
+def test_decide_chat_route_uses_rag_for_transfer_admission_question() -> None:
+    decision = chat_orchestrator.decide_chat_route("편입 지원 자격 알려줘")
+
+    assert decision.route == "rag"
+    assert decision.rag_domain == "admission_transfer"
+    assert decision.rag_detail == "eligibility"
+
+
+def test_decide_chat_route_uses_rag_for_teaching_certification_question() -> None:
+    decision = chat_orchestrator.decide_chat_route("교직이수 신청 기간 알려줘")
+
+    assert decision.route == "rag"
+    assert decision.rag_domain == "teaching_certification"
+    assert decision.rag_detail == "period"
 
 
 def test_decide_chat_route_uses_weather_for_forecast_question() -> None:
