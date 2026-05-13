@@ -20,3 +20,5 @@ class ChatResponse(BaseModel):
     intent: str
     route: Literal["llm", "relational_db", "rag", "weather"] = "llm"
     sources: list[ChatSource] = Field(default_factory=list)
+    rag_domain: str | None = None
+    rag_detail: str | None = None

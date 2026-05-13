@@ -90,3 +90,123 @@ def test_search_documents_reranks_by_category_weights(monkeypatch) -> None:
     )
 
     assert [result.chunk_id for result in results] == ["recent-title", "similar-old"]
+
+
+def test_search_documents_maps_rag_domain_to_retrieval_category(monkeypatch) -> None:
+    captured = {}
+    monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+
+    def _query_embedded_chunks(*, query_embedding, top_k, category):
+        captured["category"] = category
+        return [
+            {
+                "chunk_id": "chunk-1",
+                "doc_id": "doc-1",
+                "distance": 0.20,
+                "text": "장학금 신청 기간 안내입니다.",
+                "title": "장학금 신청 안내",
+                "source_url": "https://example.com/support",
+            }
+        ]
+
+    monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
+
+    search_service.search_documents(
+        query="장학금 신청기간 알려줘",
+        top_k=2,
+        rag_domain="scholarship",
+        rag_detail="period",
+    )
+
+    assert captured["category"] == "support"
+
+
+def test_search_documents_soft_boosts_rows_matching_rag_detail(monkeypatch) -> None:
+    monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+
+    def _query_embedded_chunks(*, query_embedding, top_k, category):
+        return [
+            {
+                "chunk_id": "general",
+                "doc_id": "doc-1",
+                "distance": 0.10,
+                "text": "장학금 안내 문서입니다.",
+                "title": "장학금 안내",
+                "source_url": "https://example.com/general",
+                "published_at": "2026-01-01T00:00:00",
+            },
+            {
+                "chunk_id": "period",
+                "doc_id": "doc-2",
+                "distance": 0.10,
+                "text": "장학금 신청 기간과 마감 일정입니다.",
+                "title": "장학금 신청 기간 안내",
+                "source_url": "https://example.com/period",
+                "published_at": "2026-01-01T00:00:00",
+            },
+        ]
+
+    monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
+
+    results = search_service.search_documents(
+        query="장학금 신청기간 알려줘",
+        top_k=2,
+        rag_domain="scholarship",
+        rag_detail="period",
+    )
+
+    assert [result.chunk_id for result in results] == ["period", "general"]
+
+
+def test_search_documents_leaves_retrieval_unfiltered_for_unmapped_rag_domain(monkeypatch) -> None:
+    captured = {}
+    monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+
+    def _query_embedded_chunks(*, query_embedding, top_k, category):
+        captured["category"] = category
+        return []
+
+    monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
+
+    search_service.search_documents(
+        query="등록금 분납 절차 알려줘",
+        top_k=2,
+        rag_domain="tuition",
+        rag_detail="procedure",
+    )
+
+    assert captured["category"] is None
+
+
+def test_search_documents_retries_without_category_when_filtered_retrieval_is_empty(
+    monkeypatch,
+) -> None:
+    categories = []
+    monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+
+    def _query_embedded_chunks(*, query_embedding, top_k, category):
+        categories.append(category)
+        if category == "support":
+            return []
+        return [
+            {
+                "chunk_id": "fallback",
+                "doc_id": "doc-1",
+                "distance": 0.20,
+                "text": "장학금 신청 기간 안내입니다.",
+                "title": "장학금 신청 안내",
+                "source_url": "https://example.com/fallback",
+            }
+        ]
+
+    monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
+
+    results = search_service.search_documents(
+        query="장학금 신청기간 알려줘",
+        top_k=1,
+        rag_domain="scholarship",
+        rag_detail="period",
+    )
+
+    assert categories == ["support", None]
+    assert [result.chunk_id for result in results] == ["fallback"]
