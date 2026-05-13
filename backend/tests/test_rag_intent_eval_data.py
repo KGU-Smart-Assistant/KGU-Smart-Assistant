@@ -19,3 +19,4 @@ def test_rag_intent_eval_examples_match_expected_taxonomy() -> None:
         assert decision.route == example["route"]
         assert decision.rag_domain == example["rag_domain"]
         assert decision.rag_detail == example["rag_detail"]
+        assert decision.source_scope == example["source_scope"]

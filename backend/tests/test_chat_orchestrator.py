@@ -34,6 +34,25 @@ def test_decide_chat_route_uses_rag_for_department_question() -> None:
     decision = chat_orchestrator.decide_chat_route("청소년학과 전공이수자격원 접수 안내 알려줘")
 
     assert decision.route == "rag"
+    assert decision.source_scope == "department"
+
+
+def test_decide_chat_route_uses_topic_domain_and_department_scope_for_department_career_notice() -> None:
+    decision = chat_orchestrator.decide_chat_route("컴퓨터공학과 취업 공지 알려줘")
+
+    assert decision.route == "rag"
+    assert decision.rag_domain == "career_support"
+    assert decision.rag_detail == "announcement_lookup"
+    assert decision.source_scope == "department"
+
+
+def test_decide_chat_route_uses_department_notice_only_when_topic_is_not_specific() -> None:
+    decision = chat_orchestrator.decide_chat_route("컴퓨터공학과 공지 알려줘")
+
+    assert decision.route == "rag"
+    assert decision.rag_domain == "department_notice"
+    assert decision.rag_detail == "announcement_lookup"
+    assert decision.source_scope == "department"
 
 
 def test_decide_chat_route_uses_rag_for_materials_question() -> None:
@@ -138,7 +157,7 @@ def test_answer_chat_uses_rag_results_as_context(monkeypatch) -> None:
     monkeypatch.setattr(
         chat_orchestrator,
         "search_documents",
-        lambda query, top_k, rag_domain, rag_detail: [search_result],
+        lambda query, top_k, rag_domain, rag_detail, source_scope: [search_result],
     )
 
     def fake_context_answer(user_input: str, context: str) -> str:
@@ -153,6 +172,7 @@ def test_answer_chat_uses_rag_results_as_context(monkeypatch) -> None:
     assert result.intent == "RAG"
     assert result.rag_domain == "scholarship"
     assert result.rag_detail == "period"
+    assert result.source_scope == "unknown"
     assert "장학 신청 안내" in captured["context"]
     assert "5월 1일부터 5월 10일" in captured["context"]
     assert result.sources[0].source_url == "https://example.com/scholarship"

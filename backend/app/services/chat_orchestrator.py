@@ -28,6 +28,7 @@ class ChatDecision:
     reason: str = ""
     rag_domain: str | None = None
     rag_detail: str | None = None
+    source_scope: str | None = None
 
 
 @dataclass(frozen=True)
@@ -46,12 +47,14 @@ class ChatResult:
     sources: list[ChatSource] = field(default_factory=list)
     rag_domain: str | None = None
     rag_detail: str | None = None
+    source_scope: str | None = None
 
 
 @dataclass(frozen=True)
 class RagClassification:
     domain: str
     detail: str = "unknown"
+    source_scope: str = "unknown"
 
 
 _PHONE_KEYWORDS = (
@@ -243,6 +246,7 @@ _RAG_DETAIL_KEYWORDS: dict[str, tuple[str, ...]] = {
     "announcement_lookup": ("공지", "안내", "모집", "결과 발표", "확인"),
     "summary": ("요약", "정리", "핵심"),
 }
+_DEPARTMENT_SCOPE_KEYWORDS = _RAG_DOMAIN_KEYWORDS["department_notice"]
 
 
 def answer_chat(user_input: str, db: Session) -> ChatResult:
@@ -330,6 +334,7 @@ def _answer_from_rag(user_input: str, decision: ChatDecision) -> ChatResult:
             top_k=5,
             rag_domain=decision.rag_domain,
             rag_detail=decision.rag_detail,
+            source_scope=decision.source_scope,
         )
     except NotImplementedError:
         return ChatResult(
@@ -341,6 +346,7 @@ def _answer_from_rag(user_input: str, decision: ChatDecision) -> ChatResult:
             route="rag",
             rag_domain=decision.rag_domain,
             rag_detail=decision.rag_detail,
+            source_scope=decision.source_scope,
         )
 
     if not results:
@@ -350,6 +356,7 @@ def _answer_from_rag(user_input: str, decision: ChatDecision) -> ChatResult:
             route="rag",
             rag_domain=decision.rag_domain,
             rag_detail=decision.rag_detail,
+            source_scope=decision.source_scope,
         )
 
     context = _format_rag_context(results)
@@ -370,6 +377,7 @@ def _answer_from_rag(user_input: str, decision: ChatDecision) -> ChatResult:
         sources=sources,
         rag_domain=decision.rag_domain,
         rag_detail=decision.rag_detail,
+        source_scope=decision.source_scope,
     )
 
 
@@ -440,6 +448,7 @@ def _attach_rag_classification(user_input: str, decision: ChatDecision) -> ChatD
             reason=decision.reason,
             rag_domain="unknown",
             rag_detail="unknown",
+            source_scope="unknown",
         )
 
     return ChatDecision(
@@ -448,10 +457,12 @@ def _attach_rag_classification(user_input: str, decision: ChatDecision) -> ChatD
         reason=decision.reason,
         rag_domain=rag_classification.domain,
         rag_detail=rag_classification.detail,
+        source_scope=rag_classification.source_scope,
     )
 
 
 def _classify_rag_query(normalized_text: str) -> RagClassification | None:
+    source_scope = _classify_source_scope(normalized_text)
     matches = [
         (
             domain,
@@ -460,7 +471,15 @@ def _classify_rag_query(normalized_text: str) -> RagClassification | None:
         )
         for domain, keywords in _RAG_DOMAIN_KEYWORDS.items()
     ]
-    specific_matches = [match for match in matches if match[0] != "general_notice" and match[1] > 0]
+    specific_matches = [
+        match
+        for match in matches
+        if match[0] not in {"general_notice", "department_notice"} and match[1] > 0
+    ]
+    if not specific_matches:
+        specific_matches = [
+            match for match in matches if match[0] != "general_notice" and match[1] > 0
+        ]
     if specific_matches:
         matches = specific_matches
     domain, count, _priority = max(matches, key=lambda item: (item[1], item[2]))
@@ -478,7 +497,16 @@ def _classify_rag_query(normalized_text: str) -> RagClassification | None:
     return RagClassification(
         domain=domain,
         detail=detail if detail_count > 0 else "unknown",
+        source_scope=source_scope,
     )
+
+
+def _classify_source_scope(normalized_text: str) -> str:
+    if _contains_any(normalized_text, _DEPARTMENT_SCOPE_KEYWORDS):
+        return "department"
+    if _contains_any(normalized_text, ("학교", "전체", "대학", "경기대")):
+        return "university"
+    return "unknown"
 
 
 def _parse_decision(raw: str) -> ChatDecision | None:
