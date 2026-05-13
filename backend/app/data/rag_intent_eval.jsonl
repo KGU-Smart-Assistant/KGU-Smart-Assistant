@@ -9,3 +9,4 @@
 {"text":"현장실습 모집 공지 알려줘","route":"rag","rag_domain":"career_support","rag_detail":"announcement_lookup","source_scope":"unknown"}
 {"text":"청소년학과 전공 공지 알려줘","route":"rag","rag_domain":"department_notice","rag_detail":"announcement_lookup","source_scope":"department"}
 {"text":"컴퓨터공학과 취업 공지 알려줘","route":"rag","rag_domain":"career_support","rag_detail":"announcement_lookup","source_scope":"department"}
+{"text":"교환학생 지원 가능한 학교를 알려줘","route":"rag","rag_domain":"international_exchange","rag_detail":"eligibility","source_scope":"unknown"}

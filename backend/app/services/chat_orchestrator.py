@@ -185,6 +185,17 @@ _RAG_DOMAIN_KEYWORDS: dict[str, tuple[str, ...]] = {
         "비교과",
         "취업지원",
     ),
+    "international_exchange": (
+        "교환학생",
+        "국제교류",
+        "파견",
+        "해외파견",
+        "복수학위",
+        "어학연수",
+        "유학",
+        "해외 대학",
+        "해외대학",
+    ),
     "department_notice": (
         "학과",
         "전공",
@@ -224,6 +235,7 @@ _RAG_DOMAIN_PRIORITY = {
     "document_materials": 4,
     "student_life": 4,
     "career_support": 4,
+    "international_exchange": 4,
     "academic_calendar": 3,
     "department_notice": 2,
     "general_notice": 1,
@@ -504,7 +516,7 @@ def _classify_rag_query(normalized_text: str) -> RagClassification | None:
 def _classify_source_scope(normalized_text: str) -> str:
     if _contains_any(normalized_text, _DEPARTMENT_SCOPE_KEYWORDS):
         return "department"
-    if _contains_any(normalized_text, ("학교", "전체", "대학", "경기대")):
+    if _contains_any(normalized_text, ("학교 전체", "전체 공지", "대학 공지", "경기대 공지")):
         return "university"
     return "unknown"
 

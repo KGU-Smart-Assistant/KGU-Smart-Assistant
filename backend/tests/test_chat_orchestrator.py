@@ -46,6 +46,15 @@ def test_decide_chat_route_uses_topic_domain_and_department_scope_for_department
     assert decision.source_scope == "department"
 
 
+def test_decide_chat_route_uses_rag_for_exchange_student_partner_school_question() -> None:
+    decision = chat_orchestrator.decide_chat_route("교환학생 지원 가능한 학교를 알려줘")
+
+    assert decision.route == "rag"
+    assert decision.rag_domain == "international_exchange"
+    assert decision.rag_detail == "eligibility"
+    assert decision.source_scope == "unknown"
+
+
 def test_decide_chat_route_uses_department_notice_only_when_topic_is_not_specific() -> None:
     decision = chat_orchestrator.decide_chat_route("컴퓨터공학과 공지 알려줘")
 
