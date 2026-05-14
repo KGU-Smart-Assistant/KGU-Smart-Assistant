@@ -26,6 +26,11 @@ class ChatDecision:
     route: ChatRoute
     db_intent: DbIntent = "unknown"
     reason: str = ""
+    rag_domain: str | None = None
+    rag_detail: str | None = None
+    source_scope: str | None = None
+    rag_confidence: float | None = None
+    matched_keywords: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -42,6 +47,20 @@ class ChatResult:
     intent: str
     route: ChatRoute
     sources: list[ChatSource] = field(default_factory=list)
+    rag_domain: str | None = None
+    rag_detail: str | None = None
+    source_scope: str | None = None
+    rag_confidence: float | None = None
+    matched_keywords: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class RagClassification:
+    domain: str
+    detail: str = "unknown"
+    source_scope: str = "unknown"
+    confidence: float = 0.0
+    matched_keywords: tuple[str, ...] = ()
 
 
 _PHONE_KEYWORDS = (
@@ -82,24 +101,85 @@ _WEATHER_KEYWORDS = (
     "예보",
 )
 
-# Sources in app/crawlers/sources.yaml are grouped into these user-question domains.
-_RAG_KEYWORD_GROUPS: dict[str, tuple[str, ...]] = {
-    "academic_schedule": (
-        "학사일정",
-        "학사 일정",
+# RAG uses a two-axis taxonomy:
+# - domain: what the user is asking about
+# - detail: which aspect of that domain they need
+_RAG_DOMAIN_KEYWORDS: dict[str, tuple[str, ...]] = {
+    "scholarship": (
+        "장학",
+        "장학금",
+        "국가장학금",
+        "교내장학",
+        "성적향상장학금",
+        "학자금",
+        "수혜",
+        "중복 수혜",
+    ),
+    "course_registration": (
         "수강신청",
+        "수강 신청",
         "수강 정정",
         "수강취소",
-        "등록 기간",
-        "휴학",
-        "복학",
+        "수강 취소",
+        "강의 신청",
+    ),
+    "academic_calendar": (
+        "학사일정",
+        "학사 일정",
         "개강",
         "종강",
         "시험 기간",
         "성적 확인",
         "성적 공시",
     ),
-    "graduation_requirements": (
+    "academic_status": (
+        "학적",
+        "휴학",
+        "복학",
+        "자퇴",
+        "제적",
+        "재입학",
+        "재학",
+        "학적변동",
+        "학적 변동",
+    ),
+    "major_change": (
+        "전과",
+        "전부",
+        "전공변경",
+        "전공 변경",
+        "소속변경",
+        "소속 변경",
+    ),
+    "multi_major": (
+        "다전공",
+        "복수전공",
+        "복수 전공",
+        "부전공",
+        "연계전공",
+        "융합전공",
+        "마이크로전공",
+    ),
+    "admission_transfer": (
+        "편입",
+        "편입학",
+        "입학",
+        "신입학",
+        "모집요강",
+        "입시",
+        "입학전형",
+        "전형",
+    ),
+    "teaching_certification": (
+        "교직",
+        "교직이수",
+        "교원자격",
+        "교원 자격",
+        "교원자격증",
+        "교직과정",
+        "교직 과정",
+    ),
+    "graduation": (
         "졸업",
         "졸업요건",
         "졸업 요건",
@@ -111,35 +191,14 @@ _RAG_KEYWORD_GROUPS: dict[str, tuple[str, ...]] = {
         "필수 이수",
         "졸업인증",
     ),
-    "university_notices": (
-        "공지",
-        "공지사항",
-        "학교 공지",
-        "전체 공지",
-        "안내",
-        "모집",
-        "선발",
-        "신청",
-        "접수",
-        "제출",
-        "대상자",
-        "자격",
-        "기간",
-        "결과 발표",
-    ),
-    "scholarship_support": (
-        "장학",
-        "장학금",
-        "국가장학금",
-        "교내장학",
-        "성적향상장학금",
-        "학자금",
+    "tuition": (
         "등록금",
-        "수혜",
-        "중복 수혜",
-        "신청 불가",
+        "납부",
+        "분납",
+        "환불",
+        "고지서",
     ),
-    "materials": (
+    "document_materials": (
         "자료실",
         "자료",
         "첨부파일",
@@ -175,7 +234,18 @@ _RAG_KEYWORD_GROUPS: dict[str, tuple[str, ...]] = {
         "비교과",
         "취업지원",
     ),
-    "department_sources": (
+    "international_exchange": (
+        "교환학생",
+        "국제교류",
+        "파견",
+        "해외파견",
+        "복수학위",
+        "어학연수",
+        "유학",
+        "해외 대학",
+        "해외대학",
+    ),
+    "department_notice": (
         "학과",
         "전공",
         "단과대",
@@ -194,29 +264,85 @@ _RAG_KEYWORD_GROUPS: dict[str, tuple[str, ...]] = {
         "미디어영상",
         "애니메이션",
     ),
+    "general_notice": (
+        "공지",
+        "공지사항",
+        "학교 공지",
+        "전체 공지",
+        "안내",
+        "모집",
+        "선발",
+        "접수",
+        "결과 발표",
+    ),
 }
-_RAG_KEYWORDS = tuple(
+_RAG_DOMAIN_PRIORITY = {
+    "scholarship": 5,
+    "course_registration": 5,
+    "academic_status": 5,
+    "major_change": 5,
+    "multi_major": 5,
+    "graduation": 5,
+    "tuition": 5,
+    "admission_transfer": 5,
+    "teaching_certification": 5,
+    "document_materials": 4,
+    "student_life": 4,
+    "career_support": 4,
+    "international_exchange": 4,
+    "academic_calendar": 3,
+    "department_notice": 2,
+    "general_notice": 1,
+}
+_RAG_DETAIL_KEYWORDS: dict[str, tuple[str, ...]] = {
+    "period": ("기간", "일정", "언제", "마감", "시기"),
+    "eligibility": ("대상", "자격", "조건", "가능", "지원 대상"),
+    "procedure": ("신청", "절차", "방법", "접수", "어떻게"),
+    "required_documents": (
+        "서류",
+        "제출서류",
+        "제출 서류",
+        "증빙",
+        "첨부",
+        "신청서",
+        "양식",
+        "서식",
+    ),
+    "benefit": ("금액", "혜택", "지원액", "수혜", "감면"),
+    "announcement_lookup": ("공지", "안내", "모집", "모집요강", "결과 발표", "확인"),
+    "summary": ("요약", "정리", "핵심"),
+}
+_RAG_DOMAIN_ALLOWED_DETAILS: dict[str, set[str]] = {
+    "scholarship": {
+        "period",
+        "eligibility",
+        "procedure",
+        "required_documents",
+        "benefit",
+        "announcement_lookup",
+        "summary",
+        "unknown",
+    },
+    "tuition": {"period", "procedure", "required_documents", "benefit", "announcement_lookup", "unknown"},
+    "course_registration": {"period", "procedure", "announcement_lookup", "summary", "unknown"},
+    "academic_calendar": {"period", "announcement_lookup", "summary", "unknown"},
+    "academic_status": {"period", "eligibility", "procedure", "required_documents", "announcement_lookup", "unknown"},
+    "major_change": {"period", "eligibility", "procedure", "required_documents", "announcement_lookup", "unknown"},
+    "multi_major": {"period", "eligibility", "procedure", "required_documents", "announcement_lookup", "summary", "unknown"},
+    "graduation": {"eligibility", "procedure", "required_documents", "announcement_lookup", "summary", "unknown"},
+    "admission_transfer": {"period", "eligibility", "procedure", "required_documents", "announcement_lookup", "unknown"},
+    "teaching_certification": {"period", "eligibility", "procedure", "required_documents", "announcement_lookup", "unknown"},
+    "document_materials": {"required_documents", "announcement_lookup", "summary", "unknown"},
+    "student_life": {"period", "eligibility", "procedure", "required_documents", "announcement_lookup", "summary", "unknown"},
+    "career_support": {"period", "eligibility", "procedure", "required_documents", "announcement_lookup", "summary", "unknown"},
+    "international_exchange": {"period", "eligibility", "procedure", "required_documents", "announcement_lookup", "summary", "unknown"},
+    "department_notice": {"announcement_lookup", "summary", "unknown"},
+    "general_notice": {"announcement_lookup", "summary", "unknown"},
+}
+_DEPARTMENT_SCOPE_KEYWORDS = tuple(
     keyword
-    for keywords in _RAG_KEYWORD_GROUPS.values()
-    for keyword in keywords
-)
-_RAG_GROUP_PRIORITY = {
-    "academic_schedule": 3,
-    "graduation_requirements": 3,
-    "scholarship_support": 3,
-    "materials": 3,
-    "student_life": 3,
-    "career_support": 3,
-    "department_sources": 2,
-    "university_notices": 1,
-}
-_RAG_FORCE_GROUP_KEYWORDS = (
-    ("scholarship_support", ("장학", "장학금", "국가장학금", "성적향상장학금")),
-    ("graduation_requirements", ("졸업", "졸업요건", "졸업학점")),
-    ("materials", ("자료실", "첨부파일", "첨부 파일", "양식", "서식", "신청서")),
-    ("academic_schedule", ("학사일정", "수강신청", "휴학", "복학", "개강", "종강")),
-    ("career_support", ("취업", "진로", "현장실습", "인턴", "채용")),
-    ("student_life", ("학생생활", "학생증", "동아리", "기숙사", "셔틀")),
+    for keyword in _RAG_DOMAIN_KEYWORDS["department_notice"]
+    if keyword != "전공"
 )
 
 
@@ -227,7 +353,7 @@ def answer_chat(user_input: str, db: Session) -> ChatResult:
         return _answer_from_relational_db(user_input, decision, db)
 
     if decision.route == "rag":
-        return _answer_from_rag(user_input)
+        return _answer_from_rag(user_input, decision)
 
     if decision.route == "weather":
         return _answer_from_weather(user_input)
@@ -242,7 +368,7 @@ def answer_chat(user_input: str, db: Session) -> ChatResult:
 def decide_chat_route(user_input: str) -> ChatDecision:
     heuristic = _heuristic_decision(user_input)
     if heuristic.route != "llm":
-        return heuristic
+        return _attach_rag_classification(user_input, heuristic)
 
     prompt = f"""
 You classify a user question for a university assistant.
@@ -261,8 +387,8 @@ User question:
     raw = get_gemini_response(prompt)
     parsed = _parse_decision(raw)
     if parsed is None:
-        return heuristic
-    return parsed
+        return _attach_rag_classification(user_input, heuristic)
+    return _attach_rag_classification(user_input, parsed)
 
 
 def _answer_from_relational_db(
@@ -298,9 +424,15 @@ def _answer_from_relational_db(
     )
 
 
-def _answer_from_rag(user_input: str) -> ChatResult:
+def _answer_from_rag(user_input: str, decision: ChatDecision) -> ChatResult:
     try:
-        results = search_documents(query=user_input, top_k=5)
+        results = search_documents(
+            query=user_input,
+            top_k=5,
+            rag_domain=decision.rag_domain,
+            rag_detail=decision.rag_detail,
+            source_scope=decision.source_scope,
+        )
     except NotImplementedError:
         return ChatResult(
             reply=(
@@ -309,6 +441,11 @@ def _answer_from_rag(user_input: str) -> ChatResult:
             ),
             intent="RAG",
             route="rag",
+            rag_domain=decision.rag_domain,
+            rag_detail=decision.rag_detail,
+            source_scope=decision.source_scope,
+            rag_confidence=decision.rag_confidence,
+            matched_keywords=decision.matched_keywords,
         )
 
     if not results:
@@ -316,6 +453,11 @@ def _answer_from_rag(user_input: str) -> ChatResult:
             reply="관련 문서를 찾지 못했습니다. 질문을 더 구체적으로 입력해 주세요.",
             intent="RAG",
             route="rag",
+            rag_domain=decision.rag_domain,
+            rag_detail=decision.rag_detail,
+            source_scope=decision.source_scope,
+            rag_confidence=decision.rag_confidence,
+            matched_keywords=decision.matched_keywords,
         )
 
     context = _format_rag_context(results)
@@ -329,7 +471,17 @@ def _answer_from_rag(user_input: str) -> ChatResult:
         )
         for result in results
     ]
-    return ChatResult(reply=reply, intent="RAG", route="rag", sources=sources)
+    return ChatResult(
+        reply=reply,
+        intent="RAG",
+        route="rag",
+        sources=sources,
+        rag_domain=decision.rag_domain,
+        rag_detail=decision.rag_detail,
+        source_scope=decision.source_scope,
+        rag_confidence=decision.rag_confidence,
+        matched_keywords=decision.matched_keywords,
+    )
 
 
 def _answer_from_weather(user_input: str) -> ChatResult:
@@ -355,12 +507,11 @@ def _heuristic_decision(user_input: str) -> ChatDecision:
         return ChatDecision(route="weather", reason="weather keyword")
     if _contains_any(normalized, _PHONE_KEYWORDS):
         return ChatDecision(route="relational_db", db_intent="phone", reason="phone keyword")
+
+    if _looks_like_rag_query(normalized):
+        return ChatDecision(route="rag", reason="rag keyword")
     if _contains_any(normalized, _MAP_KEYWORDS):
         return ChatDecision(route="relational_db", db_intent="map", reason="map keyword")
-
-    rag_reason = _matched_rag_group(normalized)
-    if rag_reason:
-        return ChatDecision(route="rag", reason=rag_reason)
     return ChatDecision(route="llm", reason="default")
 
 
@@ -381,23 +532,143 @@ def _contains_any(normalized_text: str, keywords: tuple[str, ...]) -> bool:
     return any(keyword.lower() in normalized_text for keyword in keywords)
 
 
-def _matched_rag_group(normalized_text: str) -> str | None:
-    for group, keywords in _RAG_FORCE_GROUP_KEYWORDS:
-        if _contains_any(normalized_text, keywords):
-            return f"rag keyword: {group}"
+def _looks_like_rag_query(normalized_text: str) -> bool:
+    return any(
+        _contains_any(normalized_text, keywords)
+        for keywords in _RAG_DOMAIN_KEYWORDS.values()
+    )
 
+
+def _attach_rag_classification(user_input: str, decision: ChatDecision) -> ChatDecision:
+    if decision.route != "rag":
+        return decision
+
+    rag_classification = _classify_rag_query(_normalize_query(user_input))
+    if rag_classification is None:
+        return ChatDecision(
+            route=decision.route,
+            db_intent=decision.db_intent,
+            reason=decision.reason,
+            rag_domain="unknown",
+            rag_detail="unknown",
+            source_scope="unknown",
+            rag_confidence=0.0,
+            matched_keywords=(),
+        )
+
+    return ChatDecision(
+        route=decision.route,
+        db_intent=decision.db_intent,
+        reason=decision.reason,
+        rag_domain=rag_classification.domain,
+        rag_detail=rag_classification.detail,
+        source_scope=rag_classification.source_scope,
+        rag_confidence=rag_classification.confidence,
+        matched_keywords=rag_classification.matched_keywords,
+    )
+
+
+def _classify_rag_query(normalized_text: str) -> RagClassification | None:
+    source_scope = _classify_source_scope(normalized_text)
     matches = [
         (
-            group,
-            sum(keyword.lower() in normalized_text for keyword in keywords),
-            _RAG_GROUP_PRIORITY.get(group, 0),
+            domain,
+            _matched_keywords(normalized_text, keywords),
+            _RAG_DOMAIN_PRIORITY.get(domain, 0),
         )
-        for group, keywords in _RAG_KEYWORD_GROUPS.items()
+        for domain, keywords in _RAG_DOMAIN_KEYWORDS.items()
     ]
-    group, count, _priority = max(matches, key=lambda item: (item[1], item[2]))
+    specific_matches = [
+        match
+        for match in matches
+        if match[0] not in {"general_notice", "department_notice"} and len(match[1]) > 0
+    ]
+    if not specific_matches:
+        specific_matches = [
+            match for match in matches if match[0] != "general_notice" and len(match[1]) > 0
+        ]
+    if specific_matches:
+        matches = specific_matches
+    domain, domain_keywords, _priority = max(matches, key=lambda item: (len(item[1]), item[2]))
+    count = len(domain_keywords)
     if count <= 0:
         return None
-    return f"rag keyword: {group}"
+
+    detail_matches = [
+        (
+            detail,
+            _matched_keywords(normalized_text, keywords),
+        )
+        for detail, keywords in _RAG_DETAIL_KEYWORDS.items()
+    ]
+    detail, detail_keywords = max(detail_matches, key=lambda item: len(item[1]))
+    detail_count = len(detail_keywords)
+    raw_detail = detail if detail_count > 0 else "unknown"
+    detail = _normalize_detail_for_domain(domain=domain, detail=raw_detail)
+    if detail == "unknown":
+        detail_keywords = ()
+    confidence = _rag_confidence(
+        selected_domain_count=count,
+        selected_detail_count=detail_count if detail != "unknown" else 0,
+        competing_domain_count=_second_highest_domain_count(matches, selected_domain=domain),
+        source_scope=source_scope,
+    )
+    matched_keywords = tuple(dict.fromkeys((*domain_keywords, *detail_keywords)))
+    return RagClassification(
+        domain=domain,
+        detail=detail,
+        source_scope=source_scope,
+        confidence=confidence,
+        matched_keywords=matched_keywords,
+    )
+
+
+def _classify_source_scope(normalized_text: str) -> str:
+    if _contains_any(normalized_text, _DEPARTMENT_SCOPE_KEYWORDS):
+        return "department"
+    if _contains_any(normalized_text, ("학교 전체", "전체 공지", "대학 공지", "경기대 공지")):
+        return "university"
+    return "unknown"
+
+
+def _matched_keywords(normalized_text: str, keywords: tuple[str, ...]) -> tuple[str, ...]:
+    return tuple(keyword for keyword in keywords if keyword.lower() in normalized_text)
+
+
+def _normalize_detail_for_domain(*, domain: str, detail: str) -> str:
+    allowed_details = _RAG_DOMAIN_ALLOWED_DETAILS.get(domain)
+    if allowed_details is None or detail in allowed_details:
+        return detail
+    return "unknown"
+
+
+def _second_highest_domain_count(
+    matches: list[tuple[str, tuple[str, ...], int]],
+    *,
+    selected_domain: str,
+) -> int:
+    counts = [len(keywords) for domain, keywords, _priority in matches if domain != selected_domain]
+    return max(counts, default=0)
+
+
+def _rag_confidence(
+    *,
+    selected_domain_count: int,
+    selected_detail_count: int,
+    competing_domain_count: int,
+    source_scope: str,
+) -> float:
+    confidence = 0.45
+    confidence += min(selected_domain_count, 3) * 0.12
+    if selected_detail_count > 0:
+        confidence += min(selected_detail_count, 2) * 0.08
+    if source_scope != "unknown":
+        confidence += 0.04
+    if competing_domain_count >= selected_domain_count:
+        confidence -= 0.12
+    elif competing_domain_count > 0:
+        confidence -= 0.05
+    return round(min(max(confidence, 0.0), 0.95), 3)
 
 
 def _parse_decision(raw: str) -> ChatDecision | None:
