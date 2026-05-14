@@ -28,12 +28,52 @@ def test_decide_chat_route_uses_rag_for_notice_question() -> None:
     assert decision.reason == "rag keyword"
     assert decision.rag_domain == "scholarship"
     assert decision.rag_detail == "period"
+    assert decision.rag_confidence is not None
+    assert decision.rag_confidence > 0.0
+    assert "장학" in decision.matched_keywords
+    assert "기간" in decision.matched_keywords
 
 
 def test_decide_chat_route_uses_rag_for_department_question() -> None:
     decision = chat_orchestrator.decide_chat_route("청소년학과 전공이수자격원 접수 안내 알려줘")
 
     assert decision.route == "rag"
+    assert decision.source_scope == "department"
+
+
+def test_decide_chat_route_uses_topic_domain_and_department_scope_for_department_career_notice() -> None:
+    decision = chat_orchestrator.decide_chat_route("컴퓨터공학과 취업 공지 알려줘")
+
+    assert decision.route == "rag"
+    assert decision.rag_domain == "career_support"
+    assert decision.rag_detail == "announcement_lookup"
+    assert decision.source_scope == "department"
+
+
+def test_decide_chat_route_uses_rag_for_exchange_student_partner_school_question() -> None:
+    decision = chat_orchestrator.decide_chat_route("교환학생 지원 가능한 학교를 알려줘")
+
+    assert decision.route == "rag"
+    assert decision.rag_domain == "international_exchange"
+    assert decision.rag_detail == "eligibility"
+    assert decision.source_scope == "unknown"
+
+
+def test_decide_chat_route_normalizes_disallowed_detail_for_domain() -> None:
+    decision = chat_orchestrator.decide_chat_route("졸업 혜택 알려줘")
+
+    assert decision.route == "rag"
+    assert decision.rag_domain == "graduation"
+    assert decision.rag_detail == "unknown"
+
+
+def test_decide_chat_route_uses_department_notice_only_when_topic_is_not_specific() -> None:
+    decision = chat_orchestrator.decide_chat_route("컴퓨터공학과 공지 알려줘")
+
+    assert decision.route == "rag"
+    assert decision.rag_domain == "department_notice"
+    assert decision.rag_detail == "announcement_lookup"
+    assert decision.source_scope == "department"
 
 
 def test_decide_chat_route_uses_rag_for_materials_question() -> None:
@@ -74,12 +114,44 @@ def test_decide_chat_route_separates_course_registration_period_from_scholarship
     assert decision.rag_detail == "period"
 
 
-def test_decide_chat_route_keeps_leave_of_absence_in_academic_calendar_domain() -> None:
+def test_decide_chat_route_keeps_leave_of_absence_in_academic_status_domain() -> None:
     decision = chat_orchestrator.decide_chat_route("휴학 신청 절차 알려줘")
 
     assert decision.route == "rag"
-    assert decision.rag_domain == "academic_calendar"
+    assert decision.rag_domain == "academic_status"
     assert decision.rag_detail == "procedure"
+
+
+def test_decide_chat_route_uses_rag_for_major_change_question() -> None:
+    decision = chat_orchestrator.decide_chat_route("전과 지원 조건 알려줘")
+
+    assert decision.route == "rag"
+    assert decision.rag_domain == "major_change"
+    assert decision.rag_detail == "eligibility"
+
+
+def test_decide_chat_route_uses_rag_for_multi_major_question() -> None:
+    decision = chat_orchestrator.decide_chat_route("다전공 신청 방법 알려줘")
+
+    assert decision.route == "rag"
+    assert decision.rag_domain == "multi_major"
+    assert decision.rag_detail == "procedure"
+
+
+def test_decide_chat_route_uses_rag_for_transfer_admission_question() -> None:
+    decision = chat_orchestrator.decide_chat_route("편입 지원 자격 알려줘")
+
+    assert decision.route == "rag"
+    assert decision.rag_domain == "admission_transfer"
+    assert decision.rag_detail == "eligibility"
+
+
+def test_decide_chat_route_uses_rag_for_teaching_certification_question() -> None:
+    decision = chat_orchestrator.decide_chat_route("교직이수 신청 기간 알려줘")
+
+    assert decision.route == "rag"
+    assert decision.rag_domain == "teaching_certification"
+    assert decision.rag_detail == "period"
 
 
 def test_decide_chat_route_uses_weather_for_forecast_question() -> None:
@@ -138,7 +210,7 @@ def test_answer_chat_uses_rag_results_as_context(monkeypatch) -> None:
     monkeypatch.setattr(
         chat_orchestrator,
         "search_documents",
-        lambda query, top_k, rag_domain, rag_detail: [search_result],
+        lambda query, top_k, rag_domain, rag_detail, source_scope: [search_result],
     )
 
     def fake_context_answer(user_input: str, context: str) -> str:
@@ -153,6 +225,9 @@ def test_answer_chat_uses_rag_results_as_context(monkeypatch) -> None:
     assert result.intent == "RAG"
     assert result.rag_domain == "scholarship"
     assert result.rag_detail == "period"
+    assert result.source_scope == "unknown"
+    assert result.rag_confidence is not None
+    assert result.matched_keywords
     assert "장학 신청 안내" in captured["context"]
     assert "5월 1일부터 5월 10일" in captured["context"]
     assert result.sources[0].source_url == "https://example.com/scholarship"

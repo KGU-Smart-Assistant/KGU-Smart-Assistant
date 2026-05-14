@@ -210,3 +210,41 @@ def test_search_documents_retries_without_category_when_filtered_retrieval_is_em
 
     assert categories == ["support", None]
     assert [result.chunk_id for result in results] == ["fallback"]
+
+
+def test_search_documents_soft_boosts_department_scope(monkeypatch) -> None:
+    monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+
+    def _query_embedded_chunks(*, query_embedding, top_k, category):
+        return [
+            {
+                "chunk_id": "university",
+                "doc_id": "doc-1",
+                "distance": 0.10,
+                "text": "취업 공지입니다.",
+                "title": "취업 공지",
+                "source_url": "https://example.com/university",
+                "department": "university",
+            },
+            {
+                "chunk_id": "department",
+                "doc_id": "doc-2",
+                "distance": 0.10,
+                "text": "컴퓨터공학과 취업 공지입니다.",
+                "title": "컴퓨터공학과 취업 공지",
+                "source_url": "https://example.com/department",
+                "department": "computer_science",
+            },
+        ]
+
+    monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
+
+    results = search_service.search_documents(
+        query="컴퓨터공학과 취업 공지 알려줘",
+        top_k=2,
+        rag_domain="career_support",
+        rag_detail="announcement_lookup",
+        source_scope="department",
+    )
+
+    assert [result.chunk_id for result in results] == ["department", "university"]

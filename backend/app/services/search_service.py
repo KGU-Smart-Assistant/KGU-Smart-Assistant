@@ -37,6 +37,7 @@ def search_documents(
     category: Optional[str] = None,
     rag_domain: Optional[str] = None,
     rag_detail: Optional[str] = None,
+    source_scope: Optional[str] = None,
 ) -> List[SearchResult]:
     """Return the most relevant document chunks for a query.
 
@@ -68,6 +69,7 @@ def search_documents(
         query=query,
         category=rerank_category,
         rag_detail=rag_detail,
+        source_scope=source_scope,
     )[:top_k]
     return [
         SearchResult(
@@ -108,6 +110,7 @@ def _rerank_rows(
     query: str,
     category: str | None,
     rag_detail: str | None = None,
+    source_scope: str | None = None,
 ) -> List[Dict[str, Any]]:
     effective_category = category or "default"
     weights = CATEGORY_WEIGHTS.get(effective_category, CATEGORY_WEIGHTS["default"])
@@ -121,11 +124,13 @@ def _rerank_rows(
             title=row.get("title") or "",
             text=row.get("text") or "",
         )
+        scope = _scope_match_score(scope=source_scope, row=row)
         score = (
             similarity * weights["similarity"]
             + freshness * weights["freshness"]
             + title * weights["title"]
             + detail * 0.10
+            + scope * 0.08
         )
         ranked_row = dict(row)
         ranked_row["score"] = round(score, 6)
@@ -200,7 +205,7 @@ def _detail_match_score(*, detail: str | None, title: str, text: str) -> float:
         "procedure": ("신청", "절차", "방법", "접수"),
         "required_documents": ("서류", "제출", "증빙", "첨부", "신청서", "양식", "서식"),
         "benefit": ("금액", "혜택", "지원액", "감면", "수혜"),
-        "announcement_lookup": ("공지", "안내", "모집", "발표"),
+        "announcement_lookup": ("공지", "안내", "모집", "모집요강", "발표"),
         "summary": ("요약", "정리", "핵심"),
     }
     keywords = detail_keywords.get(detail)
@@ -210,6 +215,15 @@ def _detail_match_score(*, detail: str | None, title: str, text: str) -> float:
     haystack = f"{title} {text}".casefold()
     matched = sum(1 for keyword in keywords if keyword.casefold() in haystack)
     return matched / len(keywords)
+
+
+def _scope_match_score(*, scope: str | None, row: Dict[str, Any]) -> float:
+    if scope == "department":
+        department = str(row.get("department") or "").strip()
+        return 1.0 if department and department != "university" else 0.0
+    if scope == "university":
+        return 1.0 if row.get("department") == "university" else 0.0
+    return 0.0
 
 
 def _tokenize(text: str) -> list[str]:

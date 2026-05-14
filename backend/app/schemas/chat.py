@@ -22,3 +22,6 @@ class ChatResponse(BaseModel):
     sources: list[ChatSource] = Field(default_factory=list)
     rag_domain: str | None = None
     rag_detail: str | None = None
+    source_scope: str | None = None
+    rag_confidence: float | None = None
+    matched_keywords: list[str] = Field(default_factory=list)
