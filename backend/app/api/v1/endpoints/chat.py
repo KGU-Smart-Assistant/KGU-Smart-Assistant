@@ -20,4 +20,6 @@ async def chat_with_gemini(request: ChatRequest, db: Session = Depends(get_db)):
         rag_domain=result.rag_domain,
         rag_detail=result.rag_detail,
         source_scope=result.source_scope,
+        rag_confidence=result.rag_confidence,
+        matched_keywords=list(result.matched_keywords),
     )

@@ -28,6 +28,10 @@ def test_decide_chat_route_uses_rag_for_notice_question() -> None:
     assert decision.reason == "rag keyword"
     assert decision.rag_domain == "scholarship"
     assert decision.rag_detail == "period"
+    assert decision.rag_confidence is not None
+    assert decision.rag_confidence > 0.0
+    assert "장학" in decision.matched_keywords
+    assert "기간" in decision.matched_keywords
 
 
 def test_decide_chat_route_uses_rag_for_department_question() -> None:
@@ -53,6 +57,14 @@ def test_decide_chat_route_uses_rag_for_exchange_student_partner_school_question
     assert decision.rag_domain == "international_exchange"
     assert decision.rag_detail == "eligibility"
     assert decision.source_scope == "unknown"
+
+
+def test_decide_chat_route_normalizes_disallowed_detail_for_domain() -> None:
+    decision = chat_orchestrator.decide_chat_route("졸업 혜택 알려줘")
+
+    assert decision.route == "rag"
+    assert decision.rag_domain == "graduation"
+    assert decision.rag_detail == "unknown"
 
 
 def test_decide_chat_route_uses_department_notice_only_when_topic_is_not_specific() -> None:
@@ -214,6 +226,8 @@ def test_answer_chat_uses_rag_results_as_context(monkeypatch) -> None:
     assert result.rag_domain == "scholarship"
     assert result.rag_detail == "period"
     assert result.source_scope == "unknown"
+    assert result.rag_confidence is not None
+    assert result.matched_keywords
     assert "장학 신청 안내" in captured["context"]
     assert "5월 1일부터 5월 10일" in captured["context"]
     assert result.sources[0].source_url == "https://example.com/scholarship"
