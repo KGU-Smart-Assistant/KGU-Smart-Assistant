@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import datetime
 import logging
 import re
@@ -6,40 +8,35 @@ from typing import Any, Dict, List, Optional
 from app.crawlers.embedding_pipeline import embed_text
 from app.db.vector_store import query_embedded_chunks
 from app.schemas import SearchResponse, SearchResult
+from app.services.domain_taxonomy import (
+    DETAIL_KEYWORDS,
+    DOMAIN_FILTERS,
+    DOMAIN_KEYWORDS,
+    DOMAIN_PRIORITY,
+    normalize_detail,
+    normalize_domain,
+)
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_CANDIDATE_MULTIPLIER = 4
 MAX_CANDIDATES = 50
 MAX_KEYWORD_CANDIDATES = 30
+LOW_CONFIDENCE_THRESHOLD = 0.35
 
-CATEGORY_WEIGHTS: dict[str, dict[str, float]] = {
-    "notice": {"semantic": 0.45, "lexical": 0.20, "freshness": 0.20, "title": 0.10, "category": 0.05},
-    "scholarship": {"semantic": 0.40, "lexical": 0.20, "freshness": 0.25, "title": 0.10, "category": 0.05},
-    "materials": {"semantic": 0.45, "lexical": 0.25, "freshness": 0.05, "title": 0.20, "category": 0.05},
-    "faq": {"semantic": 0.55, "lexical": 0.25, "freshness": 0.00, "title": 0.15, "category": 0.05},
-    "academic_schedule": {"semantic": 0.40, "lexical": 0.20, "freshness": 0.20, "title": 0.15, "category": 0.05},
-    "graduation": {"semantic": 0.50, "lexical": 0.25, "freshness": 0.00, "title": 0.20, "category": 0.05},
-    "career": {"semantic": 0.45, "lexical": 0.20, "freshness": 0.20, "title": 0.10, "category": 0.05},
-    "student_life": {"semantic": 0.50, "lexical": 0.20, "freshness": 0.10, "title": 0.15, "category": 0.05},
-    "default": {"semantic": 0.55, "lexical": 0.20, "freshness": 0.10, "title": 0.10, "category": 0.05},
-}
-
-CATEGORY_ALIASES = {
-    "academic": "academic_schedule",
-    "support": "scholarship",
-    "graduation_requirements": "graduation",
-}
-
-CATEGORY_KEYWORDS: dict[str, tuple[str, ...]] = {
-    "academic_schedule": ("학사일정", "수강신청", "개강", "종강", "시험", "학기"),
-    "graduation": ("졸업", "졸업요건", "졸업학점", "학위", "전공학점", "교양학점"),
-    "scholarship": ("장학", "장학금", "등록금", "학자금", "지원금", "국가장학금"),
-    "materials": ("자료", "자료실", "첨부", "파일", "서식", "양식", "pdf", "hwp"),
-    "faq": ("faq", "질문", "답변", "자주 묻는"),
-    "notice": ("공지", "공지사항", "모집", "신청", "안내"),
-    "career": ("취업", "진로", "현장실습", "인턴", "채용", "비교과"),
-    "student_life": ("학생생활", "학생증", "동아리", "기숙사", "식당", "복지"),
+DOMAIN_WEIGHTS: dict[str, dict[str, float]] = {
+    "scholarship": {"semantic": 0.35, "lexical": 0.25, "freshness": 0.25, "title": 0.10, "domain": 0.05},
+    "tuition": {"semantic": 0.35, "lexical": 0.30, "freshness": 0.20, "title": 0.10, "domain": 0.05},
+    "course_registration": {"semantic": 0.35, "lexical": 0.30, "freshness": 0.20, "title": 0.10, "domain": 0.05},
+    "academic_calendar": {"semantic": 0.35, "lexical": 0.25, "freshness": 0.20, "title": 0.15, "domain": 0.05},
+    "graduation": {"semantic": 0.45, "lexical": 0.30, "freshness": 0.00, "title": 0.20, "domain": 0.05},
+    "document_materials": {"semantic": 0.35, "lexical": 0.30, "freshness": 0.05, "title": 0.25, "domain": 0.05},
+    "student_life": {"semantic": 0.45, "lexical": 0.25, "freshness": 0.10, "title": 0.15, "domain": 0.05},
+    "career_support": {"semantic": 0.40, "lexical": 0.25, "freshness": 0.20, "title": 0.10, "domain": 0.05},
+    "department_notice": {"semantic": 0.40, "lexical": 0.25, "freshness": 0.20, "title": 0.10, "domain": 0.05},
+    "general_notice": {"semantic": 0.40, "lexical": 0.25, "freshness": 0.20, "title": 0.10, "domain": 0.05},
+    "faq": {"semantic": 0.50, "lexical": 0.30, "freshness": 0.00, "title": 0.15, "domain": 0.05},
+    "default": {"semantic": 0.45, "lexical": 0.25, "freshness": 0.10, "title": 0.15, "domain": 0.05},
 }
 
 
@@ -47,40 +44,37 @@ def search_documents(
     query: str,
     top_k: int = 5,
     category: Optional[str] = None,
+    *,
+    detail: Optional[str] = None,
+    enable_fallback: bool = True,
+    low_confidence_threshold: float = LOW_CONFIDENCE_THRESHOLD,
 ) -> List[SearchResult]:
-    """Return the most relevant document chunks for a query."""
-    normalized_category = _normalize_category(category)
-    effective_category = normalized_category or _infer_category(query)
-    query_embedding = embed_text(query)
-    candidate_count = _candidate_count(top_k)
-    vector_rows = _mark_vector_rows(
-        query_embedded_chunks(
-            query_embedding=query_embedding,
-            top_k=candidate_count,
-            category=normalized_category,
-        )
-    )
-    keyword_rows = _query_keyword_chunks(
+    """Search crawled chunks with domain filtering, detail boosting, and broad fallback."""
+    effective_domain = _normalize_domain(category) or _infer_domain(query)
+    effective_detail = _normalize_detail(detail) or _infer_detail(query)
+    primary_rows = _run_search_attempt(query=query, top_k=top_k, domain=effective_domain, detail=effective_detail, attempt="primary")
+
+    if not enable_fallback or effective_domain == "default":
+        return [_row_to_search_result(row) for row in primary_rows[:top_k]]
+
+    if primary_rows:
+        return [_row_to_search_result(row) for row in primary_rows[:top_k]]
+
+    fallback_rows = _run_search_attempt(query=query, top_k=top_k, domain="default", detail=effective_detail, attempt="fallback_broad")
+    merged_rows = rerank_candidate_rows(
+        rows=_merge_rows(primary_rows, _mark_fallback_rows(fallback_rows)),
         query=query,
-        top_k=min(candidate_count, MAX_KEYWORD_CANDIDATES),
-        category=normalized_category,
+        category=effective_domain,
+        detail=effective_detail,
     )
-    ranked_rows = rerank_candidate_rows(
-        rows=_merge_rows(vector_rows, keyword_rows),
-        query=query,
-        category=effective_category,
-    )[:top_k]
-    return [_row_to_search_result(row) for row in ranked_rows]
+    return [_row_to_search_result(row) for row in merged_rows[:top_k]]
 
 
-def search(
-    query: str,
-    top_k: int = 5,
-    category: Optional[str] = None,
-) -> SearchResponse:
-    """Wrap raw search results in the standard response schema."""
-    results = search_documents(query=query, top_k=top_k, category=category)
-    return SearchResponse(query=query, results=results)
+def search(query: str, top_k: int = 5, category: Optional[str] = None, detail: Optional[str] = None) -> SearchResponse:
+    kwargs = {"query": query, "top_k": top_k, "category": category}
+    if detail is not None:
+        kwargs["detail"] = detail
+    return SearchResponse(query=query, results=search_documents(**kwargs))
 
 
 def rerank_candidate_rows(
@@ -88,11 +82,14 @@ def rerank_candidate_rows(
     rows: List[Dict[str, Any]],
     query: str,
     category: str | None,
+    detail: str | None = None,
 ) -> List[Dict[str, Any]]:
-    effective_category = _normalize_category(category) or "default"
-    weights = CATEGORY_WEIGHTS.get(effective_category, CATEGORY_WEIGHTS["default"])
+    effective_domain = _normalize_domain(category) or "default"
+    effective_detail = _normalize_detail(detail)
+    weights = DOMAIN_WEIGHTS.get(effective_domain, DOMAIN_WEIGHTS["default"])
     tokens = _tokenize(query)
     ranked_rows: List[Dict[str, Any]] = []
+
     for row in rows:
         semantic = _distance_to_score(row.get("distance"))
         lexical = max(
@@ -101,18 +98,20 @@ def rerank_candidate_rows(
         )
         freshness = _freshness_score(row.get("published_at"))
         title = _title_match_score(tokens=tokens, title=row.get("title") or "")
-        category_match = _category_match_score(effective_category, row.get("category"))
+        domain_match = _domain_match_score(effective_domain, row.get("domain") or row.get("category"))
+        detail_boost = _detail_boost(effective_detail, row)
         exact = _exact_phrase_score(query=query, title=row.get("title") or "", text=row.get("text") or "")
+        source_penalty = _source_penalty(row)
+        fallback_penalty = 0.35 if row.get("fallback_used") else 0.0
 
         base_score = (
             semantic * weights["semantic"]
             + lexical * weights["lexical"]
             + freshness * weights["freshness"]
             + title * weights["title"]
-            + category_match * weights["category"]
+            + domain_match * weights["domain"]
         )
-        score = min(base_score + exact, 1.0)
-
+        score = max(min(base_score + detail_boost + exact - source_penalty - fallback_penalty, 1.0), 0.0)
         ranked_row = dict(row)
         ranked_row["score"] = round(score, 6)
         ranked_row["score_breakdown"] = {
@@ -120,14 +119,23 @@ def rerank_candidate_rows(
             "lexical": round(lexical, 6),
             "freshness": round(freshness, 6),
             "title": round(title, 6),
-            "category": round(category_match, 6),
+            "domain": round(domain_match, 6),
+            "category": round(domain_match, 6),
+            "detail": round(detail_boost, 6),
             "exact": round(exact, 6),
+            "source_penalty": round(source_penalty, 6),
+            "fallback_penalty": round(fallback_penalty, 6),
+            "confidence": round(_confidence_score(score=score, lexical=lexical, title=title, source_penalty=source_penalty), 6),
+            "fallback_used": 1.0 if row.get("fallback_used") else 0.0,
         }
+        if row.get("search_attempt") == "fallback_broad":
+            ranked_row["score_breakdown"]["fallback_attempt"] = 1.0
         ranked_rows.append(ranked_row)
 
     return sorted(
         ranked_rows,
         key=lambda row: (
+            not bool(row.get("fallback_used")),
             row["score"],
             "keyword" in row.get("retrieval_sources", set()),
             "vector" in row.get("retrieval_sources", set()),
@@ -137,43 +145,41 @@ def rerank_candidate_rows(
     )
 
 
-def _row_to_search_result(row: Dict[str, Any]) -> SearchResult:
-    return SearchResult(
-        chunk_id=row["chunk_id"],
-        doc_id=row["doc_id"],
-        score=row["score"],
-        text=row["text"],
-        title=row["title"],
-        source_url=row["source_url"],
-        category=row.get("category"),
-        department=row.get("department"),
-        published_at=row.get("published_at"),
-        score_breakdown=row.get("score_breakdown", {}),
+def _run_search_attempt(*, query: str, top_k: int, domain: str | None, detail: str | None, attempt: str) -> list[dict[str, Any]]:
+    filter_categories = _filter_categories(domain)
+    query_embedding = embed_text(query)
+    candidate_count = _candidate_count(top_k)
+    vector_rows = _mark_vector_rows(
+        _query_vector_candidates(
+            query_embedding=query_embedding,
+            top_k=candidate_count,
+            categories=filter_categories,
+        )
     )
-
-
-def _mark_vector_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    marked = []
+    keyword_rows = _query_keyword_chunks(
+        query=query,
+        top_k=min(candidate_count, MAX_KEYWORD_CANDIDATES),
+        categories=filter_categories,
+    )
+    rows = _merge_rows(vector_rows, keyword_rows)
     for row in rows:
-        marked_row = dict(row)
-        marked_row["retrieval_sources"] = set(marked_row.get("retrieval_sources", set())) | {"vector"}
-        marked.append(marked_row)
-    return marked
+        row["search_attempt"] = attempt
+    return rerank_candidate_rows(rows=rows, query=query, category=domain, detail=detail)
 
 
-def _distance_to_score(distance: float | None) -> float:
-    if distance is None:
-        return 0.0
-    return 1.0 / (1.0 + max(distance, 0.0))
+def _query_vector_candidates(*, query_embedding: list[float], top_k: int, categories: list[str] | None) -> List[Dict[str, Any]]:
+    if not categories:
+        return query_embedded_chunks(query_embedding=query_embedding, top_k=top_k, domain=None)
+
+    rows: List[Dict[str, Any]] = []
+    per_category_top_k = max(top_k, 5)
+    for category in categories:
+        rows.extend(query_embedded_chunks(query_embedding=query_embedding, top_k=per_category_top_k, domain=category))
+    return _dedupe_rows_by_chunk_id(rows)[:top_k]
 
 
-def _query_keyword_chunks(
-    *,
-    query: str,
-    top_k: int,
-    category: str | None,
-) -> List[Dict[str, Any]]:
-    tokens = _tokenize(query)[:6]
+def _query_keyword_chunks(*, query: str, top_k: int, categories: list[str] | None) -> List[Dict[str, Any]]:
+    tokens = _tokenize(query)[:8]
     if not tokens or top_k <= 0:
         return []
 
@@ -194,35 +200,32 @@ def _query_keyword_chunks(
                 conditions.append(CrawlerDocumentChunk.title.ilike(pattern))
                 conditions.append(CrawlerDocumentChunk.text.ilike(pattern))
 
-            stmt = (
-                select(
-                    CrawlerDocumentChunk,
-                    CrawlerDocument.category,
-                    CrawlerDocument.department,
-                    CrawlerDocument.published_at,
+            def build_stmt(category: str | None = None):
+                stmt = (
+                    select(CrawlerDocumentChunk, CrawlerDocument.domain, CrawlerDocument.department, CrawlerDocument.published_at)
+                    .join(CrawlerDocument, CrawlerDocument.doc_id == CrawlerDocumentChunk.doc_id)
+                    .where(CrawlerDocumentChunk.status == "active")
+                    .where(CrawlerDocument.status.in_(("active", "updated")))
+                    .where(or_(*conditions))
+                    .order_by(CrawlerDocumentChunk.last_seen_at.desc(), CrawlerDocumentChunk.chunk_id)
+                    .limit(top_k)
                 )
-                .join(CrawlerDocument, CrawlerDocument.doc_id == CrawlerDocumentChunk.doc_id)
-                .where(CrawlerDocumentChunk.status == "active")
-                .where(CrawlerDocument.status.in_(("active", "updated")))
-                .where(or_(*conditions))
-                .order_by(CrawlerDocumentChunk.last_seen_at.desc(), CrawlerDocumentChunk.chunk_id)
-                .limit(top_k)
-            )
-            if category:
-                stmt = stmt.where(CrawlerDocument.category == category)
+                if category:
+                    stmt = stmt.where(CrawlerDocument.domain == category)
+                return stmt
 
-            rows = db.execute(stmt).all()
+            if categories:
+                rows = []
+                for category in categories:
+                    rows.extend(db.execute(build_stmt(category)).all())
+            else:
+                rows = db.execute(build_stmt()).all()
     except Exception:
         logger.exception("Keyword document search failed")
         return []
 
     results: List[Dict[str, Any]] = []
-    for chunk, chunk_category, department, published_at in rows:
-        lexical_score = _lexical_score(
-            tokens=tokens,
-            title=chunk.title or "",
-            text=chunk.text or "",
-        )
+    for chunk, chunk_domain, department, published_at in rows:
         results.append(
             {
                 "chunk_id": chunk.chunk_id,
@@ -232,9 +235,9 @@ def _query_keyword_chunks(
                 "title": chunk.title,
                 "source_url": chunk.source_url,
                 "source_type": chunk.source_type,
-                "lexical_score": lexical_score,
+                "lexical_score": _lexical_score(tokens=tokens, title=chunk.title or "", text=chunk.text or ""),
                 "retrieval_sources": {"keyword"},
-                "category": chunk_category,
+                "domain": chunk_domain,
                 "department": department,
                 "published_at": published_at.isoformat() if published_at else None,
             }
@@ -242,10 +245,43 @@ def _query_keyword_chunks(
     return results
 
 
-def _merge_rows(
-    vector_rows: List[Dict[str, Any]],
-    keyword_rows: List[Dict[str, Any]],
-) -> List[Dict[str, Any]]:
+def _row_to_search_result(row: Dict[str, Any]) -> SearchResult:
+    domain = row.get("domain") or row.get("category")
+    return SearchResult(
+        chunk_id=row["chunk_id"],
+        doc_id=row["doc_id"],
+        score=row["score"],
+        text=row["text"],
+        title=row["title"],
+        source_url=row["source_url"],
+        domain=domain,
+        category=domain,
+        department=row.get("department"),
+        published_at=row.get("published_at"),
+        score_breakdown=row.get("score_breakdown", {}),
+    )
+
+
+def _mark_vector_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    marked = []
+    for row in rows:
+        marked_row = dict(row)
+        marked_row["retrieval_sources"] = set(marked_row.get("retrieval_sources", set())) | {"vector"}
+        marked.append(marked_row)
+    return marked
+
+
+def _mark_fallback_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    marked = []
+    for row in rows:
+        copy = dict(row)
+        copy["fallback_used"] = True
+        copy["search_attempt"] = "fallback_broad"
+        marked.append(copy)
+    return marked
+
+
+def _merge_rows(vector_rows: List[Dict[str, Any]], keyword_rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     merged: dict[str, Dict[str, Any]] = {}
     for row in vector_rows + keyword_rows:
         chunk_id = row.get("chunk_id")
@@ -259,19 +295,70 @@ def _merge_rows(
         existing_sources = set(existing.get("retrieval_sources", set()))
         row_sources = set(row.get("retrieval_sources", set()))
         existing["retrieval_sources"] = existing_sources | row_sources
-        existing["lexical_score"] = max(
-            float(existing.get("lexical_score") or 0.0),
-            float(row.get("lexical_score") or 0.0),
-        )
+        existing["lexical_score"] = max(float(existing.get("lexical_score") or 0.0), float(row.get("lexical_score") or 0.0))
+        existing["fallback_used"] = bool(existing.get("fallback_used") or row.get("fallback_used"))
 
         existing_distance = existing.get("distance")
         row_distance = row.get("distance")
-        if row_distance is not None and (
-            existing_distance is None or row_distance < existing_distance
-        ):
+        if row_distance is not None and (existing_distance is None or row_distance < existing_distance):
             existing.update(row)
             existing["retrieval_sources"] = existing_sources | row_sources
+            existing["fallback_used"] = bool(existing.get("fallback_used") or row.get("fallback_used"))
     return list(merged.values())
+
+
+def _dedupe_rows_by_chunk_id(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    merged: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        chunk_id = row.get("chunk_id")
+        if not chunk_id:
+            continue
+        existing = merged.get(chunk_id)
+        if existing is None or (
+            row.get("distance") is not None
+            and (existing.get("distance") is None or row["distance"] < existing["distance"])
+        ):
+            merged[chunk_id] = row
+    return sorted(merged.values(), key=lambda row: row.get("distance") if row.get("distance") is not None else 999)
+
+
+def _filter_categories(domain: str | None) -> list[str] | None:
+    if not domain or domain == "default":
+        return None
+    return DOMAIN_FILTERS.get(domain, [domain])
+
+
+def _infer_domain(query: str) -> str:
+    normalized = query.casefold()
+    best: tuple[str, int, int] | None = None
+    for domain, keywords in DOMAIN_KEYWORDS.items():
+        count = sum(keyword.casefold() in normalized for keyword in keywords)
+        if count <= 0:
+            continue
+        priority = DOMAIN_PRIORITY.get(domain, 0)
+        if best is None or (priority, count) > (best[1], best[2]):
+            best = (domain, priority, count)
+    return best[0] if best else "default"
+
+
+def _infer_detail(query: str) -> str:
+    normalized = query.casefold()
+    for detail, keywords in DETAIL_KEYWORDS.items():
+        if any(keyword.casefold() in normalized for keyword in keywords):
+            return detail
+    return "unknown"
+
+
+def _normalize_domain(category: str | None) -> str | None:
+    return normalize_domain(category)
+
+
+def _normalize_detail(detail: str | None) -> str | None:
+    return normalize_detail(detail)
+
+
+def _tokenize(text: str) -> list[str]:
+    return [token.casefold() for token in re.findall(r"[0-9A-Za-z가-힣]+", text) if len(token) >= 2]
 
 
 def _lexical_score(*, tokens: list[str], title: str, text: str) -> float:
@@ -288,6 +375,12 @@ def _lexical_score(*, tokens: list[str], title: str, text: str) -> float:
     return min(matched / len(tokens), 1.0)
 
 
+def _distance_to_score(distance: float | None) -> float:
+    if distance is None:
+        return 0.0
+    return 1.0 / (1.0 + max(distance, 0.0))
+
+
 def _candidate_count(top_k: int) -> int:
     return min(max(top_k * DEFAULT_CANDIDATE_MULTIPLIER, top_k), MAX_CANDIDATES)
 
@@ -296,7 +389,6 @@ def _freshness_score(published_at: object) -> float:
     published = _parse_datetime(published_at)
     if published is None:
         return 0.0
-
     age_days = max((datetime.now() - published.replace(tzinfo=None)).days, 0)
     if age_days <= 365:
         return 1.0
@@ -311,48 +403,63 @@ def _title_match_score(*, tokens: list[str], title: str) -> float:
     if not tokens:
         return 0.0
     title_text = title.casefold()
-    matched = sum(1 for token in tokens if token in title_text)
-    return matched / len(tokens)
+    return sum(1 for token in tokens if token in title_text) / len(tokens)
 
 
-def _category_match_score(expected_category: str | None, row_category: object) -> float:
-    if not expected_category or expected_category == "default" or not row_category:
+def _domain_match_score(expected_domain: str | None, row_domain: object) -> float:
+    if not expected_domain or expected_domain == "default" or not row_domain:
         return 0.0
-    return 1.0 if _normalize_category(str(row_category)) == expected_category else 0.0
+    row = _normalize_domain(str(row_domain))
+    if row == expected_domain:
+        return 1.0
+    return 0.35 if str(row_domain) in (_filter_categories(expected_domain) or []) else 0.0
+
+
+def _detail_boost(detail: str | None, row: Dict[str, Any]) -> float:
+    if not detail or detail == "unknown":
+        return 0.0
+    keywords = DETAIL_KEYWORDS.get(detail, ())
+    if not keywords:
+        return 0.0
+    title = str(row.get("title") or "").casefold()
+    text = str(row.get("text") or "").casefold()
+    matched = 0.0
+    for keyword in keywords:
+        needle = keyword.casefold()
+        if needle in title:
+            matched += 0.03
+        elif needle in text:
+            matched += 0.015
+    return min(matched, 0.09)
 
 
 def _exact_phrase_score(*, query: str, title: str, text: str) -> float:
     normalized_query = _normalize_text(query)
     if len(normalized_query) < 4:
         return 0.0
-    normalized_title = _normalize_text(title)
-    if normalized_query and normalized_query in normalized_title:
+    if normalized_query in _normalize_text(title):
         return 0.05
-    normalized_text = _normalize_text(text)
-    return 0.02 if normalized_query and normalized_query in normalized_text else 0.0
+    return 0.02 if normalized_query in _normalize_text(text) else 0.0
 
 
-def _infer_category(query: str) -> str:
-    normalized = query.casefold()
-    for category, keywords in CATEGORY_KEYWORDS.items():
-        if any(keyword.casefold() in normalized for keyword in keywords):
-            return category
-    return "default"
+def _confidence_score(*, score: float, lexical: float, title: float, source_penalty: float) -> float:
+    return max(min(score * 0.75 + lexical * 0.15 + title * 0.10 - source_penalty * 0.30, 1.0), 0.0)
 
 
-def _normalize_category(category: str | None) -> str | None:
-    if not category:
-        return None
-    normalized = category.casefold()
-    return CATEGORY_ALIASES.get(normalized, normalized)
-
-
-def _tokenize(text: str) -> list[str]:
-    return [
-        token.casefold()
-        for token in re.findall(r"[0-9A-Za-z가-힣]+", text)
-        if len(token) >= 2
-    ]
+def _source_penalty(row: Dict[str, Any]) -> float:
+    title = str(row.get("title") or "")
+    text = str(row.get("text") or "")
+    source_url = str(row.get("source_url") or "").casefold()
+    penalty = 0.0
+    if title in {"제목 없음", "untitled", ""}:
+        penalty += 0.05
+    if "page=list" in source_url or "book_idx=" in source_url:
+        penalty += 0.4
+    if "비밀번호 입력" in text or "대여불가" in text:
+        penalty += 0.2
+    if "원문 링크에서 파일을 직접 확인하세요" in text:
+        penalty += 0.03
+    return penalty
 
 
 def _normalize_text(text: str) -> str:

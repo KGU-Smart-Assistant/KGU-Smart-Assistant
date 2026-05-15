@@ -89,7 +89,7 @@ def select_latest_documents(documents: List[Document]) -> DocumentDedupResult:
 def _build_exact_key(document: Document) -> Tuple[str, str, str, str]:
     return (
         _normalize_title(document.title),
-        _normalize_value(document.category),
+        _normalize_value(document.domain or document.category),
         _normalize_value(document.department),
         _hash_text(_normalize_content(document.content)),
     )
@@ -98,7 +98,7 @@ def _build_exact_key(document: Document) -> Tuple[str, str, str, str]:
 def _build_version_key(document: Document) -> Tuple[str, str, str]:
     return (
         _normalize_title(document.title),
-        _normalize_value(document.category),
+        _normalize_value(document.domain or document.category),
         _normalize_value(document.department),
     )
 
@@ -147,12 +147,16 @@ def _document_rank_key(document: Document) -> Tuple[int, datetime, int, int, str
 
 def _normalize_title(value: str) -> str:
     lowered = value.casefold()
+    lowered = re.sub(r"\[[^\]]*(수정|재공고|재공지|변경|update|updated)[^\]]*\]", " ", lowered)
+    lowered = re.sub(r"\((수정|재공고|재공지|변경|update|updated)\)", " ", lowered)
     return re.sub(r"\s+", " ", lowered).strip()
 
 
 def _normalize_content(value: str) -> str:
     lowered = value.casefold()
     lowered = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r"\1", lowered)
+    lowered = re.sub(r"https?://\S+", " ", lowered)
+    lowered = re.sub(r"\b(pageindex|pageunit|searchcnd|searchwrd|sf\.[a-z]+)=\S+", " ", lowered)
     lowered = re.sub(r"\s+", " ", lowered)
     return lowered.strip()
 

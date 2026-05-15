@@ -1,10 +1,10 @@
-defaults:
+﻿defaults:
   recent_documents: &recent_documents
     min_published_year: 2018
 
   portal_notice: &portal_notice
     <<: *recent_documents
-    category: notice
+    domain: general_notice
     max_pages: 0
     max_depth: 2
     max_pagination_pages: 200
@@ -28,7 +28,7 @@ defaults:
 
   portal_materials: &portal_materials
     <<: *recent_documents
-    category: materials
+    domain: document_materials
     max_pages: 0
     max_depth: 2
     max_pagination_pages: 200
@@ -56,7 +56,7 @@ defaults:
 
   portal_faq: &portal_faq
     <<: *recent_documents
-    category: faq
+    domain: faq
     max_pages: 0
     max_depth: 2
     max_pagination_pages: 200
@@ -79,7 +79,7 @@ defaults:
 
   portal_schedule: &portal_schedule
     <<: *recent_documents
-    category: academic_schedule
+    domain: academic_calendar
     max_pages: 3
     max_depth: 1
     follow_patterns:
@@ -100,9 +100,10 @@ defaults:
 
   external_notice: &external_notice
     <<: *recent_documents
-    category: notice
+    domain: general_notice
     max_pages: 0
     max_depth: 2
+    skip_images: true
     follow_patterns:
       - "board"
       - "bo_idx=1"
@@ -120,6 +121,12 @@ defaults:
       - "logout"
       - "javascript:"
       - "mailto:"
+      - "upload_hi/book"
+      - ".jpg"
+      - ".jpeg"
+      - ".png"
+      - ".gif"
+      - ".webp"
     collect_seed_pages: false
     embed: true
     embedding_limit: 150
@@ -128,7 +135,7 @@ defaults:
 sources:
   - name: academic_schedule
     <<: *recent_documents
-    category: academic_schedule
+    domain: academic_calendar
     department: university
     seed_urls:
       - "https://www.kyonggi.ac.kr/www/selectTnSchafsSchdulListUS.do?key=5695"
@@ -143,7 +150,7 @@ sources:
 
   - name: graduation_requirements
     <<: *recent_documents
-    category: graduation
+    domain: graduation
     department: university
     seed_urls:
       - "https://www.kyonggi.ac.kr/www/contents.do?key=8418"
@@ -158,7 +165,7 @@ sources:
 
   - name: university_notices
     <<: *recent_documents
-    category: notice
+    domain: general_notice
     department: university
     seed_urls:
       - "https://www.kyonggi.ac.kr/www/selectBbsNttList.do?key=7520&bbsNo=1073"
@@ -186,7 +193,7 @@ sources:
 
   - name: scholarship_support
     <<: *recent_documents
-    category: support
+    domain: scholarship
     department: scholarship_support
     seed_urls:
       - "https://www.kyonggi.ac.kr/scholarship/index.do"
@@ -216,7 +223,7 @@ sources:
 
   - name: student_life
     <<: *recent_documents
-    category: student_life
+    domain: student_life
     department: university
     seed_urls:
       - "https://www.kyonggi.ac.kr/www/contents.do?key=5754"
@@ -231,7 +238,7 @@ sources:
 
   - name: career_support
     <<: *recent_documents
-    category: career
+    domain: career_support
     department: university
     seed_urls:
       - "https://www.kyonggi.ac.kr/www/contents.do?key=5782"
@@ -246,12 +253,14 @@ sources:
 
   - name: electrical_engineering_shared_notice
     department: electrical_engineering_shared
+    domain: department_notice
     seed_urls:
       - "https://ee.kgu.ac.kr/"
     <<: *external_notice
 
   - name: materials_science_engineering_notice
     department: materials_science_engineering
+    domain: department_notice
     seed_urls:
       - "http://mse.kgu.ac.kr/"
     <<: *external_notice
@@ -2928,3 +2937,4 @@ source_blueprints:
       - portal
     seed_url_template: "{base_url}"
     <<: *portal_schedule
+

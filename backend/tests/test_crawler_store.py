@@ -33,7 +33,7 @@ def _document(*, content: str = "document text") -> Document:
         source_url="https://example.com/notices/1",
         title="Notice title",
         content=content,
-        category="notice",
+        domain="general_notice",
         department="academic_affairs",
         author_department="department office",
         published_at=datetime(2026, 4, 1, 9, 0, 0),
@@ -77,7 +77,7 @@ def test_store_ingest_source_result_persists_crawler_rows() -> None:
         source={
             "name": "alpha_notice",
             "seed_urls": ["https://example.com/notices"],
-            "category": "notice",
+            "domain": "general_notice",
             "department": "academic_affairs",
         },
         documents=[_document()],
@@ -90,11 +90,11 @@ def test_store_ingest_source_result_persists_crawler_rows() -> None:
     assert result == {"documents": 1, "chunks": 1}
 
     source = db.get(CrawlerSource, "alpha_notice")
-    assert source.category == "notice"
+    assert source.domain == "general_notice"
     assert source.status == "ok"
 
     document = db.get(CrawlerDocument, "doc-1")
-    assert document.doc_type == "notice"
+    assert document.doc_type == "general_notice"
     assert document.status == "active"
     assert document.content_hash
     assert document.last_seen_at == seen_at
@@ -124,7 +124,7 @@ def test_store_ingest_source_result_marks_changed_rows_updated() -> None:
     source = {
         "name": "alpha_notice",
         "seed_urls": ["https://example.com/notices"],
-        "category": "notice",
+        "domain": "general_notice",
         "department": "academic_affairs",
     }
 

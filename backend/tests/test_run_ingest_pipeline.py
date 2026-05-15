@@ -239,6 +239,15 @@ def test_classify_source_report_statuses() -> None:
 
     assert run_ingest.classify_source_report(
         category="notice",
+        raw_documents=2,
+        documents=0,
+        exact_duplicates_removed=0,
+        version_duplicates_removed=0,
+        quality_removed_short=2,
+    )["status"] == "filtered_by_quality"
+
+    assert run_ingest.classify_source_report(
+        category="notice",
         raw_documents=3,
         documents=2,
         exact_duplicates_removed=0,

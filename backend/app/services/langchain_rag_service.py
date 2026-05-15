@@ -6,7 +6,7 @@ import json
 import os
 from pathlib import Path
 import re
-from typing import Callable, Iterable, List
+from typing import Callable, List
 
 from langchain_core.documents import Document
 from langchain_core.prompts import PromptTemplate
@@ -18,7 +18,7 @@ from app.crawlers.embedding_pipeline import embed_text
 from app.db.vector_store import query_embedded_chunks
 from app.schemas.search import SearchResult
 from app.services.gemini_service import get_gemini_response
-from app.services.search_service import rerank_candidate_rows, search_documents
+from app.services.search_service import LOW_CONFIDENCE_THRESHOLD, rerank_candidate_rows, search_documents
 
 SearchFn = Callable[..., List[SearchResult]]
 AnswerFn = Callable[[str], str]
@@ -27,27 +27,30 @@ DEFAULT_TRACE_PATH = ".tmp/rag_traces.jsonl"
 DEFAULT_EXPANDED_QUERY_LIMIT = 5
 DEFAULT_COMPRESSION_SENTENCE_LIMIT = 4
 DEFAULT_COMPRESSED_CHARS = 900
+DEFAULT_RAG_CONFIDENCE_THRESHOLD = LOW_CONFIDENCE_THRESHOLD
 
 RAG_PROMPT = PromptTemplate.from_template(
     """
-You are a Korean university assistant for Kyonggi University.
-Answer using only the retrieved context below.
-If the context is insufficient, say that the available document evidence is insufficient.
-Do not invent dates, eligibility rules, amounts, office names, or URLs.
+너는 경기대학교 스마트 어시스턴트다.
+아래 검색 근거에 포함된 내용만 사용해서 한국어로 답변해라.
+근거가 부족하면 확정적으로 말하지 말고, 확인 가능한 출처 URL을 안내해라.
+날짜, 자격, 금액, 부서명, URL은 근거에 없으면 만들지 마라.
+답변 끝에는 반드시 "출처:" 섹션을 포함하고 사용한 URL을 적어라.
 
-Retrieved context:
+검색 근거:
 {context}
 
-User question:
+사용자 질문:
 {question}
 
-Answer in Korean:
+한국어 답변:
 """.strip()
 )
 
 DOMAIN_QUERY_EXPANSIONS: dict[str, tuple[str, ...]] = {
-    "성적장학": ("성적우수장학금 신청 안내", "교내장학금 신청 기간", "장학금 제출 서류"),
-    "장학": ("장학금 신청 안내", "국가장학금 신청", "교내장학금"),
+    "성적장학": ("성적향상장학금 신청 안내", "성적향상장학금 신청 기간", "장학금 제출 서류"),
+    "성적향상장학": ("성적향상장학금 신청 안내", "성적향상장학금 신청 기간", "장학금 제출 서류"),
+    "장학": ("장학금 신청 안내", "국가장학금 신청", "교내장학금 신청 기간"),
     "졸업": ("졸업요건", "졸업학점", "졸업인증", "전공학점"),
     "수강": ("수강신청", "수강 정정", "수강취소", "수강신청 기간"),
     "학사": ("학사일정", "개강", "종강", "시험 기간"),
@@ -64,6 +67,8 @@ class LangChainRagResult:
     context: str
     expanded_queries: list[str]
     trace_id: str | None = None
+    confidence: float = 0.0
+    low_confidence: bool = False
 
 
 class HybridSearchRetriever(BaseRetriever):
@@ -73,6 +78,7 @@ class HybridSearchRetriever(BaseRetriever):
 
     top_k: int = 5
     category: str | None = None
+    detail: str | None = None
     expand_queries: bool = True
     compress_documents: bool = True
     search_fn: SearchFn = Field(default=search_documents, exclude=True)
@@ -80,25 +86,29 @@ class HybridSearchRetriever(BaseRetriever):
     def _get_relevant_documents(self, query: str, *, run_manager=None) -> list[Document]:
         queries = expand_search_queries(query) if self.expand_queries else [query]
         documents_by_chunk: dict[str, Document] = {}
-        for expanded_query in queries:
-            for result in self.search_fn(
-                query=expanded_query,
-                top_k=self.top_k,
-                category=self.category,
-            ):
+
+        for query_index, expanded_query in enumerate(queries):
+            search_kwargs = {"query": expanded_query, "top_k": self.top_k, "category": self.category}
+            if self.detail is not None:
+                search_kwargs["detail"] = self.detail
+            for result in self.search_fn(**search_kwargs):
                 document = search_result_to_document(result)
-                document.metadata.setdefault("matched_queries", [])
-                document.metadata["matched_queries"].append(expanded_query)
+                _annotate_document_for_query(
+                    document=document,
+                    original_query=query,
+                    matched_query=expanded_query,
+                    query_index=query_index,
+                )
                 key = str(document.metadata.get("chunk_id") or document.page_content)
                 existing = documents_by_chunk.get(key)
-                if existing is None or float(document.metadata.get("score") or 0) > float(
-                    existing.metadata.get("score") or 0
-                ):
+                if existing is None:
                     documents_by_chunk[key] = document
+                    continue
+                _merge_document_metadata(existing, document)
 
         documents = sorted(
             documents_by_chunk.values(),
-            key=lambda document: float(document.metadata.get("score") or 0.0),
+            key=lambda document: float(document.metadata.get("rerank_score") or 0.0),
             reverse=True,
         )[: self.top_k]
         if self.compress_documents:
@@ -107,7 +117,7 @@ class HybridSearchRetriever(BaseRetriever):
 
 
 class ChromaVectorStoreRetriever(BaseRetriever):
-    """LangChain adapter for the configured Chroma vector store."""
+    """LangChain adapter for direct Chroma vector search."""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -119,7 +129,7 @@ class ChromaVectorStoreRetriever(BaseRetriever):
         rows = query_embedded_chunks(
             query_embedding=embed_text(query),
             top_k=self.top_k,
-            category=self.category,
+            domain=self.category,
             collection_name=self.collection_name,
         )
         ranked_rows = rerank_candidate_rows(rows=rows, query=query, category=self.category)
@@ -131,35 +141,39 @@ def answer_with_langchain_rag(
     *,
     top_k: int = 5,
     category: str | None = None,
+    detail: str | None = None,
     search_fn: SearchFn = search_documents,
     answer_fn: AnswerFn = get_gemini_response,
     retriever: BaseRetriever | None = None,
     trace_id: str | None = None,
     trace_path: str | None = None,
+    confidence_threshold: float = DEFAULT_RAG_CONFIDENCE_THRESHOLD,
 ) -> LangChainRagResult:
-    effective_retriever = retriever or HybridSearchRetriever(
-        top_k=top_k,
-        category=category,
-        search_fn=search_fn,
-    )
-    chain = build_rag_chain(retriever=effective_retriever, answer_fn=answer_fn)
+    effective_retriever = retriever or HybridSearchRetriever(top_k=top_k, category=category, detail=detail, search_fn=search_fn)
+    chain = build_rag_chain(retriever=effective_retriever, answer_fn=answer_fn, confidence_threshold=confidence_threshold)
     expanded_queries = expand_search_queries(user_input)
-    run_config = {
-        "run_name": "kgu_langchain_rag",
-        "tags": ["kgu", "rag", "langchain"],
-        "metadata": {
-            "trace_id": trace_id,
-            "expanded_queries": expanded_queries,
-            "retriever": effective_retriever.__class__.__name__,
+    result = chain.invoke(
+        user_input,
+        config={
+            "run_name": "kgu_langchain_rag",
+            "tags": ["kgu", "rag", "langchain"],
+            "metadata": {
+                "trace_id": trace_id,
+                "expanded_queries": expanded_queries,
+                "retriever": effective_retriever.__class__.__name__,
+                "category": category,
+                "detail": detail,
+            },
         },
-    }
-    result = chain.invoke(user_input, config=run_config)
+    )
     traced = LangChainRagResult(
         reply=result.reply,
         documents=result.documents,
         context=result.context,
         expanded_queries=expanded_queries,
         trace_id=trace_id,
+        confidence=result.confidence,
+        low_confidence=result.low_confidence,
     )
     trace_rag_result(user_input, traced, trace_path=trace_path)
     return traced
@@ -169,24 +183,16 @@ def build_rag_chain(
     *,
     retriever: BaseRetriever,
     answer_fn: AnswerFn = get_gemini_response,
+    confidence_threshold: float = DEFAULT_RAG_CONFIDENCE_THRESHOLD,
 ):
     return (
-        RunnableParallel(
-            {
-                "question": RunnablePassthrough(),
-                "documents": retriever,
-            }
-        )
+        RunnableParallel({"question": RunnablePassthrough(), "documents": retriever})
         | RunnableLambda(_prepare_prompt_payload)
-        | RunnableLambda(lambda payload: _generate_answer(payload, answer_fn=answer_fn))
+        | RunnableLambda(lambda payload: _generate_answer(payload, answer_fn=answer_fn, confidence_threshold=confidence_threshold))
     )
 
 
-def expand_search_queries(
-    query: str,
-    *,
-    max_queries: int = DEFAULT_EXPANDED_QUERY_LIMIT,
-) -> list[str]:
+def expand_search_queries(query: str, *, max_queries: int = DEFAULT_EXPANDED_QUERY_LIMIT) -> list[str]:
     normalized = query.casefold()
     expanded = [query]
     for keyword, alternatives in DOMAIN_QUERY_EXPANSIONS.items():
@@ -215,11 +221,7 @@ def compress_documents_for_query(
     for document in documents:
         sentences = _split_sentences(document.page_content)
         scored_sentences = [
-            (
-                _sentence_overlap_score(sentence, tokens),
-                index,
-                sentence,
-            )
+            (_sentence_overlap_score(sentence, tokens), index, sentence)
             for index, sentence in enumerate(sentences)
         ]
         selected = [
@@ -245,15 +247,21 @@ def search_result_to_document(result: SearchResult) -> Document:
         "title": result.title,
         "source_url": result.source_url,
         "score": result.score,
+        "retrieval_score": result.score,
     }
-    if result.category:
-        metadata["category"] = result.category
+    result_domain = result.domain or result.category
+    if result_domain:
+        metadata["domain"] = result_domain
     if result.department:
         metadata["department"] = result.department
     if result.published_at:
         metadata["published_at"] = result.published_at
     if result.score_breakdown:
         metadata["score_breakdown"] = result.score_breakdown
+        metadata["confidence"] = result.score_breakdown.get("confidence", result.score)
+        metadata["fallback_used"] = bool(result.score_breakdown.get("fallback_used"))
+    else:
+        metadata["confidence"] = result.score
     return Document(page_content=result.text, metadata=metadata)
 
 
@@ -264,41 +272,13 @@ def row_to_document(row: dict) -> Document:
         "title": row.get("title", ""),
         "source_url": row.get("source_url", ""),
         "score": row.get("score", 0.0),
+        "retrieval_score": row.get("score", 0.0),
+        "confidence": row.get("score_breakdown", {}).get("confidence", row.get("score", 0.0)),
     }
-    for key in ("category", "department", "published_at", "score_breakdown"):
+    for key in ("domain", "category", "department", "published_at", "score_breakdown"):
         if row.get(key):
             metadata[key] = row[key]
     return Document(page_content=row.get("text", ""), metadata=metadata)
-
-
-def _prepare_prompt_payload(payload: dict) -> dict:
-    documents = payload["documents"]
-    question = payload["question"]
-    context = format_documents(documents)
-    prompt = RAG_PROMPT.format(context=context, question=question)
-    return {
-        "question": question,
-        "documents": documents,
-        "context": context,
-        "prompt": prompt,
-    }
-
-
-def _generate_answer(payload: dict, *, answer_fn: AnswerFn) -> LangChainRagResult:
-    documents = payload["documents"]
-    if not documents:
-        return LangChainRagResult(
-            reply="관련 문서를 찾지 못했습니다. 질문을 조금 더 구체적으로 입력해 주세요.",
-            documents=[],
-            context="",
-            expanded_queries=[],
-        )
-    return LangChainRagResult(
-        reply=answer_fn(payload["prompt"]),
-        documents=documents,
-        context=payload["context"],
-        expanded_queries=[],
-    )
 
 
 def format_documents(documents: list[Document]) -> str:
@@ -309,9 +289,11 @@ def format_documents(documents: list[Document]) -> str:
             f"[{index}] {metadata.get('title', 'Untitled')}",
             f"source_url: {metadata.get('source_url')}",
             f"score: {metadata.get('score')}",
+            f"rerank_score: {metadata.get('rerank_score', metadata.get('score'))}",
+            f"confidence: {metadata.get('confidence', metadata.get('score'))}",
         ]
-        if metadata.get("category"):
-            lines.append(f"category: {metadata['category']}")
+        if metadata.get("domain"):
+            lines.append(f"domain: {metadata['domain']}")
         if metadata.get("department"):
             lines.append(f"department: {metadata['department']}")
         if metadata.get("published_at"):
@@ -323,12 +305,7 @@ def format_documents(documents: list[Document]) -> str:
     return "\n\n".join(blocks)
 
 
-def trace_rag_result(
-    query: str,
-    result: LangChainRagResult,
-    *,
-    trace_path: str | None = None,
-) -> None:
+def trace_rag_result(query: str, result: LangChainRagResult, *, trace_path: str | None = None) -> None:
     path = trace_path or os.getenv("RAG_TRACE_PATH") or DEFAULT_TRACE_PATH
     if os.getenv("RAG_TRACE_ENABLED", "true").casefold() in {"0", "false", "no"}:
         return
@@ -338,14 +315,19 @@ def trace_rag_result(
         "query": query,
         "expanded_queries": result.expanded_queries,
         "document_count": len(result.documents),
+        "confidence": result.confidence,
+        "low_confidence": result.low_confidence,
         "documents": [
             {
                 "chunk_id": document.metadata.get("chunk_id"),
                 "title": document.metadata.get("title"),
                 "source_url": document.metadata.get("source_url"),
                 "score": document.metadata.get("score"),
+                "rerank_score": document.metadata.get("rerank_score"),
+                "confidence": document.metadata.get("confidence"),
                 "matched_queries": document.metadata.get("matched_queries", []),
                 "compressed": document.metadata.get("compressed", False),
+                "fallback_used": document.metadata.get("fallback_used", False),
             }
             for document in result.documents
         ],
@@ -357,8 +339,157 @@ def trace_rag_result(
         file.write(json.dumps(payload, ensure_ascii=False) + "\n")
 
 
+def _prepare_prompt_payload(payload: dict) -> dict:
+    documents = payload["documents"]
+    question = payload["question"]
+    context = format_documents(documents)
+    prompt = RAG_PROMPT.format(context=context, question=question)
+    return {"question": question, "documents": documents, "context": context, "prompt": prompt}
+
+
+def _generate_answer(payload: dict, *, answer_fn: AnswerFn, confidence_threshold: float) -> LangChainRagResult:
+    documents = payload["documents"]
+    if not documents:
+        return LangChainRagResult(
+            reply="관련 문서를 찾지 못했습니다. 질문을 조금 더 구체적으로 입력해 주세요.",
+            documents=[],
+            context="",
+            expanded_queries=[],
+            confidence=0.0,
+            low_confidence=True,
+        )
+
+    confidence = max(_document_confidence(document) for document in documents)
+    if confidence < confidence_threshold:
+        return LangChainRagResult(
+            reply=_low_confidence_reply(documents),
+            documents=documents,
+            context=payload["context"],
+            expanded_queries=[],
+            confidence=round(confidence, 6),
+            low_confidence=True,
+        )
+
+    reply = answer_fn(payload["prompt"])
+    reply = ensure_source_urls(reply, documents)
+    return LangChainRagResult(
+        reply=reply,
+        documents=documents,
+        context=payload["context"],
+        expanded_queries=[],
+        confidence=round(confidence, 6),
+        low_confidence=False,
+    )
+
+
+def ensure_source_urls(reply: str, documents: list[Document]) -> str:
+    urls = []
+    for document in documents:
+        url = str(document.metadata.get("source_url") or "").strip()
+        if url and url not in urls:
+            urls.append(url)
+    if not urls:
+        return reply
+    missing_urls = [url for url in urls if url not in reply]
+    if not missing_urls and "출처" in reply:
+        return reply
+    source_lines = ["", "", "출처:"] + [f"- {url}" for url in urls]
+    return reply.rstrip() + "\n".join(source_lines)
+
+
+def _low_confidence_reply(documents: list[Document]) -> str:
+    lines = [
+        "검색된 문서의 관련도가 낮아서 확정 답변은 제한합니다.",
+        "아래 출처에서 직접 확인해 주세요.",
+        "",
+        "출처:",
+    ]
+    seen = set()
+    for document in documents:
+        title = str(document.metadata.get("title") or "문서")
+        url = str(document.metadata.get("source_url") or "").strip()
+        if not url or url in seen:
+            continue
+        seen.add(url)
+        lines.append(f"- {title}: {url}")
+    return "\n".join(lines)
+
+
+def _annotate_document_for_query(*, document: Document, original_query: str, matched_query: str, query_index: int) -> None:
+    metadata = document.metadata
+    metadata.setdefault("matched_queries", [])
+    metadata["matched_queries"].append(matched_query)
+    metadata["best_query_index"] = min(int(metadata.get("best_query_index", query_index)), query_index)
+    metadata["query_relevance"] = _document_query_relevance(original_query, document)
+    metadata["rerank_score"] = _document_rerank_score(
+        retrieval_score=float(metadata.get("score") or 0.0),
+        query_relevance=float(metadata["query_relevance"]),
+        query_index=query_index,
+    )
+
+
+def _merge_document_metadata(existing: Document, candidate: Document) -> None:
+    existing_queries = list(existing.metadata.get("matched_queries", []))
+    for query in candidate.metadata.get("matched_queries", []):
+        if query not in existing_queries:
+            existing_queries.append(query)
+    existing.metadata["matched_queries"] = existing_queries
+
+    if float(candidate.metadata.get("rerank_score") or 0.0) > float(existing.metadata.get("rerank_score") or 0.0):
+        preserved_queries = existing.metadata["matched_queries"]
+        existing.page_content = candidate.page_content
+        existing.metadata.update(candidate.metadata)
+        existing.metadata["matched_queries"] = preserved_queries
+
+
+def _document_rerank_score(*, retrieval_score: float, query_relevance: float, query_index: int) -> float:
+    expansion_penalty = min(query_index * 0.08, 0.24)
+    original_bonus = 0.08 if query_index == 0 else 0.0
+    score = retrieval_score * 0.55 + query_relevance * 0.37 + original_bonus - expansion_penalty
+    return round(max(min(score, 1.0), 0.0), 6)
+
+
+def _document_query_relevance(query: str, document: Document) -> float:
+    tokens = _tokenize(query)
+    if not tokens:
+        return 0.0
+    title = str(document.metadata.get("title") or "")
+    title_text = title.casefold()
+    body_text = document.page_content.casefold()
+    matched = 0.0
+    for token in tokens:
+        if token in title_text:
+            matched += 1.5
+        elif token in body_text:
+            matched += 0.8
+    exact_bonus = _long_token_bonus(tokens=tokens, title=title_text, text=body_text)
+    return min((matched / (len(tokens) * 1.5)) + exact_bonus, 1.0)
+
+
+def _long_token_bonus(*, tokens: list[str], title: str, text: str) -> float:
+    bonus = 0.0
+    for token in tokens:
+        if len(token) < 4:
+            continue
+        if token in title:
+            bonus += 0.08
+        elif token in text:
+            bonus += 0.04
+    return min(bonus, 0.25)
+
+
+def _document_confidence(document: Document) -> float:
+    metadata = document.metadata
+    if metadata.get("confidence") is not None:
+        return float(metadata.get("confidence") or 0.0)
+    breakdown = metadata.get("score_breakdown") or {}
+    if breakdown.get("confidence") is not None:
+        return float(breakdown.get("confidence") or 0.0)
+    return float(metadata.get("score") or 0.0)
+
+
 def _split_sentences(text: str) -> list[str]:
-    sentences = [sentence.strip() for sentence in re.split(r"(?<=[.!?。！？\n])\s+", text) if sentence.strip()]
+    sentences = [sentence.strip() for sentence in re.split(r"(?<=[.!?。！？])\s+", text) if sentence.strip()]
     return sentences or [text.strip()]
 
 
@@ -370,8 +501,4 @@ def _sentence_overlap_score(sentence: str, query_tokens: set[str]) -> float:
 
 
 def _tokenize(text: str) -> list[str]:
-    return [
-        token.casefold()
-        for token in re.findall(r"[0-9A-Za-z가-힣]+", text)
-        if len(token) >= 2
-    ]
+    return [token.casefold() for token in re.findall(r"[0-9A-Za-z가-힣]+", text) if len(token) >= 2]

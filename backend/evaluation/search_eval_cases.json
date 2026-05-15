@@ -1,0 +1,355 @@
+﻿{
+  "cases": [
+    {
+      "query": "성적향상장학금 신청 기간과 기준은 어디서 확인해?",
+      "category": "scholarship",
+      "expected_terms": ["성적향상장학금", "장학금"]
+    },
+    {
+      "query": "교내장학금 종류와 신청 자격 알려줘",
+      "category": "scholarship",
+      "expected_terms": ["교내장학", "장학금"]
+    },
+    {
+      "query": "국가장학금 신청 안내 공지 찾아줘",
+      "category": "scholarship",
+      "expected_terms": ["국가장학금", "장학금"]
+    },
+    {
+      "query": "등록금 감면 장학금은 어떤 기준이야?",
+      "category": "scholarship",
+      "expected_terms": ["등록금", "장학"]
+    },
+    {
+      "query": "학자금 지원 관련 안내 어디 있어?",
+      "category": "scholarship",
+      "expected_terms": ["학자금", "지원"]
+    },
+    {
+      "query": "장학금 제출 서류는 뭐가 필요해?",
+      "category": "scholarship",
+      "expected_terms": ["장학금", "제출"]
+    },
+    {
+      "query": "장학금 선발 대상자 공지 확인하고 싶어",
+      "category": "scholarship",
+      "expected_terms": ["장학금", "대상자"]
+    },
+    {
+      "query": "성적 기준으로 받을 수 있는 장학금 알려줘",
+      "category": "scholarship",
+      "expected_terms": ["성적", "장학금"]
+    },
+    {
+      "query": "장학금 신청서 양식은 어디서 받아?",
+      "category": "scholarship",
+      "expected_terms": ["장학금", "신청서"]
+    },
+    {
+      "query": "장학금 관련 문의처나 담당 부서 안내 찾아줘",
+      "category": "scholarship",
+      "expected_terms": ["장학금", "문의"]
+    },
+    {
+      "query": "졸업요건이랑 전공 학점 기준 알려줘",
+      "category": "graduation",
+      "expected_terms": ["졸업", "전공"]
+    },
+    {
+      "query": "졸업인증제 기준은 어디서 확인해?",
+      "category": "graduation",
+      "expected_terms": ["졸업인증", "졸업"]
+    },
+    {
+      "query": "교양 학점 졸업 기준 알려줘",
+      "category": "graduation",
+      "expected_terms": ["교양", "졸업"]
+    },
+    {
+      "query": "졸업 학점 계산 기준이 궁금해",
+      "category": "graduation",
+      "expected_terms": ["졸업", "학점"]
+    },
+    {
+      "query": "복수전공 졸업 요건 찾아줘",
+      "category": "graduation",
+      "expected_terms": ["복수전공", "졸업"]
+    },
+    {
+      "query": "부전공 졸업 기준은 뭐야?",
+      "category": "graduation",
+      "expected_terms": ["부전공", "졸업"]
+    },
+    {
+      "query": "졸업사정 관련 공지 알려줘",
+      "category": "graduation",
+      "expected_terms": ["졸업사정", "졸업"]
+    },
+    {
+      "query": "학위 수여 관련 일정 찾아줘",
+      "category": "graduation",
+      "expected_terms": ["학위", "졸업"]
+    },
+    {
+      "query": "졸업논문이나 졸업시험 안내 있어?",
+      "category": "graduation",
+      "expected_terms": ["졸업", "시험"]
+    },
+    {
+      "query": "졸업 관련 신청 기간 확인해줘",
+      "category": "graduation",
+      "expected_terms": ["졸업", "신청"]
+    },
+    {
+      "query": "수강신청 기간과 수강 정정 기간은 언제야?",
+      "category": "academic_calendar",
+      "expected_terms": ["수강신청", "수강"]
+    },
+    {
+      "query": "학사일정에서 개강일과 종강일 찾아줘",
+      "category": "academic_calendar",
+      "expected_terms": ["학사일정", "개강"]
+    },
+    {
+      "query": "성적공시 기간 알려줘",
+      "category": "academic_calendar",
+      "expected_terms": ["성적공시", "성적"]
+    },
+    {
+      "query": "기말고사 시험 기간은 어디서 확인해?",
+      "category": "academic_calendar",
+      "expected_terms": ["시험", "기말"]
+    },
+    {
+      "query": "중간고사 기간 알려줘",
+      "category": "academic_calendar",
+      "expected_terms": ["중간고사", "시험"]
+    },
+    {
+      "query": "휴학 신청 기간과 복학 신청 기간 찾아줘",
+      "category": "academic_calendar",
+      "expected_terms": ["휴학", "복학"]
+    },
+    {
+      "query": "등록 기간이 학사일정에 언제로 되어 있어?",
+      "category": "academic_calendar",
+      "expected_terms": ["등록", "학사일정"]
+    },
+    {
+      "query": "계절학기 수강신청 안내 찾아줘",
+      "category": "academic_calendar",
+      "expected_terms": ["계절학기", "수강신청"]
+    },
+    {
+      "query": "수강취소 신청 기간 알려줘",
+      "category": "academic_calendar",
+      "expected_terms": ["수강취소", "수강"]
+    },
+    {
+      "query": "강의평가 기간은 언제야?",
+      "category": "academic_calendar",
+      "expected_terms": ["강의평가", "기간"]
+    },
+    {
+      "query": "신청서 양식이나 첨부파일 자료실 어디서 봐?",
+      "category": "document_materials",
+      "expected_terms": ["자료실", "신청서"]
+    },
+    {
+      "query": "휴학원 양식 파일 찾아줘",
+      "category": "document_materials",
+      "expected_terms": ["휴학", "양식"]
+    },
+    {
+      "query": "복학 신청서 서식은 어디 있어?",
+      "category": "document_materials",
+      "expected_terms": ["복학", "신청서"]
+    },
+    {
+      "query": "장학금 신청서 PDF나 HWP 파일 있나?",
+      "category": "document_materials",
+      "expected_terms": ["장학금", "신청서"]
+    },
+    {
+      "query": "졸업 관련 제출서류 양식 찾아줘",
+      "category": "document_materials",
+      "expected_terms": ["졸업", "제출서류"]
+    },
+    {
+      "query": "현장실습 신청서 파일 받아야 해",
+      "category": "document_materials",
+      "expected_terms": ["현장실습", "신청서"]
+    },
+    {
+      "query": "학과 자료실에 있는 첨부파일 안내 찾아줘",
+      "category": "document_materials",
+      "expected_terms": ["자료실", "첨부파일"]
+    },
+    {
+      "query": "서식 자료실에서 위임장 양식 검색해줘",
+      "category": "document_materials",
+      "expected_terms": ["서식", "위임장"]
+    },
+    {
+      "query": "전과 신청서 양식은 어디서 다운로드해?",
+      "category": "document_materials",
+      "expected_terms": ["전과", "신청서"]
+    },
+    {
+      "query": "증명서 발급 관련 양식 자료 찾아줘",
+      "category": "document_materials",
+      "expected_terms": ["증명서", "양식"]
+    },
+    {
+      "query": "현장실습이나 취업지원 공지는 어디서 확인해?",
+      "category": "career_support",
+      "expected_terms": ["현장실습", "취업"]
+    },
+    {
+      "query": "인턴 채용 공고 찾아줘",
+      "category": "career_support",
+      "expected_terms": ["인턴", "채용"]
+    },
+    {
+      "query": "취업 비교과 프로그램 안내 알려줘",
+      "category": "career_support",
+      "expected_terms": ["취업", "비교과"]
+    },
+    {
+      "query": "진로 상담 프로그램은 어디서 확인해?",
+      "category": "career_support",
+      "expected_terms": ["진로", "상담"]
+    },
+    {
+      "query": "취업박람회 관련 공지 찾아줘",
+      "category": "career_support",
+      "expected_terms": ["취업", "박람회"]
+    },
+    {
+      "query": "채용 설명회 일정 알려줘",
+      "category": "career_support",
+      "expected_terms": ["채용", "설명회"]
+    },
+    {
+      "query": "현장실습 신청 기간이 궁금해",
+      "category": "career_support",
+      "expected_terms": ["현장실습", "신청"]
+    },
+    {
+      "query": "커리어 관련 프로그램 안내 검색해줘",
+      "category": "career_support",
+      "expected_terms": ["커리어", "프로그램"]
+    },
+    {
+      "query": "취업지원센터 공지 알려줘",
+      "category": "career_support",
+      "expected_terms": ["취업지원", "공지"]
+    },
+    {
+      "query": "기업 추천 채용 관련 안내 있어?",
+      "category": "career_support",
+      "expected_terms": ["추천", "채용"]
+    },
+    {
+      "query": "기숙사 신청 관련 안내 알려줘",
+      "category": "student_life",
+      "expected_terms": ["기숙사", "신청"]
+    },
+    {
+      "query": "생활관 입사 신청 기간 찾아줘",
+      "category": "student_life",
+      "expected_terms": ["생활관", "입사"]
+    },
+    {
+      "query": "학생증 발급 안내 알려줘",
+      "category": "student_life",
+      "expected_terms": ["학생증", "발급"]
+    },
+    {
+      "query": "동아리 모집 공지 검색해줘",
+      "category": "student_life",
+      "expected_terms": ["동아리", "모집"]
+    },
+    {
+      "query": "학생 상담 프로그램 안내 있어?",
+      "category": "student_life",
+      "expected_terms": ["상담", "학생"]
+    },
+    {
+      "query": "통학버스 관련 안내 어디서 확인해?",
+      "category": "student_life",
+      "expected_terms": ["통학", "버스"]
+    },
+    {
+      "query": "학생 식당 운영 시간 안내 찾아줘",
+      "category": "student_life",
+      "expected_terms": ["식당", "운영"]
+    },
+    {
+      "query": "복지시설 이용 안내 알려줘",
+      "category": "student_life",
+      "expected_terms": ["복지", "시설"]
+    },
+    {
+      "query": "편의시설 위치나 이용 안내 검색해줘",
+      "category": "student_life",
+      "expected_terms": ["편의시설", "이용"]
+    },
+    {
+      "query": "학생생활 관련 공지 모아서 알려줘",
+      "category": "student_life",
+      "expected_terms": ["학생생활", "공지"]
+    },
+    {
+      "query": "최근 학사 공지사항 알려줘",
+      "category": "general_notice",
+      "expected_terms": ["공지", "학사"]
+    },
+    {
+      "query": "모집 안내 공지 찾아줘",
+      "category": "general_notice",
+      "expected_terms": ["모집", "안내"]
+    },
+    {
+      "query": "신청 접수 기간이 있는 공지 검색해줘",
+      "category": "general_notice",
+      "expected_terms": ["신청", "접수"]
+    },
+    {
+      "query": "대상자 발표 공지 어디 있어?",
+      "category": "general_notice",
+      "expected_terms": ["대상자", "발표"]
+    },
+    {
+      "query": "학과 공지사항 확인하고 싶어",
+      "category": "general_notice",
+      "expected_terms": ["학과", "공지"]
+    },
+    {
+      "query": "전공 공지에서 안내문 찾아줘",
+      "category": "general_notice",
+      "expected_terms": ["전공", "공지"]
+    },
+    {
+      "query": "대학 공지 중 제출 기한 있는 글 찾아줘",
+      "category": "general_notice",
+      "expected_terms": ["제출", "기한"]
+    },
+    {
+      "query": "전체 공지에서 자격 조건 있는 안내 찾아줘",
+      "category": "general_notice",
+      "expected_terms": ["자격", "안내"]
+    },
+    {
+      "query": "학교 공지사항 최신 안내 알려줘",
+      "category": "general_notice",
+      "expected_terms": ["공지사항", "안내"]
+    },
+    {
+      "query": "학과별 공지 자료는 어디서 확인해?",
+      "category": "general_notice",
+      "expected_terms": ["학과별", "공지"]
+    }
+  ]
+}
+

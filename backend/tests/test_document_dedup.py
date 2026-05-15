@@ -106,3 +106,28 @@ def test_select_latest_documents_keeps_distinct_notices_with_same_title() -> Non
     assert {document.doc_id for document in result.documents} == {"first", "second"}
     assert result.exact_duplicates_removed == 0
     assert result.version_duplicates_removed == 0
+
+
+def test_select_latest_documents_treats_updated_title_as_same_notice() -> None:
+    now = datetime(2026, 4, 10, 12, 0, 0)
+    documents = [
+        _build_document(
+            doc_id="original",
+            source_url="https://example.com/notice/1?pageIndex=1",
+            title="Scholarship Notice",
+            content="important scholarship information https://example.com/file.pdf " * 10,
+            collected_at=now,
+        ),
+        _build_document(
+            doc_id="updated",
+            source_url="https://example.com/notice/1?pageIndex=2",
+            title="Scholarship Notice (수정)",
+            content="important scholarship information https://example.com/file2.pdf " * 10,
+            collected_at=now + timedelta(minutes=1),
+        ),
+    ]
+
+    result = select_latest_documents(documents)
+
+    assert [document.doc_id for document in result.documents] == ["updated"]
+    assert result.exact_duplicates_removed == 1

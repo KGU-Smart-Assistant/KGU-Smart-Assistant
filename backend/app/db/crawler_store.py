@@ -18,6 +18,7 @@ from app.models import (
     CrawlerSource,
 )
 from app.schemas import Document, DocumentChunk
+from app.services.domain_taxonomy import classify_domain, normalize_domain
 
 
 def store_ingest_source_result(
@@ -44,6 +45,7 @@ def store_ingest_source_result(
     document_count = _upsert_documents(
         db,
         source_name=source_name,
+        source_domain=_source_domain(source),
         documents=documents,
         seen_at=completed_at,
     )
@@ -73,7 +75,7 @@ def _upsert_source(
         db.add(
             CrawlerSource(
                 name=source["name"],
-                category=source.get("category"),
+                domain=_source_domain(source),
                 department=source.get("department"),
                 seed_urls_json=seed_urls_json,
                 status=status,
@@ -83,7 +85,7 @@ def _upsert_source(
         )
         return
 
-    row.category = source.get("category")
+    row.domain = _source_domain(source)
     row.department = source.get("department")
     row.seed_urls_json = seed_urls_json
     row.status = status
@@ -95,10 +97,12 @@ def _upsert_documents(
     db: Session,
     *,
     source_name: str,
+    source_domain: str | None,
     documents: list[Document],
     seen_at: datetime,
 ) -> int:
     for document in documents:
+        domain = _document_domain(document=document, source_name=source_name, source_domain=source_domain)
         content_hash = _hash_text(document.content)
         row = db.get(CrawlerDocument, document.doc_id)
         status = "active"
@@ -113,7 +117,7 @@ def _upsert_documents(
             "content_hash": content_hash,
             "source_type": document.source_type,
             "doc_type": _classify_doc_type(document),
-            "category": document.category,
+            "domain": domain,
             "department": document.department,
             "author_department": document.author_department,
             "published_at": document.published_at,
@@ -227,15 +231,31 @@ def _insert_ingest_run(
 
 
 def _classify_doc_type(document: Document) -> str:
-    if document.category == "academic_schedule":
+    domain = _document_domain(document=document, source_name="")
+    if domain in {"academic_calendar", "course_registration"}:
         return "calendar"
-    if document.category == "faq":
+    if domain == "faq":
         return "faq"
     if document.source_type in {"pdf", "docx", "hwp", "hwpx", "zip", "file"}:
         return "file"
-    if document.category:
-        return document.category
+    if domain:
+        return domain
     return document.source_type
+
+
+def _source_domain(source: dict[str, Any]) -> str | None:
+    return normalize_domain(source.get("domain")) or normalize_domain(source.get("category"))
+
+
+def _document_domain(*, document: Document, source_name: str, source_domain: str | None = None) -> str:
+    return classify_domain(
+        title=document.title,
+        content=document.content,
+        source_url=document.source_url,
+        source_name=source_name,
+        source_domain=getattr(document, "domain", None) or source_domain,
+        legacy_category=getattr(document, "category", None),
+    ).domain
 
 
 def _hash_text(value: str) -> str:
