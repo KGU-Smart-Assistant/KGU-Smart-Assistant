@@ -27,10 +27,12 @@ class ChatDecision:
     db_intent: DbIntent = "unknown"
     reason: str = ""
     rag_domain: str | None = None
+    rag_domains: tuple[str, ...] = ()
     rag_detail: str | None = None
     source_scope: str | None = None
     rag_confidence: float | None = None
     matched_keywords: tuple[str, ...] = ()
+    intent_scores: tuple["RagIntentScore", ...] = ()
 
 
 @dataclass(frozen=True)
@@ -48,19 +50,32 @@ class ChatResult:
     route: ChatRoute
     sources: list[ChatSource] = field(default_factory=list)
     rag_domain: str | None = None
+    rag_domains: tuple[str, ...] = ()
     rag_detail: str | None = None
     source_scope: str | None = None
     rag_confidence: float | None = None
+    matched_keywords: tuple[str, ...] = ()
+    intent_scores: tuple["RagIntentScore", ...] = ()
+    answer_status: Literal["answered", "partial", "insufficient"] = "answered"
+    unverified: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class RagIntentScore:
+    domain: str
+    score: float
     matched_keywords: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
 class RagClassification:
     domain: str
+    domains: tuple[str, ...] = ()
     detail: str = "unknown"
     source_scope: str = "unknown"
     confidence: float = 0.0
     matched_keywords: tuple[str, ...] = ()
+    intent_scores: tuple[RagIntentScore, ...] = ()
 
 
 _PHONE_KEYWORDS = (
@@ -118,6 +133,7 @@ _RAG_DOMAIN_KEYWORDS: dict[str, tuple[str, ...]] = {
     "course_registration": (
         "수강신청",
         "수강 신청",
+        "수강정정",
         "수강 정정",
         "수강취소",
         "수강 취소",
@@ -296,7 +312,7 @@ _RAG_DOMAIN_PRIORITY = {
 }
 _RAG_DETAIL_KEYWORDS: dict[str, tuple[str, ...]] = {
     "period": ("기간", "일정", "언제", "마감", "시기"),
-    "eligibility": ("대상", "자격", "조건", "가능", "지원 대상"),
+    "eligibility": ("대상", "자격", "조건", "가능", "지원 대상", "할 수 있어", "받을 수"),
     "procedure": ("신청", "절차", "방법", "접수", "어떻게"),
     "required_documents": (
         "서류",
@@ -329,7 +345,7 @@ _RAG_DOMAIN_ALLOWED_DETAILS: dict[str, set[str]] = {
     "academic_status": {"period", "eligibility", "procedure", "required_documents", "announcement_lookup", "unknown"},
     "major_change": {"period", "eligibility", "procedure", "required_documents", "announcement_lookup", "unknown"},
     "multi_major": {"period", "eligibility", "procedure", "required_documents", "announcement_lookup", "summary", "unknown"},
-    "graduation": {"eligibility", "procedure", "required_documents", "announcement_lookup", "summary", "unknown"},
+    "graduation": {"period", "eligibility", "procedure", "required_documents", "announcement_lookup", "summary", "unknown"},
     "admission_transfer": {"period", "eligibility", "procedure", "required_documents", "announcement_lookup", "unknown"},
     "teaching_certification": {"period", "eligibility", "procedure", "required_documents", "announcement_lookup", "unknown"},
     "document_materials": {"required_documents", "announcement_lookup", "summary", "unknown"},
@@ -344,6 +360,8 @@ _DEPARTMENT_SCOPE_KEYWORDS = tuple(
     for keyword in _RAG_DOMAIN_KEYWORDS["department_notice"]
     if keyword != "전공"
 )
+MIN_GROUNDED_RESULT_SCORE = 0.18
+MIN_RAG_INTENT_SCORE = 0.30
 
 
 def answer_chat(user_input: str, db: Session) -> ChatResult:
@@ -430,6 +448,7 @@ def _answer_from_rag(user_input: str, decision: ChatDecision) -> ChatResult:
             query=user_input,
             top_k=5,
             rag_domain=decision.rag_domain,
+            rag_domains=list(decision.rag_domains),
             rag_detail=decision.rag_detail,
             source_scope=decision.source_scope,
         )
@@ -443,9 +462,13 @@ def _answer_from_rag(user_input: str, decision: ChatDecision) -> ChatResult:
             route="rag",
             rag_domain=decision.rag_domain,
             rag_detail=decision.rag_detail,
+            rag_domains=decision.rag_domains,
             source_scope=decision.source_scope,
             rag_confidence=decision.rag_confidence,
             matched_keywords=decision.matched_keywords,
+            intent_scores=decision.intent_scores,
+            answer_status="insufficient",
+            unverified=(_unverified_reason(decision),),
         )
 
     if not results:
@@ -454,33 +477,56 @@ def _answer_from_rag(user_input: str, decision: ChatDecision) -> ChatResult:
             intent="RAG",
             route="rag",
             rag_domain=decision.rag_domain,
+            rag_domains=decision.rag_domains,
             rag_detail=decision.rag_detail,
             source_scope=decision.source_scope,
             rag_confidence=decision.rag_confidence,
             matched_keywords=decision.matched_keywords,
+            intent_scores=decision.intent_scores,
+            answer_status="insufficient",
+            unverified=(_unverified_reason(decision),),
         )
 
-    context = _format_rag_context(results)
-    reply = get_gemini_response_with_context(user_input=user_input, context=context)
-    sources = [
-        ChatSource(
-            type="document",
-            title=result.title,
-            source_url=result.source_url,
-            score=result.score,
-        )
-        for result in results
+    grounded_results = [
+        result for result in results if result.score >= MIN_GROUNDED_RESULT_SCORE
     ]
+    if not grounded_results:
+        return ChatResult(
+            reply=_insufficient_rag_reply(decision),
+            intent="RAG",
+            route="rag",
+            sources=_chat_sources_from_results(results),
+            rag_domain=decision.rag_domain,
+            rag_domains=decision.rag_domains,
+            rag_detail=decision.rag_detail,
+            source_scope=decision.source_scope,
+            rag_confidence=decision.rag_confidence,
+            matched_keywords=decision.matched_keywords,
+            intent_scores=decision.intent_scores,
+            answer_status="insufficient",
+            unverified=(_unverified_reason(decision),),
+        )
+
+    answer_status: Literal["answered", "partial", "insufficient"] = (
+        "partial" if len(grounded_results) < len(results) else "answered"
+    )
+    context = _format_rag_context(grounded_results)
+    reply = get_gemini_response_with_context(user_input=user_input, context=context)
+    sources = _chat_sources_from_results(results)
     return ChatResult(
         reply=reply,
         intent="RAG",
         route="rag",
         sources=sources,
         rag_domain=decision.rag_domain,
+        rag_domains=decision.rag_domains,
         rag_detail=decision.rag_detail,
         source_scope=decision.source_scope,
         rag_confidence=decision.rag_confidence,
         matched_keywords=decision.matched_keywords,
+        intent_scores=decision.intent_scores,
+        answer_status=answer_status,
+        unverified=() if answer_status == "answered" else (_unverified_reason(decision),),
     )
 
 
@@ -550,10 +596,12 @@ def _attach_rag_classification(user_input: str, decision: ChatDecision) -> ChatD
             db_intent=decision.db_intent,
             reason=decision.reason,
             rag_domain="unknown",
+            rag_domains=(),
             rag_detail="unknown",
             source_scope="unknown",
             rag_confidence=0.0,
             matched_keywords=(),
+            intent_scores=(),
         )
 
     return ChatDecision(
@@ -561,10 +609,12 @@ def _attach_rag_classification(user_input: str, decision: ChatDecision) -> ChatD
         db_intent=decision.db_intent,
         reason=decision.reason,
         rag_domain=rag_classification.domain,
+        rag_domains=rag_classification.domains,
         rag_detail=rag_classification.detail,
         source_scope=rag_classification.source_scope,
         rag_confidence=rag_classification.confidence,
         matched_keywords=rag_classification.matched_keywords,
+        intent_scores=rag_classification.intent_scores,
     )
 
 
@@ -593,6 +643,7 @@ def _classify_rag_query(normalized_text: str) -> RagClassification | None:
     count = len(domain_keywords)
     if count <= 0:
         return None
+    intent_scores = _rank_rag_intents(matches)
 
     detail_matches = [
         (
@@ -614,13 +665,53 @@ def _classify_rag_query(normalized_text: str) -> RagClassification | None:
         source_scope=source_scope,
     )
     matched_keywords = tuple(dict.fromkeys((*domain_keywords, *detail_keywords)))
+    if source_scope == "department" and "department_notice" not in {
+        score.domain for score in intent_scores
+    }:
+        intent_scores.append(
+            RagIntentScore(
+                domain="department_notice",
+                score=MIN_RAG_INTENT_SCORE,
+                matched_keywords=_matched_keywords(
+                    normalized_text,
+                    _DEPARTMENT_SCOPE_KEYWORDS,
+                ),
+            )
+        )
+        intent_scores = sorted(intent_scores, key=lambda item: item.score, reverse=True)[:3]
+
     return RagClassification(
         domain=domain,
+        domains=tuple(score.domain for score in intent_scores),
         detail=detail,
         source_scope=source_scope,
         confidence=confidence,
         matched_keywords=matched_keywords,
+        intent_scores=tuple(intent_scores),
     )
+
+
+def _rank_rag_intents(
+    matches: list[tuple[str, tuple[str, ...], int]],
+) -> list[RagIntentScore]:
+    scored: list[RagIntentScore] = []
+    max_priority = max(_RAG_DOMAIN_PRIORITY.values(), default=1)
+    for domain, keywords, priority in matches:
+        if not keywords:
+            continue
+        keyword_score = min(len(keywords) / 3, 1.0)
+        priority_score = priority / max_priority
+        score = round((keyword_score * 0.75) + (priority_score * 0.25), 3)
+        if score < MIN_RAG_INTENT_SCORE:
+            continue
+        scored.append(
+            RagIntentScore(
+                domain=domain,
+                score=score,
+                matched_keywords=keywords,
+            )
+        )
+    return sorted(scored, key=lambda item: item.score, reverse=True)[:3]
 
 
 def _classify_source_scope(normalized_text: str) -> str:
@@ -694,6 +785,81 @@ def _parse_decision(raw: str) -> ChatDecision | None:
         db_intent = "unknown"
 
     return ChatDecision(route=route, db_intent=db_intent, reason=reason)
+
+
+def _chat_sources_from_results(results: list[SearchResult]) -> list[ChatSource]:
+    return [
+        ChatSource(
+            type="document",
+            title=result.title,
+            source_url=result.source_url,
+            score=result.score,
+        )
+        for result in results
+    ]
+
+
+def _insufficient_rag_reply(decision: ChatDecision) -> str:
+    domain_text = _domain_label(decision.rag_domain)
+    detail_text = _detail_label(decision.rag_detail)
+    if domain_text and detail_text:
+        return (
+            f"{domain_text} 관련 {detail_text} 질문으로 판단되지만, "
+            "현재 검색된 자료에서는 답변에 필요한 근거를 확인할 수 없습니다."
+        )
+    if domain_text:
+        return (
+            f"{domain_text} 관련 질문으로 판단되지만, 현재 검색된 자료에서는 "
+            "답변에 필요한 근거를 확인할 수 없습니다."
+        )
+    return "현재 검색된 자료에서는 답변에 필요한 근거를 확인할 수 없습니다."
+
+
+def _unverified_reason(decision: ChatDecision) -> str:
+    domain_text = _domain_label(decision.rag_domain) or "질문 의도"
+    detail_text = _detail_label(decision.rag_detail)
+    if detail_text:
+        return f"{domain_text}의 {detail_text}에 대한 직접 근거"
+    return f"{domain_text}에 대한 직접 근거"
+
+
+def _domain_label(domain: str | None) -> str | None:
+    labels = {
+        "scholarship": "장학",
+        "course_registration": "수강신청",
+        "academic_calendar": "학사일정",
+        "academic_status": "학적",
+        "major_change": "전과",
+        "multi_major": "다전공",
+        "admission_transfer": "입학/편입",
+        "teaching_certification": "교직",
+        "graduation": "졸업",
+        "tuition": "등록금",
+        "document_materials": "자료/서식",
+        "student_life": "학생생활",
+        "career_support": "진로/취업",
+        "international_exchange": "국제교류",
+        "department_notice": "학과 공지",
+        "general_notice": "일반 공지",
+    }
+    if domain is None or domain == "unknown":
+        return None
+    return labels.get(domain, domain)
+
+
+def _detail_label(detail: str | None) -> str | None:
+    labels = {
+        "period": "기간",
+        "eligibility": "대상/자격",
+        "procedure": "신청 절차",
+        "required_documents": "제출 서류",
+        "benefit": "혜택",
+        "announcement_lookup": "공지 확인",
+        "summary": "요약",
+    }
+    if detail is None or detail == "unknown":
+        return None
+    return labels.get(detail, detail)
 
 
 def _format_rag_context(results: list[SearchResult]) -> str:

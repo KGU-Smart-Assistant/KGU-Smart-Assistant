@@ -15,13 +15,23 @@ class ChatSource(BaseModel):
     score: float | None = None
 
 
+class RagIntentScore(BaseModel):
+    domain: str
+    score: float
+    matched_keywords: list[str] = Field(default_factory=list)
+
+
 class ChatResponse(BaseModel):
     reply: str
     intent: str
     route: Literal["llm", "relational_db", "rag", "weather"] = "llm"
     sources: list[ChatSource] = Field(default_factory=list)
     rag_domain: str | None = None
+    rag_domains: list[str] = Field(default_factory=list)
     rag_detail: str | None = None
     source_scope: str | None = None
     rag_confidence: float | None = None
     matched_keywords: list[str] = Field(default_factory=list)
+    intent_scores: list[RagIntentScore] = Field(default_factory=list)
+    answer_status: Literal["answered", "partial", "insufficient"] = "answered"
+    unverified: list[str] = Field(default_factory=list)

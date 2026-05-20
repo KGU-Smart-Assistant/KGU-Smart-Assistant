@@ -8,6 +8,7 @@ from app.schemas import SearchResponse, SearchResult
 
 DEFAULT_CANDIDATE_MULTIPLIER = 4
 MAX_CANDIDATES = 50
+MAX_RETRIEVAL_CATEGORIES = 3
 
 CATEGORY_WEIGHTS: dict[str, dict[str, float]] = {
     "notice": {"similarity": 0.55, "freshness": 0.30, "title": 0.15},
@@ -36,6 +37,7 @@ def search_documents(
     top_k: int = 5,
     category: Optional[str] = None,
     rag_domain: Optional[str] = None,
+    rag_domains: Optional[List[str]] = None,
     rag_detail: Optional[str] = None,
     source_scope: Optional[str] = None,
 ) -> List[SearchResult]:
@@ -47,18 +49,22 @@ def search_documents(
     query_embedding = embed_text(query)
     candidate_count = _candidate_count(top_k)
     mapped_domain_category = _category_from_rag_domain(rag_domain)
-    retrieval_category = category or mapped_domain_category
+    retrieval_categories = _retrieval_categories(
+        category=category,
+        rag_domain=rag_domain,
+        rag_domains=rag_domains,
+    )
     rerank_category = (
         category
         or mapped_domain_category
         or ("default" if rag_domain is not None else _infer_category(query))
     )
-    rows = query_embedded_chunks(
+    rows = _query_candidate_rows(
         query_embedding=query_embedding,
         top_k=candidate_count,
-        category=retrieval_category,
+        categories=retrieval_categories,
     )
-    if retrieval_category is not None and not rows:
+    if any(category is not None for category in retrieval_categories) and not rows:
         rows = query_embedded_chunks(
             query_embedding=query_embedding,
             top_k=candidate_count,
@@ -104,6 +110,49 @@ def _candidate_count(top_k: int) -> int:
     return min(max(top_k * DEFAULT_CANDIDATE_MULTIPLIER, top_k), MAX_CANDIDATES)
 
 
+def _retrieval_categories(
+    *,
+    category: str | None,
+    rag_domain: str | None,
+    rag_domains: List[str] | None,
+) -> list[str | None]:
+    if category is not None:
+        return [category]
+
+    categories: list[str] = []
+    for domain in [rag_domain, *(rag_domains or [])]:
+        mapped_category = _category_from_rag_domain(domain)
+        if mapped_category and mapped_category not in categories:
+            categories.append(mapped_category)
+
+    if not categories:
+        return [None]
+    return categories[:MAX_RETRIEVAL_CATEGORIES]
+
+
+def _query_candidate_rows(
+    *,
+    query_embedding: List[float],
+    top_k: int,
+    categories: list[str | None],
+) -> List[Dict[str, Any]]:
+    rows_by_chunk_id: dict[str, Dict[str, Any]] = {}
+    for category in categories:
+        rows = query_embedded_chunks(
+            query_embedding=query_embedding,
+            top_k=top_k,
+            category=category,
+        )
+        for row in rows:
+            chunk_id = str(row.get("chunk_id") or "")
+            existing = rows_by_chunk_id.get(chunk_id)
+            if existing is None or _distance_to_score(row.get("distance")) > _distance_to_score(
+                existing.get("distance")
+            ):
+                rows_by_chunk_id[chunk_id] = row
+    return list(rows_by_chunk_id.values())
+
+
 def _rerank_rows(
     *,
     rows: List[Dict[str, Any]],
@@ -119,6 +168,11 @@ def _rerank_rows(
         similarity = _distance_to_score(row.get("distance"))
         freshness = _freshness_score(row.get("published_at"))
         title = _title_match_score(query=query, title=row.get("title") or "")
+        keyword = _keyword_match_score(
+            query=query,
+            title=row.get("title") or "",
+            text=row.get("text") or "",
+        )
         detail = _detail_match_score(
             detail=rag_detail,
             title=row.get("title") or "",
@@ -129,6 +183,7 @@ def _rerank_rows(
             similarity * weights["similarity"]
             + freshness * weights["freshness"]
             + title * weights["title"]
+            + keyword * 0.12
             + detail * 0.10
             + scope * 0.08
         )
@@ -167,6 +222,15 @@ def _title_match_score(*, query: str, title: str) -> float:
         return 0.0
     title_text = title.casefold()
     matched = sum(1 for token in tokens if token in title_text)
+    return matched / len(tokens)
+
+
+def _keyword_match_score(*, query: str, title: str, text: str) -> float:
+    tokens = _tokenize(query)
+    if not tokens:
+        return 0.0
+    haystack = f"{title} {text}".casefold()
+    matched = sum(1 for token in tokens if token in haystack)
     return matched / len(tokens)
 
 
