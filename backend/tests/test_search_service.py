@@ -306,4 +306,3 @@ def test_merge_preserves_vector_and_keyword_signals() -> None:
 
 def test_tokenize_keeps_korean_words() -> None:
     assert search_service._tokenize("졸업요건과 전공 학점") == ["졸업요건과", "전공", "학점"]
-

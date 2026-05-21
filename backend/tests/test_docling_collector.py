@@ -196,4 +196,3 @@ def test_collect_documents_with_docling_falls_back_to_docling_for_scanned_pdf(
     assert documents[0].content == "# Fallback\ncontent"
     assert converter.calls == 1
 
-
