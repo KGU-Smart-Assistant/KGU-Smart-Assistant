@@ -58,6 +58,46 @@ def test_filter_quality_documents_removes_html_listing_pages() -> None:
     assert result.removed_navigation_noise == 1
 
 
+def test_filter_quality_documents_removes_career_list_pages() -> None:
+    document = _document(
+        "행사 수원캠퍼스 서울캠퍼스 캘린더 전체 접수대기중 접수중 운영중 종료 "
+        "번호 프로그램 정보 신청기간 신청 정원 상태 " * 5,
+        title="행사",
+    )
+    document.source_url = "https://job.kyonggi.ac.kr/ko/program/program3/suwon/list/all/3"
+
+    result = filter_quality_documents([document])
+
+    assert result.documents == []
+    assert result.removed_navigation_noise == 1
+
+
+def test_filter_quality_documents_keeps_career_detail_pages() -> None:
+    document = _document(
+        "행사 수원캠퍼스 서울캠퍼스 캘린더 2026년 1학기 상상사진관 무료 이력서 사진촬영 프로그램 "
+        "신청대상 학부생 신청형태 개인 장소 복지관 문의 인재개발처 세부내용 " * 4,
+        title="행사",
+    )
+    document.source_url = "https://job.kyonggi.ac.kr/ko/program/program3/suwon/view/666?p=1"
+
+    result = filter_quality_documents([document])
+
+    assert len(result.documents) == 1
+
+
+def test_filter_quality_documents_removes_student_life_link_directory() -> None:
+    document = _document(
+        "대학소개 입학에서 취업까지 등록 휴학 복학 자원퇴학 전과 복수전공 장학안내 바로가기 " * 6,
+        title="Ⅰ. 대학소개",
+    )
+    document.source_url = "https://www.kyonggi.ac.kr/www/contents.do?key=9346"
+
+    result = filter_quality_documents([document])
+
+    assert result.documents == []
+    assert result.removed_navigation_noise == 1
+
+
 def test_filter_quality_documents_keeps_informative_notice() -> None:
     content = (
         "2026학년도 성적우수장학금 신청 안내입니다. "
@@ -88,10 +128,47 @@ def test_filter_quality_documents_replaces_attachment_with_link_fallback() -> No
     assert result.documents[0].source_url in result.documents[0].content
 
 
+def test_filter_quality_documents_keeps_download_link_curriculum_page() -> None:
+    document = _document(
+        "인공지능전공 교육과정 2025학년도 교육과정 다운로드 미리보기",
+        source_type="html",
+        title="인공지능전공 교육과정",
+    )
+    document.attachment_urls = [
+        "https://www.kyonggi.ac.kr/downloadContentsFile.do?fileNo=1500&key=9122"
+    ]
+
+    result = filter_quality_documents([document])
+
+    assert len(result.documents) == 1
+    assert result.attachment_link_fallbacks == 1
+    assert "다운로드 URL" in result.documents[0].content
+    assert document.attachment_urls[0] in result.documents[0].content
+
+
 def test_normalize_document_text_cleans_whitespace() -> None:
     normalized = normalize_document_text(_document("장학금\n\n신청\t기간"))
 
     assert normalized == "장학금 신청 기간"
+
+
+def test_filter_quality_documents_keeps_normalized_content() -> None:
+    document = _document(
+        "LMS 안내입니다. 온라인 강의와 원격수업을 확인할 수 있습니다. "
+        "문의 전화와 이용 방법을 안내하는 본문입니다. "
+        "학생은 매 학기 개설된 강좌를 확인하고 수업 자료와 공지를 조회할 수 있습니다.\n\n"
+        "콘텐츠 정보 담당부서 원격교육지원센터\n맞춤설정 맞춤정보 어떤 정보를 찾고계시나요?",
+        source_type="html",
+        title="LMS",
+    )
+    document.source_url = "https://www.kyonggi.ac.kr/www/contents.do?key=7799"
+
+    result = filter_quality_documents([document])
+
+    assert len(result.documents) == 1
+    assert "LMS 안내입니다." in result.documents[0].content
+    assert "콘텐츠 정보" not in result.documents[0].content
+    assert "맞춤설정" not in result.documents[0].content
 
 
 def test_sanitize_title_removes_home_markdown_link() -> None:
@@ -119,7 +196,7 @@ def test_is_garbled_text_detects_private_use_characters() -> None:
     assert is_garbled_text("\uf071\uf071\uf071\uf09e\uf09e\uf09e")
 
 
-def test_is_garbled_text_detects_bad_pdf_ocr_cjk_noise() -> None:
+def test_is_garbled_text_detects_bad_pdf_cjk_noise() -> None:
     text = (
         "KGI 2024 01 Q Today 4S HX H全 田 87 田 警巴星暑 77 B201 "
         "召今 对里 箱 研 请对 是 全号 基到 为 号合 草 召今 对里 箱 研 请对 是 全号 "
@@ -129,7 +206,7 @@ def test_is_garbled_text_detects_bad_pdf_ocr_cjk_noise() -> None:
     assert is_garbled_text(text)
 
 
-def test_is_garbled_text_detects_bad_numeric_table_ocr() -> None:
+def test_is_garbled_text_detects_bad_numeric_table_noise() -> None:
     text = (
         "829,000 () *15.208.133 ）21（01-00169888-186-0 2 *11,688,133登71 "
         "221213 *11,611.221 09.17~12.16 *3,088 32212170 企：0 全号 对里 "

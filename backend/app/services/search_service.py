@@ -204,7 +204,7 @@ def _query_keyword_chunks(*, query: str, top_k: int, categories: list[str] | Non
                 stmt = (
                     select(CrawlerDocumentChunk, CrawlerDocument.domain, CrawlerDocument.department, CrawlerDocument.published_at)
                     .join(CrawlerDocument, CrawlerDocument.doc_id == CrawlerDocumentChunk.doc_id)
-                    .where(CrawlerDocumentChunk.status == "active")
+                    .where(CrawlerDocumentChunk.status.in_(("active", "updated")))
                     .where(CrawlerDocument.status.in_(("active", "updated")))
                     .where(or_(*conditions))
                     .order_by(CrawlerDocumentChunk.last_seen_at.desc(), CrawlerDocumentChunk.chunk_id)

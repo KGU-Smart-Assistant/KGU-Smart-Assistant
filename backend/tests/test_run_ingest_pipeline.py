@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from app.crawlers import run_ingest
+from app.crawlers.crawl4ai_collector import _is_allowed_url
 from app.schemas import Document, DocumentChunk
 
 
@@ -210,6 +211,42 @@ def test_build_crawler_config_derives_allowed_path_prefixes_and_skip_images() ->
     assert config.min_published_at == datetime(2018, 1, 1)
     assert config.docling_config.skip_images is True
     assert config.allowed_author_department_filters == ("?먯쑀?꾧났",)
+
+
+def test_build_crawler_config_can_restrict_board_queries_to_seed_pairs() -> None:
+    config = run_ingest.build_crawler_config(
+        {
+            "seed_urls": [
+                "https://www.kyonggi.ac.kr/www/selectBbsNttList.do?bbsNo=684&dc=11R11&key=5259"
+            ],
+            "follow_patterns": ["selectbbsnttlist.do", "selectbbsnttview.do"],
+            "restrict_to_seed_board_queries": True,
+        }
+    )
+
+    allowed_domains = {"kyonggi.ac.kr"}
+
+    assert config.allowed_query_param_filters == ({"bbsno": "684", "key": "5259"},)
+    assert _is_allowed_url(
+        "https://www.kyonggi.ac.kr/www/selectBbsNttList.do?bbsNo=684&key=5259&pageIndex=2",
+        allowed_domains,
+        config,
+    )
+    assert _is_allowed_url(
+        "https://www.kyonggi.ac.kr/www/selectBbsNttView.do?bbsNo=684&key=5259&nttNo=623460",
+        allowed_domains,
+        config,
+    )
+    assert not _is_allowed_url(
+        "https://www.kyonggi.ac.kr/www/selectBbsNttList.do?bbsNo=1206&key=8725",
+        allowed_domains,
+        config,
+    )
+    assert not _is_allowed_url(
+        "https://www.kyonggi.ac.kr/www/selectBbsNttView.do?bbsNo=684&key=5143&nttNo=623460",
+        allowed_domains,
+        config,
+    )
 
 
 def test_classify_source_report_statuses() -> None:

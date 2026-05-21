@@ -93,7 +93,10 @@ def filter_quality_documents(documents: Iterable[Document]) -> DocumentQualityRe
         ):
             removed_low_information += 1
             continue
-        kept.append(document)
+        if normalized == " ".join(document.content.split()):
+            kept.append(document)
+        else:
+            kept.append(document.model_copy(update={"content": normalized}))
 
     return DocumentQualityResult(
         documents=kept,
@@ -117,10 +120,24 @@ def should_use_attachment_link_fallback(
     document: Document,
     normalized_text: str | None = None,
 ) -> bool:
-    return document.source_type in ATTACHMENT_SOURCE_TYPES
+    if document.source_type in ATTACHMENT_SOURCE_TYPES:
+        return True
+    if not document.attachment_urls:
+        return False
+    normalized = normalized_text or normalize_document_text(document)
+    return _is_download_link_page(normalized)
 
 
 def build_attachment_fallback_text(document: Document) -> str:
+    attachment_urls = "\n".join(f"- {url}" for url in document.attachment_urls)
+    if attachment_urls:
+        attachment_urls = f"\n다운로드 URL:\n{attachment_urls}"
+    return (
+        "첨부파일 본문을 안정적으로 추출하지 못했습니다. 원문 링크 또는 다운로드 URL에서 직접 확인하세요.\n"
+        f"제목: {sanitize_title(document.title)}\n"
+        f"원문 링크: {document.source_url}"
+        f"{attachment_urls}"
+    )
     return (
         "첨부파일 본문을 안정적으로 추출하지 못했습니다. "
         "원문 링크에서 파일을 직접 확인하세요.\n"
@@ -137,6 +154,31 @@ def sanitize_title(title: str) -> str:
     if not cleaned or cleaned.casefold() == "home":
         return "제목 없음"
     return cleaned[:300]
+
+
+def _is_download_link_page(text: str) -> bool:
+    lowered = text.casefold()
+    has_curriculum_context = any(
+        keyword in text
+        for keyword in (
+            "교육과정",
+            "교과과정",
+            "이수체계도",
+            "졸업",
+            "전공",
+        )
+    )
+    has_download_context = any(
+        keyword in lowered
+        for keyword in (
+            "download",
+            "preview",
+            "다운로드",
+            "미리보기",
+            "바로가기",
+        )
+    )
+    return has_curriculum_context and has_download_context
 
 
 def is_searchable_chunk_text(text: str) -> bool:
@@ -180,9 +222,9 @@ def is_garbled_text(text: str) -> bool:
         return True
     if text.count("?") >= 6 and text.count("?") / max(len(text), 1) > 0.03:
         return True
-    if _looks_like_bad_cjk_ocr(text):
+    if _looks_like_bad_cjk_noise(text):
         return True
-    if _looks_like_bad_numeric_table_ocr(text):
+    if _looks_like_bad_numeric_table_noise(text):
         return True
     return False
 
@@ -196,6 +238,10 @@ def _is_navigation_noise(text: str) -> bool:
 def _is_listing_noise(document: Document, normalized_text: str) -> bool:
     lowered_url = document.source_url.casefold()
     lowered_text = normalized_text.casefold()
+    if _is_career_listing_or_calendar_url(lowered_url):
+        return True
+    if "contents.do?key=9346" in lowered_url:
+        return True
     if "page=list" in lowered_url:
         return True
     if "book_idx=" in lowered_url:
@@ -207,6 +253,14 @@ def _is_listing_noise(document: Document, normalized_text: str) -> bool:
     if lowered_text.count("대여불가") >= 5 and lowered_text.count("|") >= 20:
         return True
     return False
+
+
+def _is_career_listing_or_calendar_url(lowered_url: str) -> bool:
+    if "job.kyonggi.ac.kr" not in lowered_url:
+        return False
+    if "/calendar" in lowered_url:
+        return True
+    return "/list/" in lowered_url and "/view/" not in lowered_url
 
 
 def _looks_like_low_value_short_text(text: str) -> bool:
@@ -221,7 +275,7 @@ def _looks_like_low_value_short_text(text: str) -> bool:
     return True
 
 
-def _looks_like_bad_cjk_ocr(text: str) -> bool:
+def _looks_like_bad_cjk_noise(text: str) -> bool:
     compact = "".join(text.split())
     if len(compact) < 80:
         return False
@@ -237,7 +291,7 @@ def _looks_like_bad_cjk_ocr(text: str) -> bool:
     return cjk >= 20 and cjk > hangul * 1.5 and cjk / informative > 0.15
 
 
-def _looks_like_bad_numeric_table_ocr(text: str) -> bool:
+def _looks_like_bad_numeric_table_noise(text: str) -> bool:
     compact = "".join(text.split())
     if len(compact) < 150:
         return False

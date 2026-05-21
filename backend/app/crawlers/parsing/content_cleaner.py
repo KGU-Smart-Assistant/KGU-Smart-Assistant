@@ -71,6 +71,13 @@ FOOTER_MARKERS = (
     "대학정보공시",
     "Copyright (C) 2020 Kyonggi University. School of Electronic Engineering.",
     "All Rights Reserved.",
+    "콘텐츠 정보",
+    "_관련정보_",
+    "관련정보",
+    "맞춤 설정",
+    "맞춤설정",
+    "맞춤정보",
+    "어떤 정보를 찾고계시나요?",
 )
 
 IGNORED_HEADINGS = {
@@ -167,6 +174,13 @@ def _trim_to_content_region(lines: list[str]) -> list[str]:
                 "게시물삭제",
                 "개인정보처리방침",
                 "이메일무단수집거부",
+                "콘텐츠 정보",
+                "_관련정보_",
+                "관련정보",
+                "맞춤 설정",
+                "맞춤설정",
+                "맞춤정보",
+                "어떤 정보를 찾고계시나요?",
             )
         ):
             end = index
@@ -179,6 +193,13 @@ def _strip_markdown_noise(line: str) -> str:
     line = re.sub(r"!\\?\[.*$", "", line)
     line = re.sub(r"\[([^\]]*)\]\(javascript:[^)]+\)", r"\1", line, flags=re.IGNORECASE)
     line = re.sub(r"javascript:\S+", "", line, flags=re.IGNORECASE)
+    line = line.replace("100m 확대축소초기화 로드뷰길찾기지도 크게 보기", "")
+    line = re.sub(
+        r"FAQ\s+서비스별연락처\s+선택조건으로 조회\s+제한검색조건\s+검색항목\s+제목\s+작성자.*?전체 열기",
+        "FAQ ",
+        line,
+    )
+    line = re.sub(r"^(한국어\s+){2,}English\s+中文\s+日本語\s+(한국어\s+English\s+中文\s+日本語\s+)?", "", line)
     line = line.replace("카카오톡 닫기 인쇄", "")
     line = line.replace("SNS공유", "")
     line = re.sub(r"!\[[^\]]*\]\([^)]+\)", "", line)
@@ -194,6 +215,10 @@ def _should_drop_line(line: str, *, source_url: str) -> bool:
     if not normalized:
         return True
     if len(normalized) <= 1:
+        return True
+    if normalized in {"100m", "확대축소초기화", "로드뷰길찾기지도 크게 보기"}:
+        return True
+    if normalized in {"한국어", "english", "中文", "日本語"}:
         return True
     if any(token.casefold() in normalized for token in SKIP_LINE_TOKENS):
         return True

@@ -91,3 +91,88 @@ def test_clean_crawled_markdown_removes_unclosed_image_alt_noise() -> None:
     assert "![" not in cleaned
     assert "ENJOY K" not in cleaned
     assert "식당 운영시간" in cleaned
+
+
+def test_clean_crawled_markdown_trims_kyonggi_content_footer() -> None:
+    content = """
+LMS(Learning Management System)
+LMS는 온라인 학습관리 시스템입니다.
+문의: 031-249-8707
+콘텐츠 정보 담당부서 원격교육지원센터 최종수정일2026.01.26
+_관련정보_ 더 보시겠어요?
+맞춤 설정 맞춤정보 어떤 정보를 찾고계시나요?
+"""
+
+    cleaned = clean_crawled_markdown(
+        content,
+        source_url="https://www.kyonggi.ac.kr/www/contents.do?key=7799",
+    )
+
+    assert "LMS는 온라인 학습관리 시스템입니다." in cleaned
+    assert "콘텐츠 정보" not in cleaned
+    assert "관련정보" not in cleaned
+    assert "맞춤설정" not in cleaned
+    assert "맞춤정보" not in cleaned
+
+
+def test_clean_crawled_markdown_removes_kyonggi_widget_text() -> None:
+    content = """
+사무실 안내
+경기대학교 수원캠퍼스 제1복지관 100m 확대축소초기화 로드뷰길찾기지도 크게 보기
+주소 수원캠퍼스 제1복지관 2층
+한국어 한국어 한국어 English 中文 日本語 한국어 English 中文 日本語 방문학생 프로그램 안내
+FAQ 서비스별연락처 선택조건으로 조회 제한검색조건 검색항목 제목 작성자 **도서관이용** 전체 도서관이용 대출/반납/예약 시설이용 홈페이지 온라인컨텐츠 서비스/기타 총 5 건 ,1/1페이지 전체 열기 질문도서관 이용 시간은 어떻게 되나요?
+"""
+
+    cleaned = clean_crawled_markdown(
+        content,
+        source_url="https://www.kyonggi.ac.kr/www/contents.do?key=5283",
+    )
+
+    assert "100m 확대축소초기화" not in cleaned
+    assert "한국어 한국어" not in cleaned
+    assert "선택조건으로 조회" not in cleaned
+    assert "주소 수원캠퍼스 제1복지관 2층" in cleaned
+    assert "방문학생 프로그램 안내" in cleaned
+
+
+def test_clean_crawled_markdown_removes_split_map_widget_text() -> None:
+    content = """
+사무실 안내
+경기대학교 경기드림타워
+100m
+확대축소초기화
+로드뷰길찾기지도 크게 보기
+주소
+수원캠퍼스 경기드림타워 1층 106호
+"""
+
+    cleaned = clean_crawled_markdown(
+        content,
+        source_url="https://www.kyonggi.ac.kr/www/contents.do?key=5478",
+    )
+
+    assert "100m" not in cleaned
+    assert "확대축소초기화" not in cleaned
+    assert "로드뷰길찾기지도" not in cleaned
+    assert "수원캠퍼스 경기드림타워 1층 106호" in cleaned
+
+
+def test_clean_crawled_markdown_removes_split_language_switcher() -> None:
+    content = """
+한국어
+English
+中文
+日本語
+방문학생 프로그램 안내
+"""
+
+    cleaned = clean_crawled_markdown(
+        content,
+        source_url="https://www.kyonggi.ac.kr/international_kgu/contents.do?key=7585",
+    )
+
+    assert "English" not in cleaned
+    assert "中文" not in cleaned
+    assert "日本語" not in cleaned
+    assert "방문학생 프로그램 안내" in cleaned

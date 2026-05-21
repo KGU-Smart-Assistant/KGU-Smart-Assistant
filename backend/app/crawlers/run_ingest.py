@@ -5,7 +5,7 @@ from pathlib import Path
 import sys
 from datetime import datetime
 from typing import Any, Dict, List
-from urllib.parse import urlparse
+from urllib.parse import parse_qsl, urlparse
 
 import yaml
 
@@ -169,6 +169,11 @@ def build_crawler_config(source: Dict[str, Any]) -> Crawl4AICollectorConfig:
         allowed_path_prefixes=(
             tuple(allowed_path_prefixes) if allowed_path_prefixes is not None else None
         ),
+        allowed_query_param_filters=(
+            tuple(_derive_seed_board_query_filters(seed_urls))
+            if source.get("restrict_to_seed_board_queries", False)
+            else None
+        ),
         collect_seed_pages=source.get("collect_seed_pages", True),
         allowed_keyword_filters=(
             tuple(source["allowed_keyword_filters"])
@@ -197,6 +202,28 @@ def build_crawler_config(source: Dict[str, Any]) -> Crawl4AICollectorConfig:
             skip_images=source.get("skip_images", False),
         ),
     )
+
+
+def _derive_seed_board_query_filters(seed_urls: List[str]) -> List[Dict[str, str]]:
+    filters: List[Dict[str, str]] = []
+    for seed_url in seed_urls:
+        parsed = urlparse(seed_url)
+        if "selectbbsnttlist.do" not in parsed.path.casefold():
+            continue
+        query = {
+            key.casefold(): value
+            for key, value in parse_qsl(parsed.query, keep_blank_values=True)
+        }
+        allowed_filter = {
+            key: query[key]
+            for key in ("bbsno", "key")
+            if query.get(key)
+        }
+        if len(allowed_filter) < 2:
+            continue
+        if allowed_filter not in filters:
+            filters.append(allowed_filter)
+    return filters
 
 
 def collect_source_documents(

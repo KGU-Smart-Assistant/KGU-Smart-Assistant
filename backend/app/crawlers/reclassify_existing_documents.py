@@ -134,7 +134,7 @@ def _process_document_batch(
         chunks = db.execute(
             select(CrawlerDocumentChunk)
             .where(CrawlerDocumentChunk.doc_id == document.doc_id)
-            .where(CrawlerDocumentChunk.status == "active")
+            .where(CrawlerDocumentChunk.status.in_(("active", "updated")))
             .order_by(CrawlerDocumentChunk.chunk_index)
         ).scalars().all()
         chroma_rows.extend((chunk, domain, document.published_at) for chunk in chunks)
@@ -199,7 +199,7 @@ def _sync_chroma_rows(
 
         metadata = _metadata_for_chunk(chunk=chunk, domain=domain, published_at=published_at, embedding_model=model)
         upsert_ids.append(chunk.chunk_id)
-        upsert_embeddings.append(embedding)
+        upsert_embeddings.append(_embedding_to_list(embedding))
         upsert_documents.append(text)
         upsert_metadatas.append(metadata)
 
@@ -211,6 +211,12 @@ def _sync_chroma_rows(
             metadatas=upsert_metadatas,
         )
     return SyncStats(chroma_upserts=len(upsert_ids), skipped_missing_text=skipped_missing_text)
+
+
+def _embedding_to_list(embedding) -> list[float]:
+    if hasattr(embedding, "tolist"):
+        return embedding.tolist()
+    return list(embedding)
 
 
 def _index_chroma_get(result: dict) -> dict[str, dict]:

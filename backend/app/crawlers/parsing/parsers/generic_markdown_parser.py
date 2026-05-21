@@ -1,4 +1,5 @@
 import re
+from urllib.parse import urljoin
 
 from app.crawlers.parsing.content_cleaner import clean_crawled_markdown
 from app.crawlers.parsing.parsers.base import BaseParser
@@ -25,6 +26,35 @@ class GenericMarkdownParser(BaseParser):
 
             title = re.sub(r"^#+\s*", "", stripped).strip()
             if title:
-                return ParsedDocument(title=title[:300], content=content)
+                return ParsedDocument(
+                    title=title[:300],
+                    content=content,
+                    attachment_urls=_extract_attachment_urls(context.url, result),
+                )
 
         return None
+
+
+def _extract_attachment_urls(base_url: str, result) -> list[str]:
+    attachment_urls: list[str] = []
+    seen: set[str] = set()
+    for link_group in (getattr(result, "links", {}) or {}).values():
+        for link in link_group or []:
+            href = (link or {}).get("href") or ""
+            normalized = urljoin(base_url, href)
+            if not _looks_like_attachment_url(normalized):
+                continue
+            if normalized in seen:
+                continue
+            seen.add(normalized)
+            attachment_urls.append(normalized)
+    return attachment_urls
+
+
+def _looks_like_attachment_url(url: str) -> bool:
+    lowered = url.casefold()
+    return (
+        "downloadcontentsfile.do" in lowered
+        or "downloadbbsfile.do" in lowered
+        or lowered.endswith((".pdf", ".hwp", ".hwpx", ".doc", ".docx", ".xls", ".xlsx"))
+    )
