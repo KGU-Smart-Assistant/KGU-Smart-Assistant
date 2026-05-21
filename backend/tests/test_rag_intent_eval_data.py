@@ -16,7 +16,12 @@ def test_rag_intent_eval_examples_match_expected_taxonomy() -> None:
 
     for example in examples:
         decision = chat_orchestrator.decide_chat_route(example["text"])
+        expected_domains = example.get("expected_domains", [example["rag_domain"]])
         assert decision.route == example["route"]
-        assert decision.rag_domain == example["rag_domain"]
-        assert decision.rag_detail == example["rag_detail"]
+        if example.get("assert_primary", len(expected_domains) == 1):
+            assert decision.rag_domain == example["rag_domain"]
+            assert decision.rag_detail == example["rag_detail"]
         assert decision.source_scope == example["source_scope"]
+        actual_domains = list(decision.rag_domains)
+        for domain in expected_domains:
+            assert domain in actual_domains
