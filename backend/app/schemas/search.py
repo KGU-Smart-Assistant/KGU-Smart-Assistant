@@ -10,10 +10,13 @@ class SearchRequest(BaseModel):
         Literal[
             "notice",
             "academic",
-            "scholarship",
+            "support",
             "faq",
             "materials",
             "academic_schedule",
+            "graduation",
+            "student_life",
+            "career",
         ]
     ] = None
 

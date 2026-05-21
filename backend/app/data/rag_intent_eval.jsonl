@@ -1,0 +1,20 @@
+{"text":"장학금 신청기간 알려줘","route":"rag","rag_domain":"scholarship","rag_detail":"period","source_scope":"unknown"}
+{"text":"장학금 신청 공지 어디서 확인해?","route":"rag","rag_domain":"scholarship","rag_detail":"announcement_lookup","source_scope":"unknown"}
+{"text":"수강신청 기간 알려줘","route":"rag","rag_domain":"course_registration","rag_detail":"period","source_scope":"unknown"}
+{"text":"휴학 신청 절차 알려줘","route":"rag","rag_domain":"academic_status","rag_detail":"procedure","source_scope":"unknown"}
+{"text":"복학 신청 기간 알려줘","route":"rag","rag_domain":"academic_status","rag_detail":"period","source_scope":"unknown"}
+{"text":"전과 지원 조건 알려줘","route":"rag","rag_domain":"major_change","rag_detail":"eligibility","source_scope":"unknown"}
+{"text":"전과 신청 기간 알려줘","route":"rag","rag_domain":"major_change","rag_detail":"period","source_scope":"unknown"}
+{"text":"다전공 신청 방법 알려줘","route":"rag","rag_domain":"multi_major","rag_detail":"procedure","source_scope":"unknown"}
+{"text":"복수전공 이수 조건 알려줘","route":"rag","rag_domain":"multi_major","rag_detail":"eligibility","source_scope":"unknown"}
+{"text":"편입 지원 자격 알려줘","route":"rag","rag_domain":"admission_transfer","rag_detail":"eligibility","source_scope":"unknown"}
+{"text":"편입 모집요강 알려줘","route":"rag","rag_domain":"admission_transfer","rag_detail":"announcement_lookup","source_scope":"unknown"}
+{"text":"교직이수 신청 기간 알려줘","route":"rag","rag_domain":"teaching_certification","rag_detail":"period","source_scope":"unknown"}
+{"text":"졸업요건 제출서류 알려줘","route":"rag","rag_domain":"graduation","rag_detail":"required_documents","source_scope":"unknown"}
+{"text":"등록금 분납 절차 알려줘","route":"rag","rag_domain":"tuition","rag_detail":"procedure","source_scope":"unknown"}
+{"text":"자료실 신청서 양식 찾아줘","route":"rag","rag_domain":"document_materials","rag_detail":"required_documents","source_scope":"unknown"}
+{"text":"학생증 발급 안내 알려줘","route":"rag","rag_domain":"student_life","rag_detail":"announcement_lookup","source_scope":"unknown"}
+{"text":"현장실습 모집 공지 알려줘","route":"rag","rag_domain":"career_support","rag_detail":"announcement_lookup","source_scope":"unknown"}
+{"text":"청소년학과 전공 공지 알려줘","route":"rag","rag_domain":"department_notice","rag_detail":"announcement_lookup","source_scope":"department"}
+{"text":"컴퓨터공학과 취업 공지 알려줘","route":"rag","rag_domain":"career_support","rag_detail":"announcement_lookup","source_scope":"department"}
+{"text":"교환학생 지원 가능한 학교를 알려줘","route":"rag","rag_domain":"international_exchange","rag_detail":"eligibility","source_scope":"unknown"}

@@ -17,4 +17,9 @@ async def chat_with_gemini(request: ChatRequest, db: Session = Depends(get_db)):
         intent=result.intent,
         route=result.route,
         sources=[ChatSource(**source.__dict__) for source in result.sources],
+        rag_domain=result.rag_domain,
+        rag_detail=result.rag_detail,
+        source_scope=result.source_scope,
+        rag_confidence=result.rag_confidence,
+        matched_keywords=list(result.matched_keywords),
     )
