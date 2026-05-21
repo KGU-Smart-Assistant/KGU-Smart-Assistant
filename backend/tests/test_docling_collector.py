@@ -163,7 +163,7 @@ def test_collect_documents_with_docling_uses_pdf_text_before_docling(
     )
     monkeypatch.setattr(
         "app.crawlers.docling_collector._extract_pdf_text",
-        lambda path: "PDF text content",
+        lambda path, max_pages: "PDF text content",
     )
     pdf_path = tmp_path / "sample.pdf"
     pdf_path.write_bytes(b"%PDF")
@@ -185,7 +185,7 @@ def test_collect_documents_with_docling_falls_back_to_docling_for_scanned_pdf(
     )
     monkeypatch.setattr(
         "app.crawlers.docling_collector._extract_pdf_text",
-        lambda path: "",
+        lambda path, max_pages: "",
     )
     pdf_path = tmp_path / "scan.pdf"
     pdf_path.write_bytes(b"%PDF")
@@ -207,7 +207,7 @@ def test_collect_documents_with_docling_uses_page_ocr_before_docling(
     )
     monkeypatch.setattr(
         "app.crawlers.docling_collector._extract_pdf_text",
-        lambda path: "",
+        lambda path, max_pages: "",
     )
     monkeypatch.setattr(
         "app.crawlers.docling_collector._extract_pdf_ocr_text",

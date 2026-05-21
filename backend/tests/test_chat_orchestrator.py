@@ -30,8 +30,21 @@ def test_decide_chat_route_uses_rag_for_notice_question() -> None:
     assert decision.rag_detail == "period"
     assert decision.rag_confidence is not None
     assert decision.rag_confidence > 0.0
+    assert decision.rag_domains[0] == "scholarship"
+    assert decision.intent_scores[0].domain == "scholarship"
     assert "장학" in decision.matched_keywords
     assert "기간" in decision.matched_keywords
+
+
+def test_decide_chat_route_keeps_multiple_rag_intents_for_complex_question() -> None:
+    decision = chat_orchestrator.decide_chat_route("휴학하면 등록금이랑 장학금은 어떻게 돼?")
+
+    assert decision.route == "rag"
+    assert decision.rag_domain == "scholarship"
+    assert "scholarship" in decision.rag_domains
+    assert "academic_status" in decision.rag_domains
+    assert "tuition" in decision.rag_domains
+    assert [score.domain for score in decision.intent_scores] == list(decision.rag_domains)
 
 
 def test_decide_chat_route_uses_rag_for_department_question() -> None:
@@ -210,7 +223,7 @@ def test_answer_chat_uses_rag_results_as_context(monkeypatch) -> None:
     monkeypatch.setattr(
         chat_orchestrator,
         "search_documents",
-        lambda query, top_k, rag_domain, rag_detail, source_scope: [search_result],
+        lambda query, top_k, rag_domain, rag_domains, rag_detail, source_scope: [search_result],
     )
 
     def fake_context_answer(user_input: str, context: str) -> str:
@@ -224,13 +237,39 @@ def test_answer_chat_uses_rag_results_as_context(monkeypatch) -> None:
     assert result.route == "rag"
     assert result.intent == "RAG"
     assert result.rag_domain == "scholarship"
+    assert result.rag_domains[0] == "scholarship"
     assert result.rag_detail == "period"
     assert result.source_scope == "unknown"
     assert result.rag_confidence is not None
     assert result.matched_keywords
+    assert result.intent_scores
+    assert result.answer_status == "answered"
     assert "장학 신청 안내" in captured["context"]
     assert "5월 1일부터 5월 10일" in captured["context"]
     assert result.sources[0].source_url == "https://example.com/scholarship"
+
+
+def test_answer_chat_returns_insufficient_when_results_do_not_ground_answer(monkeypatch) -> None:
+    search_result = SearchResult(
+        chunk_id="chunk-1",
+        doc_id="doc-1",
+        score=0.05,
+        text="휴학 신청은 포털에서 진행합니다.",
+        title="휴학 신청 안내",
+        source_url="https://example.com/leave",
+    )
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "search_documents",
+        lambda query, top_k, rag_domain, rag_domains, rag_detail, source_scope: [search_result],
+    )
+
+    result = chat_orchestrator.answer_chat("휴학하면 장학금은 어떻게 돼?", db=None)
+
+    assert result.route == "rag"
+    assert result.answer_status == "insufficient"
+    assert result.unverified
+    assert "근거를 확인할 수 없습니다" in result.reply
 
 
 def test_answer_chat_uses_weather_service(monkeypatch) -> None:

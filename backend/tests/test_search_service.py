@@ -212,6 +212,49 @@ def test_search_documents_retries_without_category_when_filtered_retrieval_is_em
     assert [result.chunk_id for result in results] == ["fallback"]
 
 
+def test_search_documents_queries_multiple_rag_domain_categories(monkeypatch) -> None:
+    categories = []
+    monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+
+    def _query_embedded_chunks(*, query_embedding, top_k, category):
+        categories.append(category)
+        if category == "support":
+            return [
+                {
+                    "chunk_id": "scholarship",
+                    "doc_id": "doc-1",
+                    "distance": 0.20,
+                    "text": "장학금 안내입니다.",
+                    "title": "장학금 안내",
+                    "source_url": "https://example.com/scholarship",
+                }
+            ]
+        if category == "academic_schedule":
+            return [
+                {
+                    "chunk_id": "course",
+                    "doc_id": "doc-2",
+                    "distance": 0.10,
+                    "text": "수강신청 안내입니다.",
+                    "title": "수강신청 안내",
+                    "source_url": "https://example.com/course",
+                }
+            ]
+        return []
+
+    monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
+
+    results = search_service.search_documents(
+        query="장학금과 수강신청 알려줘",
+        top_k=2,
+        rag_domain="scholarship",
+        rag_domains=["course_registration"],
+    )
+
+    assert categories == ["support", "academic_schedule"]
+    assert {result.chunk_id for result in results} == {"scholarship", "course"}
+
+
 def test_search_documents_soft_boosts_department_scope(monkeypatch) -> None:
     monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
 

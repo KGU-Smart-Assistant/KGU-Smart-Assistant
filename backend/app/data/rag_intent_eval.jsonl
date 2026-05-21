@@ -1,20 +1,45 @@
-{"text":"장학금 신청기간 알려줘","route":"rag","rag_domain":"scholarship","rag_detail":"period","source_scope":"unknown"}
-{"text":"장학금 신청 공지 어디서 확인해?","route":"rag","rag_domain":"scholarship","rag_detail":"announcement_lookup","source_scope":"unknown"}
-{"text":"수강신청 기간 알려줘","route":"rag","rag_domain":"course_registration","rag_detail":"period","source_scope":"unknown"}
-{"text":"휴학 신청 절차 알려줘","route":"rag","rag_domain":"academic_status","rag_detail":"procedure","source_scope":"unknown"}
-{"text":"복학 신청 기간 알려줘","route":"rag","rag_domain":"academic_status","rag_detail":"period","source_scope":"unknown"}
-{"text":"전과 지원 조건 알려줘","route":"rag","rag_domain":"major_change","rag_detail":"eligibility","source_scope":"unknown"}
-{"text":"전과 신청 기간 알려줘","route":"rag","rag_domain":"major_change","rag_detail":"period","source_scope":"unknown"}
-{"text":"다전공 신청 방법 알려줘","route":"rag","rag_domain":"multi_major","rag_detail":"procedure","source_scope":"unknown"}
-{"text":"복수전공 이수 조건 알려줘","route":"rag","rag_domain":"multi_major","rag_detail":"eligibility","source_scope":"unknown"}
-{"text":"편입 지원 자격 알려줘","route":"rag","rag_domain":"admission_transfer","rag_detail":"eligibility","source_scope":"unknown"}
-{"text":"편입 모집요강 알려줘","route":"rag","rag_domain":"admission_transfer","rag_detail":"announcement_lookup","source_scope":"unknown"}
-{"text":"교직이수 신청 기간 알려줘","route":"rag","rag_domain":"teaching_certification","rag_detail":"period","source_scope":"unknown"}
-{"text":"졸업요건 제출서류 알려줘","route":"rag","rag_domain":"graduation","rag_detail":"required_documents","source_scope":"unknown"}
-{"text":"등록금 분납 절차 알려줘","route":"rag","rag_domain":"tuition","rag_detail":"procedure","source_scope":"unknown"}
-{"text":"자료실 신청서 양식 찾아줘","route":"rag","rag_domain":"document_materials","rag_detail":"required_documents","source_scope":"unknown"}
-{"text":"학생증 발급 안내 알려줘","route":"rag","rag_domain":"student_life","rag_detail":"announcement_lookup","source_scope":"unknown"}
-{"text":"현장실습 모집 공지 알려줘","route":"rag","rag_domain":"career_support","rag_detail":"announcement_lookup","source_scope":"unknown"}
-{"text":"청소년학과 전공 공지 알려줘","route":"rag","rag_domain":"department_notice","rag_detail":"announcement_lookup","source_scope":"department"}
-{"text":"컴퓨터공학과 취업 공지 알려줘","route":"rag","rag_domain":"career_support","rag_detail":"announcement_lookup","source_scope":"department"}
-{"text":"교환학생 지원 가능한 학교를 알려줘","route":"rag","rag_domain":"international_exchange","rag_detail":"eligibility","source_scope":"unknown"}
+{"text":"장학금 신청기간 알려줘","route":"rag","rag_domain":"scholarship","rag_detail":"period","source_scope":"unknown","expected_domains":["scholarship"]}
+{"text":"장학금 신청 공지 어디서 확인해?","route":"rag","rag_domain":"scholarship","rag_detail":"announcement_lookup","source_scope":"unknown","expected_domains":["scholarship"]}
+{"text":"수강신청 기간 알려줘","route":"rag","rag_domain":"course_registration","rag_detail":"period","source_scope":"unknown","expected_domains":["course_registration"]}
+{"text":"휴학 신청 절차 알려줘","route":"rag","rag_domain":"academic_status","rag_detail":"procedure","source_scope":"unknown","expected_domains":["academic_status"]}
+{"text":"복학 신청 기간 알려줘","route":"rag","rag_domain":"academic_status","rag_detail":"period","source_scope":"unknown","expected_domains":["academic_status"]}
+{"text":"전과 지원 조건 알려줘","route":"rag","rag_domain":"major_change","rag_detail":"eligibility","source_scope":"unknown","expected_domains":["major_change"]}
+{"text":"전과 신청 기간 알려줘","route":"rag","rag_domain":"major_change","rag_detail":"period","source_scope":"unknown","expected_domains":["major_change"]}
+{"text":"다전공 신청 방법 알려줘","route":"rag","rag_domain":"multi_major","rag_detail":"procedure","source_scope":"unknown","expected_domains":["multi_major"]}
+{"text":"복수전공 이수 조건 알려줘","route":"rag","rag_domain":"multi_major","rag_detail":"eligibility","source_scope":"unknown","expected_domains":["multi_major"]}
+{"text":"편입 지원 자격 알려줘","route":"rag","rag_domain":"admission_transfer","rag_detail":"eligibility","source_scope":"unknown","expected_domains":["admission_transfer"]}
+{"text":"편입 모집요강 알려줘","route":"rag","rag_domain":"admission_transfer","rag_detail":"announcement_lookup","source_scope":"unknown","expected_domains":["admission_transfer"]}
+{"text":"교직이수 신청 기간 알려줘","route":"rag","rag_domain":"teaching_certification","rag_detail":"period","source_scope":"unknown","expected_domains":["teaching_certification"]}
+{"text":"졸업요건 제출서류 알려줘","route":"rag","rag_domain":"graduation","rag_detail":"required_documents","source_scope":"unknown","expected_domains":["graduation"]}
+{"text":"등록금 분납 절차 알려줘","route":"rag","rag_domain":"tuition","rag_detail":"procedure","source_scope":"unknown","expected_domains":["tuition"]}
+{"text":"자료실 신청서 양식 찾아줘","route":"rag","rag_domain":"document_materials","rag_detail":"required_documents","source_scope":"unknown","expected_domains":["document_materials"]}
+{"text":"학생증 발급 안내 알려줘","route":"rag","rag_domain":"student_life","rag_detail":"announcement_lookup","source_scope":"unknown","expected_domains":["student_life"]}
+{"text":"현장실습 모집 공지 알려줘","route":"rag","rag_domain":"career_support","rag_detail":"announcement_lookup","source_scope":"unknown","expected_domains":["career_support"]}
+{"text":"청소년학과 전공 공지 알려줘","route":"rag","rag_domain":"department_notice","rag_detail":"announcement_lookup","source_scope":"department","expected_domains":["department_notice"]}
+{"text":"컴퓨터공학과 취업 공지 알려줘","route":"rag","rag_domain":"career_support","rag_detail":"announcement_lookup","source_scope":"department","expected_domains":["career_support"]}
+{"text":"교환학생 지원 가능한 학교를 알려줘","route":"rag","rag_domain":"international_exchange","rag_detail":"eligibility","source_scope":"unknown","expected_domains":["international_exchange"]}
+{"text":"휴학하면 등록금이랑 장학금은 어떻게 돼?","route":"rag","rag_domain":"scholarship","rag_detail":"procedure","source_scope":"unknown","expected_domains":["academic_status","tuition","scholarship"]}
+{"text":"복학 신청하면 기숙사도 자동 신청돼?","route":"rag","rag_domain":"academic_status","rag_detail":"procedure","source_scope":"unknown","expected_domains":["academic_status","student_life"]}
+{"text":"수강취소하면 장학금에 영향 있어?","route":"rag","rag_domain":"scholarship","rag_detail":"unknown","source_scope":"unknown","expected_domains":["course_registration","scholarship"]}
+{"text":"졸업요건이랑 다전공 이수 조건 알려줘","route":"rag","rag_domain":"graduation","rag_detail":"eligibility","source_scope":"unknown","expected_domains":["graduation","multi_major"]}
+{"text":"교환학생 지원하면 등록금은 어디에 내?","route":"rag","rag_domain":"tuition","rag_detail":"unknown","source_scope":"unknown","expected_domains":["international_exchange","tuition"]}
+{"text":"휴학 중에도 장학금 신청할 수 있어?","route":"rag","rag_domain":"scholarship","rag_detail":"eligibility","source_scope":"unknown","expected_domains":["academic_status","scholarship"]}
+{"text":"복학할 때 등록금 납부 기간도 같이 알려줘","route":"rag","rag_domain":"academic_status","rag_detail":"period","source_scope":"unknown","expected_domains":["academic_status","tuition"]}
+{"text":"수강정정 기간이랑 졸업학점 확인하고 싶어","route":"rag","rag_domain":"course_registration","rag_detail":"period","source_scope":"unknown","expected_domains":["course_registration","graduation"]}
+{"text":"다전공 신청하면 졸업요건이 바뀌어?","route":"rag","rag_domain":"multi_major","rag_detail":"procedure","source_scope":"unknown","expected_domains":["multi_major","graduation"]}
+{"text":"전과하면 장학금 유지돼?","route":"rag","rag_domain":"major_change","rag_detail":"unknown","source_scope":"unknown","expected_domains":["major_change","scholarship"]}
+{"text":"기숙사 신청 기간이랑 제출서류 알려줘","route":"rag","rag_domain":"student_life","rag_detail":"period","source_scope":"unknown","expected_domains":["student_life","document_materials"]}
+{"text":"현장실습 신청 자격이랑 제출서류 알려줘","route":"rag","rag_domain":"career_support","rag_detail":"eligibility","source_scope":"unknown","expected_domains":["career_support","document_materials"]}
+{"text":"교환학생 모집 공지랑 제출서류 어디서 봐?","route":"rag","rag_domain":"international_exchange","rag_detail":"required_documents","source_scope":"unknown","expected_domains":["international_exchange","document_materials"]}
+{"text":"컴퓨터공학과 다전공 공지 알려줘","route":"rag","rag_domain":"multi_major","rag_detail":"announcement_lookup","source_scope":"department","expected_domains":["multi_major","department_notice"]}
+{"text":"경영학과 장학 공지 확인하고 싶어","route":"rag","rag_domain":"scholarship","rag_detail":"announcement_lookup","source_scope":"department","expected_domains":["scholarship","department_notice"]}
+{"text":"졸업인증 자료 제출 기간 알려줘","route":"rag","rag_domain":"graduation","rag_detail":"period","source_scope":"unknown","expected_domains":["graduation","document_materials"]}
+{"text":"등록금 환불 신청서 양식 어디 있어?","route":"rag","rag_domain":"tuition","rag_detail":"required_documents","source_scope":"unknown","expected_domains":["tuition","document_materials"]}
+{"text":"교직이수하면 졸업학점에 영향 있어?","route":"rag","rag_domain":"teaching_certification","rag_detail":"unknown","source_scope":"unknown","expected_domains":["teaching_certification","graduation"]}
+{"text":"편입생도 장학금 받을 수 있어?","route":"rag","rag_domain":"scholarship","rag_detail":"eligibility","source_scope":"unknown","expected_domains":["admission_transfer","scholarship"]}
+{"text":"재입학하면 등록금 환불 기준이 어떻게 돼?","route":"rag","rag_domain":"academic_status","rag_detail":"unknown","source_scope":"unknown","expected_domains":["academic_status","tuition"]}
+{"text":"수강취소 신청서 서식 찾아줘","route":"rag","rag_domain":"course_registration","rag_detail":"required_documents","source_scope":"unknown","expected_domains":["course_registration","document_materials"]}
+{"text":"전공변경 신청 기간 공지 알려줘","route":"rag","rag_domain":"major_change","rag_detail":"period","source_scope":"unknown","expected_domains":["major_change"]}
+{"text":"복수전공 포기하면 졸업요건은 어떻게 돼?","route":"rag","rag_domain":"multi_major","rag_detail":"unknown","source_scope":"unknown","expected_domains":["multi_major","graduation"]}
+{"text":"해외파견 장학금 신청 조건 알려줘","route":"rag","rag_domain":"scholarship","rag_detail":"eligibility","source_scope":"unknown","expected_domains":["international_exchange","scholarship"]}
+{"text":"학생증 재발급 신청서 어디서 받아?","route":"rag","rag_domain":"student_life","rag_detail":"required_documents","source_scope":"unknown","expected_domains":["student_life","document_materials"]}
