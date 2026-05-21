@@ -46,13 +46,26 @@ def search_documents(
     category: Optional[str] = None,
     *,
     detail: Optional[str] = None,
+    rag_domain: Optional[str] = None,
+    rag_domains: Optional[List[str]] = None,
+    rag_detail: Optional[str] = None,
+    source_scope: Optional[str] = None,
     enable_fallback: bool = True,
     low_confidence_threshold: float = LOW_CONFIDENCE_THRESHOLD,
 ) -> List[SearchResult]:
     """Search crawled chunks with domain filtering, detail boosting, and broad fallback."""
-    effective_domain = _normalize_domain(category) or _infer_domain(query)
-    effective_detail = _normalize_detail(detail) or _infer_detail(query)
-    primary_rows = _run_search_attempt(query=query, top_k=top_k, domain=effective_domain, detail=effective_detail, attempt="primary")
+    effective_domain = _normalize_domain(category) or _normalize_domain(rag_domain) or _infer_domain(query)
+    effective_detail = _normalize_detail(detail) or _normalize_detail(rag_detail) or _infer_detail(query)
+    filter_categories = _filter_categories_for_domains(effective_domain, rag_domains)
+    primary_rows = _run_search_attempt(
+        query=query,
+        top_k=top_k,
+        domain=effective_domain,
+        detail=effective_detail,
+        categories=filter_categories,
+        source_scope=source_scope,
+        attempt="primary",
+    )
 
     if not enable_fallback or effective_domain == "default":
         return [_row_to_search_result(row) for row in primary_rows[:top_k]]
@@ -60,12 +73,21 @@ def search_documents(
     if primary_rows:
         return [_row_to_search_result(row) for row in primary_rows[:top_k]]
 
-    fallback_rows = _run_search_attempt(query=query, top_k=top_k, domain="default", detail=effective_detail, attempt="fallback_broad")
+    fallback_rows = _run_search_attempt(
+        query=query,
+        top_k=top_k,
+        domain="default",
+        detail=effective_detail,
+        categories=None,
+        source_scope=source_scope,
+        attempt="fallback_broad",
+    )
     merged_rows = rerank_candidate_rows(
         rows=_merge_rows(primary_rows, _mark_fallback_rows(fallback_rows)),
         query=query,
         category=effective_domain,
         detail=effective_detail,
+        source_scope=source_scope,
     )
     return [_row_to_search_result(row) for row in merged_rows[:top_k]]
 
@@ -83,6 +105,7 @@ def rerank_candidate_rows(
     query: str,
     category: str | None,
     detail: str | None = None,
+    source_scope: str | None = None,
 ) -> List[Dict[str, Any]]:
     effective_domain = _normalize_domain(category) or "default"
     effective_detail = _normalize_detail(detail)
@@ -100,6 +123,7 @@ def rerank_candidate_rows(
         title = _title_match_score(tokens=tokens, title=row.get("title") or "")
         domain_match = _domain_match_score(effective_domain, row.get("domain") or row.get("category"))
         detail_boost = _detail_boost(effective_detail, row)
+        scope_boost = _scope_boost(source_scope, row)
         exact = _exact_phrase_score(query=query, title=row.get("title") or "", text=row.get("text") or "")
         source_penalty = _source_penalty(row)
         fallback_penalty = 0.35 if row.get("fallback_used") else 0.0
@@ -111,7 +135,7 @@ def rerank_candidate_rows(
             + title * weights["title"]
             + domain_match * weights["domain"]
         )
-        score = max(min(base_score + detail_boost + exact - source_penalty - fallback_penalty, 1.0), 0.0)
+        score = max(min(base_score + detail_boost + scope_boost + exact - source_penalty - fallback_penalty, 1.0), 0.0)
         ranked_row = dict(row)
         ranked_row["score"] = round(score, 6)
         ranked_row["score_breakdown"] = {
@@ -122,6 +146,7 @@ def rerank_candidate_rows(
             "domain": round(domain_match, 6),
             "category": round(domain_match, 6),
             "detail": round(detail_boost, 6),
+            "scope": round(scope_boost, 6),
             "exact": round(exact, 6),
             "source_penalty": round(source_penalty, 6),
             "fallback_penalty": round(fallback_penalty, 6),
@@ -145,26 +170,40 @@ def rerank_candidate_rows(
     )
 
 
-def _run_search_attempt(*, query: str, top_k: int, domain: str | None, detail: str | None, attempt: str) -> list[dict[str, Any]]:
-    filter_categories = _filter_categories(domain)
+def _run_search_attempt(
+    *,
+    query: str,
+    top_k: int,
+    domain: str | None,
+    detail: str | None,
+    categories: list[str] | None,
+    source_scope: str | None,
+    attempt: str,
+) -> list[dict[str, Any]]:
     query_embedding = embed_text(query)
     candidate_count = _candidate_count(top_k)
     vector_rows = _mark_vector_rows(
         _query_vector_candidates(
             query_embedding=query_embedding,
             top_k=candidate_count,
-            categories=filter_categories,
+            categories=categories,
         )
     )
     keyword_rows = _query_keyword_chunks(
         query=query,
         top_k=min(candidate_count, MAX_KEYWORD_CANDIDATES),
-        categories=filter_categories,
+        categories=categories,
     )
     rows = _merge_rows(vector_rows, keyword_rows)
     for row in rows:
         row["search_attempt"] = attempt
-    return rerank_candidate_rows(rows=rows, query=query, category=domain, detail=detail)
+    return rerank_candidate_rows(
+        rows=rows,
+        query=query,
+        category=domain,
+        detail=detail,
+        source_scope=source_scope,
+    )
 
 
 def _query_vector_candidates(*, query_embedding: list[float], top_k: int, categories: list[str] | None) -> List[Dict[str, Any]]:
@@ -328,6 +367,18 @@ def _filter_categories(domain: str | None) -> list[str] | None:
     return DOMAIN_FILTERS.get(domain, [domain])
 
 
+def _filter_categories_for_domains(domain: str | None, extra_domains: list[str] | None) -> list[str] | None:
+    categories: list[str] = []
+    for raw_domain in [domain, *(extra_domains or [])]:
+        normalized = _normalize_domain(raw_domain)
+        if not normalized or normalized == "default":
+            continue
+        for category in _filter_categories(normalized) or []:
+            if category not in categories:
+                categories.append(category)
+    return categories or None
+
+
 def _infer_domain(query: str) -> str:
     normalized = query.casefold()
     best: tuple[str, int, int] | None = None
@@ -431,6 +482,15 @@ def _detail_boost(detail: str | None, row: Dict[str, Any]) -> float:
         elif needle in text:
             matched += 0.015
     return min(matched, 0.09)
+
+
+def _scope_boost(source_scope: str | None, row: Dict[str, Any]) -> float:
+    if source_scope == "department":
+        department = str(row.get("department") or "").strip()
+        return 0.08 if department and department != "university" else 0.0
+    if source_scope == "university":
+        return 0.08 if row.get("department") == "university" else 0.0
+    return 0.0
 
 
 def _exact_phrase_score(*, query: str, title: str, text: str) -> float:

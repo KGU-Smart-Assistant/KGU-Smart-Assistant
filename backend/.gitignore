@@ -155,6 +155,7 @@ venv.bak/
 .tmp/
 .pytest_tmp/
 servers/
+models/
 
 # Spyder project settings
 .spyderproject

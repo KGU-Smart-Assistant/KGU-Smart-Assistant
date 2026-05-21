@@ -202,6 +202,77 @@ def test_low_confidence_category_search_falls_back_to_broad_search(monkeypatch) 
     assert results[0].score_breakdown["fallback_used"] == 1.0
 
 
+def test_search_documents_accepts_rag_domain_filters(monkeypatch) -> None:
+    captured = []
+
+    monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])
+
+    def _query_embedded_chunks(*, query_embedding, top_k, domain):
+        captured.append(domain)
+        return []
+
+    monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
+
+    search_service.search_documents(
+        query="장학금 신청기간 알려줘",
+        top_k=2,
+        rag_domain="scholarship",
+        rag_domains=["course_registration"],
+        rag_detail="period",
+    )
+
+    assert captured == [
+        "scholarship",
+        "general_notice",
+        "department_notice",
+        "course_registration",
+        "academic_calendar",
+        None,
+    ]
+
+
+def test_search_documents_soft_boosts_department_scope(monkeypatch) -> None:
+    monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])
+
+    def _query_embedded_chunks(*, query_embedding, top_k, domain):
+        return [
+            {
+                "chunk_id": "university",
+                "doc_id": "doc-1",
+                "distance": 0.1,
+                "text": "취업 공지입니다.",
+                "title": "취업 공지",
+                "source_url": "https://example.com/university",
+                "domain": domain,
+                "department": "university",
+            },
+            {
+                "chunk_id": "department",
+                "doc_id": "doc-2",
+                "distance": 0.1,
+                "text": "컴퓨터공학과 취업 공지입니다.",
+                "title": "컴퓨터공학과 취업 공지",
+                "source_url": "https://example.com/department",
+                "domain": domain,
+                "department": "computer_science",
+            },
+        ]
+
+    monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
+
+    results = search_service.search_documents(
+        query="컴퓨터공학과 취업 공지 알려줘",
+        top_k=2,
+        rag_domain="career_support",
+        rag_detail="announcement_lookup",
+        source_scope="department",
+    )
+
+    assert [result.chunk_id for result in results] == ["department", "university"]
+
+
 def test_merge_preserves_vector_and_keyword_signals() -> None:
     rows = search_service._merge_rows(
         vector_rows=[
