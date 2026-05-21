@@ -1,54 +1,55 @@
-from app.services import search_service
+﻿from app.services import search_service
 
 
-def test_search_documents_embeds_query_and_maps_vector_results(monkeypatch) -> None:
+def test_search_documents_uses_explicit_category_filter(monkeypatch) -> None:
     captured = {}
 
     monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])
 
-    def _query_embedded_chunks(*, query_embedding, top_k, category):
-        captured["query_embedding"] = query_embedding
-        captured["top_k"] = top_k
-        captured["category"] = category
+    def _query_embedded_chunks(*, query_embedding, top_k, domain):
+        captured.setdefault("categories", []).append(domain)
         return [
             {
-                "chunk_id": "chunk-1",
+                "chunk_id": f"chunk-{domain}",
                 "doc_id": "doc-1",
                 "distance": 0.25,
-                "text": "Document chunk text",
-                "title": "Document title",
+                "text": "장학금 신청 안내",
+                "title": "장학금 신청 안내",
                 "source_url": "https://example.com/source",
+                "domain": domain,
             }
         ]
 
     monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
 
-    results = search_service.search_documents(
-        query="scholarship",
-        top_k=3,
-        category="notice",
-    )
+    results = search_service.search_documents(query="장학금 신청", top_k=3, category="scholarship")
 
-    assert captured == {
-        "query_embedding": [0.1, 0.2, 0.3],
-        "top_k": 12,
-        "category": "notice",
-    }
-    assert len(results) == 1
-    assert results[0].chunk_id == "chunk-1"
-    assert results[0].doc_id == "doc-1"
-    assert results[0].score == 0.44
-    assert results[0].text == "Document chunk text"
-    assert results[0].title == "Document title"
-    assert results[0].source_url == "https://example.com/source"
+    assert captured["categories"] == ["scholarship", "general_notice", "department_notice"]
+    assert len(results) == 3
+    assert results[0].score_breakdown["category"] == 1.0
+    assert "confidence" in results[0].score_breakdown
+
+
+def test_search_documents_infers_category_and_applies_filter(monkeypatch) -> None:
+    captured = {}
+
+    monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])
+
+    def _query_embedded_chunks(*, query_embedding, top_k, domain):
+        captured.setdefault("categories", []).append(domain)
+        return []
+
+    monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
+
+    search_service.search_documents(query="성적향상장학금 신청 기간 알려줘", top_k=3)
+
+    assert captured["categories"] == ["scholarship", "general_notice", "department_notice", None]
 
 
 def test_search_wraps_results_in_response(monkeypatch) -> None:
-    monkeypatch.setattr(
-        search_service,
-        "search_documents",
-        lambda query, top_k, category: [],
-    )
+    monkeypatch.setattr(search_service, "search_documents", lambda query, top_k, category: [])
 
     response = search_service.search(query="faq", top_k=2, category=None)
 
@@ -58,8 +59,9 @@ def test_search_wraps_results_in_response(monkeypatch) -> None:
 
 def test_search_documents_reranks_by_category_weights(monkeypatch) -> None:
     monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])
 
-    def _query_embedded_chunks(*, query_embedding, top_k, category):
+    def _query_embedded_chunks(*, query_embedding, top_k, domain):
         return [
             {
                 "chunk_id": "similar-old",
@@ -68,6 +70,7 @@ def test_search_documents_reranks_by_category_weights(monkeypatch) -> None:
                 "text": "장학금 안내",
                 "title": "장학금 안내",
                 "source_url": "https://example.com/old",
+                "domain": domain,
                 "published_at": "2018-01-01T00:00:00",
             },
             {
@@ -77,205 +80,182 @@ def test_search_documents_reranks_by_category_weights(monkeypatch) -> None:
                 "text": "신청 안내",
                 "title": "장학금 신청 안내",
                 "source_url": "https://example.com/recent",
+                "domain": domain,
                 "published_at": "2026-01-01T00:00:00",
             },
         ]
 
     monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
 
-    results = search_service.search_documents(
-        query="장학금 신청",
-        top_k=2,
-        category="scholarship",
-    )
+    results = search_service.search_documents(query="장학금 신청", top_k=2, category="scholarship")
 
-    assert [result.chunk_id for result in results] == ["recent-title", "similar-old"]
+    assert results[0].chunk_id == "recent-title"
 
 
-def test_search_documents_maps_rag_domain_to_retrieval_category(monkeypatch) -> None:
-    captured = {}
+def test_search_documents_merges_keyword_candidates(monkeypatch) -> None:
     monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
-
-    def _query_embedded_chunks(*, query_embedding, top_k, category):
-        captured["category"] = category
-        return [
+    monkeypatch.setattr(
+        search_service,
+        "query_embedded_chunks",
+        lambda **kwargs: [
             {
-                "chunk_id": "chunk-1",
+                "chunk_id": "vector-only",
                 "doc_id": "doc-1",
-                "distance": 0.20,
-                "text": "장학금 신청 기간 안내입니다.",
-                "title": "장학금 신청 안내",
-                "source_url": "https://example.com/support",
+                "distance": 0.2,
+                "text": "공지 본문",
+                "title": "공지",
+                "source_url": "https://example.com/vector",
             }
-        ]
-
-    monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
-
-    search_service.search_documents(
-        query="장학금 신청기간 알려줘",
-        top_k=2,
-        rag_domain="scholarship",
-        rag_detail="period",
+        ],
     )
-
-    assert captured["category"] == "support"
-
-
-def test_search_documents_soft_boosts_rows_matching_rag_detail(monkeypatch) -> None:
-    monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
-
-    def _query_embedded_chunks(*, query_embedding, top_k, category):
-        return [
+    monkeypatch.setattr(
+        search_service,
+        "_query_keyword_chunks",
+        lambda **kwargs: [
             {
-                "chunk_id": "general",
-                "doc_id": "doc-1",
-                "distance": 0.10,
-                "text": "장학금 안내 문서입니다.",
-                "title": "장학금 안내",
-                "source_url": "https://example.com/general",
-                "published_at": "2026-01-01T00:00:00",
-            },
-            {
-                "chunk_id": "period",
+                "chunk_id": "keyword-only",
                 "doc_id": "doc-2",
-                "distance": 0.10,
-                "text": "장학금 신청 기간과 마감 일정입니다.",
-                "title": "장학금 신청 기간 안내",
-                "source_url": "https://example.com/period",
-                "published_at": "2026-01-01T00:00:00",
-            },
-        ]
-
-    monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
-
-    results = search_service.search_documents(
-        query="장학금 신청기간 알려줘",
-        top_k=2,
-        rag_domain="scholarship",
-        rag_detail="period",
+                "lexical_score": 1.0,
+                "retrieval_sources": {"keyword"},
+                "text": "졸업요건과 전공학점 기준 안내",
+                "title": "졸업요건 안내",
+                "source_url": "https://example.com/keyword",
+                "domain": "graduation",
+            }
+        ],
     )
 
-    assert [result.chunk_id for result in results] == ["period", "general"]
+    results = search_service.search_documents(query="졸업요건", top_k=2)
+
+    assert {result.chunk_id for result in results} == {"vector-only", "keyword-only"}
 
 
-def test_search_documents_leaves_retrieval_unfiltered_for_unmapped_rag_domain(monkeypatch) -> None:
-    captured = {}
+def test_keyword_signal_can_beat_weak_vector_match(monkeypatch) -> None:
     monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
-
-    def _query_embedded_chunks(*, query_embedding, top_k, category):
-        captured["category"] = category
-        return []
-
-    monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
-
-    search_service.search_documents(
-        query="등록금 분납 절차 알려줘",
-        top_k=2,
-        rag_domain="tuition",
-        rag_detail="procedure",
+    monkeypatch.setattr(
+        search_service,
+        "query_embedded_chunks",
+        lambda **kwargs: [
+            {
+                "chunk_id": "weak-vector",
+                "doc_id": "doc-1",
+                "distance": 0.7,
+                "text": "캠퍼스 일반 공지",
+                "title": "일반 안내",
+                "source_url": "https://example.com/vector",
+                "domain": "general_notice",
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        search_service,
+        "_query_keyword_chunks",
+        lambda **kwargs: [
+            {
+                "chunk_id": "exact-keyword",
+                "doc_id": "doc-2",
+                "lexical_score": 1.0,
+                "retrieval_sources": {"keyword"},
+                "text": "졸업요건과 전공학점 기준 안내",
+                "title": "졸업요건 안내",
+                "source_url": "https://example.com/graduation",
+                "domain": "graduation",
+            }
+        ],
     )
 
-    assert captured["category"] is None
+    results = search_service.search_documents(query="졸업요건", top_k=2)
+
+    assert results[0].chunk_id == "exact-keyword"
+    assert results[0].score_breakdown["lexical"] == 1.0
+    assert results[0].score_breakdown["category"] == 1.0
 
 
-def test_search_documents_retries_without_category_when_filtered_retrieval_is_empty(
-    monkeypatch,
-) -> None:
-    categories = []
+def test_low_confidence_category_search_falls_back_to_broad_search(monkeypatch) -> None:
+    captured = []
+
     monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])
 
-    def _query_embedded_chunks(*, query_embedding, top_k, category):
-        categories.append(category)
-        if category == "support":
+    def _query_embedded_chunks(*, query_embedding, top_k, domain):
+        captured.append(domain)
+        if domain in {"scholarship", "general_notice", "department_notice"}:
             return []
         return [
             {
                 "chunk_id": "fallback",
                 "doc_id": "doc-1",
-                "distance": 0.20,
-                "text": "장학금 신청 기간 안내입니다.",
-                "title": "장학금 신청 안내",
+                "distance": 0.1,
+                "text": "성적향상장학금 안내",
+                "title": "성적향상장학금 신청 안내",
                 "source_url": "https://example.com/fallback",
+                "domain": "general_notice",
             }
         ]
 
     monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
 
-    results = search_service.search_documents(
-        query="장학금 신청기간 알려줘",
-        top_k=1,
-        rag_domain="scholarship",
-        rag_detail="period",
-    )
+    results = search_service.search_documents(query="성적향상장학금 신청 기간", top_k=1, category="scholarship")
 
-    assert categories == ["support", None]
-    assert [result.chunk_id for result in results] == ["fallback"]
+    assert captured == ["scholarship", "general_notice", "department_notice", None]
+    assert results[0].chunk_id == "fallback"
+    assert results[0].score_breakdown["fallback_used"] == 1.0
 
 
-def test_search_documents_queries_multiple_rag_domain_categories(monkeypatch) -> None:
-    categories = []
+def test_search_documents_accepts_rag_domain_filters(monkeypatch) -> None:
+    captured = []
+
     monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])
 
-    def _query_embedded_chunks(*, query_embedding, top_k, category):
-        categories.append(category)
-        if category == "support":
-            return [
-                {
-                    "chunk_id": "scholarship",
-                    "doc_id": "doc-1",
-                    "distance": 0.20,
-                    "text": "장학금 안내입니다.",
-                    "title": "장학금 안내",
-                    "source_url": "https://example.com/scholarship",
-                }
-            ]
-        if category == "academic_schedule":
-            return [
-                {
-                    "chunk_id": "course",
-                    "doc_id": "doc-2",
-                    "distance": 0.10,
-                    "text": "수강신청 안내입니다.",
-                    "title": "수강신청 안내",
-                    "source_url": "https://example.com/course",
-                }
-            ]
+    def _query_embedded_chunks(*, query_embedding, top_k, domain):
+        captured.append(domain)
         return []
 
     monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
 
-    results = search_service.search_documents(
-        query="장학금과 수강신청 알려줘",
+    search_service.search_documents(
+        query="장학금 신청기간 알려줘",
         top_k=2,
         rag_domain="scholarship",
         rag_domains=["course_registration"],
+        rag_detail="period",
     )
 
-    assert categories == ["support", "academic_schedule"]
-    assert {result.chunk_id for result in results} == {"scholarship", "course"}
+    assert captured == [
+        "scholarship",
+        "general_notice",
+        "department_notice",
+        "course_registration",
+        "academic_calendar",
+        None,
+    ]
 
 
 def test_search_documents_soft_boosts_department_scope(monkeypatch) -> None:
     monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])
 
-    def _query_embedded_chunks(*, query_embedding, top_k, category):
+    def _query_embedded_chunks(*, query_embedding, top_k, domain):
         return [
             {
                 "chunk_id": "university",
                 "doc_id": "doc-1",
-                "distance": 0.10,
+                "distance": 0.1,
                 "text": "취업 공지입니다.",
                 "title": "취업 공지",
                 "source_url": "https://example.com/university",
+                "domain": domain,
                 "department": "university",
             },
             {
                 "chunk_id": "department",
                 "doc_id": "doc-2",
-                "distance": 0.10,
+                "distance": 0.1,
                 "text": "컴퓨터공학과 취업 공지입니다.",
                 "title": "컴퓨터공학과 취업 공지",
                 "source_url": "https://example.com/department",
+                "domain": domain,
                 "department": "computer_science",
             },
         ]
@@ -291,3 +271,38 @@ def test_search_documents_soft_boosts_department_scope(monkeypatch) -> None:
     )
 
     assert [result.chunk_id for result in results] == ["department", "university"]
+
+
+def test_merge_preserves_vector_and_keyword_signals() -> None:
+    rows = search_service._merge_rows(
+        vector_rows=[
+            {
+                "chunk_id": "same",
+                "doc_id": "doc-1",
+                "distance": 0.2,
+                "text": "본문",
+                "title": "제목",
+                "source_url": "https://example.com/vector",
+                "retrieval_sources": {"vector"},
+            }
+        ],
+        keyword_rows=[
+            {
+                "chunk_id": "same",
+                "doc_id": "doc-1",
+                "lexical_score": 1.0,
+                "text": "본문",
+                "title": "제목",
+                "source_url": "https://example.com/keyword",
+                "retrieval_sources": {"keyword"},
+            }
+        ],
+    )
+
+    assert rows[0]["distance"] == 0.2
+    assert rows[0]["lexical_score"] == 1.0
+    assert rows[0]["retrieval_sources"] == {"vector", "keyword"}
+
+
+def test_tokenize_keeps_korean_words() -> None:
+    assert search_service._tokenize("졸업요건과 전공 학점") == ["졸업요건과", "전공", "학점"]

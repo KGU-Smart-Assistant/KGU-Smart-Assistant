@@ -1,0 +1,25 @@
+# Crawler worker runtime. This intentionally excludes FastAPI/uvicorn.
+python-dotenv
+pydantic
+pydantic-settings
+
+# HTTP and parsing
+requests
+httpx
+beautifulsoup4
+
+# Document crawling and parsing
+docling
+crawl4ai
+olefile
+ftfy
+PyYAML
+
+# AI / embedding / vector store
+google-genai
+chromadb
+
+# DB ORM / migrations
+SQLAlchemy
+Alembic
+psycopg2-binary

@@ -1,0 +1,7 @@
+# Optional crawler/document-ingestion dependencies.
+# Install these only for crawling and document parsing jobs, not for the API server image.
+beautifulsoup4
+docling
+crawl4ai
+olefile
+ftfy

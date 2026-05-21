@@ -52,7 +52,7 @@ def test_build_chunk_metadata_includes_retrieval_fields() -> None:
 
     metadata = vector_store._build_chunk_metadata(
         chunk=chunk,
-        category="notice",
+        domain="general_notice",
         department="academic_affairs",
     )
 
@@ -60,7 +60,7 @@ def test_build_chunk_metadata_includes_retrieval_fields() -> None:
     assert metadata["chunk_index"] == 3
     assert metadata["source_type"] == "pdf"
     assert metadata["published_at"] == "2026-04-01T09:00:00"
-    assert metadata["category"] == "notice"
+    assert metadata["domain"] == "general_notice"
     assert metadata["department"] == "academic_affairs"
 
 
