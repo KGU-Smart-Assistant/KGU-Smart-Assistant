@@ -17,12 +17,17 @@ def test_parse_expected_action_preserves_relational_db_intent() -> None:
 
 
 def test_validate_plan_reports_expected_compound_match(monkeypatch) -> None:
-    monkeypatch.setattr(chat_orchestrator.settings, "intent_classifier_model_name", None)
-    monkeypatch.setattr(chat_orchestrator, "_WEATHER_KEYWORDS", ("weather",))
+    monkeypatch.setattr(chat_orchestrator.settings, "intent_classifier_model_name", "test-model")
+    monkeypatch.setattr(chat_orchestrator, "classify_with_klue_bert", lambda _: None)
     monkeypatch.setattr(
         chat_orchestrator,
-        "_RAG_FORCE_GROUP_KEYWORDS",
-        (("scholarship_support", ("scholarship",)),),
+        "get_gemini_response",
+        lambda _: (
+            '{"actions":['
+            '{"query":"weather tomorrow","route":"weather","db_intent":"unknown","reason":"planner"},'
+            '{"query":"scholarship deadline","route":"rag","db_intent":"unknown","reason":"planner"}'
+            '],"reason":"planner"}'
+        ),
     )
 
     report = validate_plan(
@@ -39,12 +44,12 @@ def test_validate_plan_reports_expected_compound_match(monkeypatch) -> None:
             "route": "weather",
             "db_intent": "unknown",
             "query": "weather tomorrow",
-            "reason": "compound segment weather keyword",
+            "reason": "planner",
         },
         {
             "route": "rag",
             "db_intent": "unknown",
             "query": "scholarship deadline",
-            "reason": "rag keyword: scholarship_support",
+            "reason": "planner",
         },
     ]

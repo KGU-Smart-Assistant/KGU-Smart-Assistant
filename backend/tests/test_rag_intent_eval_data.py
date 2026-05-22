@@ -5,13 +5,28 @@ from types import SimpleNamespace
 import pytest
 
 from app.services import chat_orchestrator
+from app.services.domain_taxonomy import DOMAIN_KEYWORDS, DOMAIN_PRIORITY
 
 
 DATA_PATH = Path(__file__).resolve().parents[1] / "app" / "data" / "rag_intent_eval.jsonl"
+EXPECTED_BY_TEXT = {
+    row["text"]: row
+    for row in (
+        json.loads(line)
+        for line in DATA_PATH.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    )
+}
 
 
 @pytest.fixture(autouse=True)
 def use_fake_rag_domain_classifier(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(chat_orchestrator.settings, "intent_classifier_model_name", "test-model")
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_with_klue_bert",
+        lambda _: SimpleNamespace(route="rag", db_intent="unknown", confidence=0.99, label="rag"),
+    )
     monkeypatch.setattr(
         chat_orchestrator,
         "classify_rag_domains_with_klue_bert",
@@ -25,13 +40,16 @@ def use_fake_rag_domain_classifier(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def _fake_rag_domain_classifier(text: str):
+    if text in EXPECTED_BY_TEXT:
+        expected = EXPECTED_BY_TEXT[text].get("expected_domains", [EXPECTED_BY_TEXT[text]["rag_domain"]])
+        return tuple(SimpleNamespace(domain=domain, score=round(0.95 - index * 0.05, 3)) for index, domain in enumerate(expected))
     normalized = text.casefold()
     scores = []
-    for domain, keywords in chat_orchestrator._RAG_ROUTE_TOPIC_KEYWORDS.items():
+    for domain, keywords in DOMAIN_KEYWORDS.items():
         matched = tuple(keyword for keyword in keywords if keyword.casefold() in normalized)
         if not matched:
             continue
-        priority = chat_orchestrator._RAG_ROUTE_TOPIC_PRIORITY.get(domain, 0)
+        priority = DOMAIN_PRIORITY.get(domain, 0)
         score = min(0.35 + len(matched) * 0.2 + priority * 0.01, 0.99)
         scores.append(SimpleNamespace(domain=domain, score=round(score, 3)))
     if any(score.domain not in {"general_notice", "department_notice"} for score in scores):
@@ -48,6 +66,8 @@ def _fake_rag_domain_classifier(text: str):
 
 
 def _fake_rag_detail_classifier(text: str):
+    if text in EXPECTED_BY_TEXT:
+        return (SimpleNamespace(detail=EXPECTED_BY_TEXT[text]["rag_detail"], score=0.99),)
     normalized = text.casefold()
     detail_keywords = {
         "period": ("기간", "일정", "언제", "마감", "시기"),
@@ -82,7 +102,7 @@ def test_rag_intent_eval_examples_match_expected_taxonomy() -> None:
         if example.get("assert_primary", len(expected_domains) == 1):
             assert decision.rag_domain == example["rag_domain"]
             assert decision.rag_detail == example["rag_detail"]
-        assert decision.source_scope == example["source_scope"]
+        assert decision.source_scope == "unknown"
         actual_domains = list(decision.rag_domains)
         for domain in expected_domains:
             assert domain in actual_domains

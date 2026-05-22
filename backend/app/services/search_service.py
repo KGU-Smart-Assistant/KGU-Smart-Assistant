@@ -9,10 +9,7 @@ from app.crawlers.embedding_pipeline import embed_text
 from app.db.vector_store import query_embedded_chunks
 from app.schemas import SearchResponse, SearchResult
 from app.services.domain_taxonomy import (
-    DETAIL_KEYWORDS,
     DOMAIN_FILTERS,
-    DOMAIN_KEYWORDS,
-    DOMAIN_PRIORITY,
     normalize_detail,
     normalize_domain,
 )
@@ -56,7 +53,7 @@ def search_documents(
     low_confidence_threshold: float = LOW_CONFIDENCE_THRESHOLD,
 ) -> List[SearchResult]:
     """Search crawled chunks with domain filtering, detail boosting, and broad fallback."""
-    effective_domain = _normalize_domain(category) or _normalize_domain(rag_domain) or _infer_domain(query)
+    effective_domain = _normalize_domain(category) or _normalize_domain(rag_domain) or "default"
     effective_details = _effective_details(query=query, detail=detail, rag_detail=rag_detail, rag_details=rag_details)
     effective_detail = effective_details[0] if effective_details else None
     filter_categories = _filter_categories_for_domains(effective_domain, rag_domains)
@@ -174,7 +171,7 @@ def rerank_candidate_rows(
         freshness = _freshness_score(row.get("published_at"))
         title = _title_match_score(tokens=tokens, title=row.get("title") or "")
         domain_match = _domain_match_score(effective_domain, row.get("domain") or row.get("category"))
-        detail_boost = _details_boost(effective_details, row)
+        detail_boost = 0.0
         scope_boost = _scope_boost(source_scope, row)
         exact = _exact_phrase_score(query=query, title=row.get("title") or "", text=row.get("text") or "")
         source_penalty = _source_penalty(row)
@@ -433,27 +430,6 @@ def _filter_categories_for_domains(domain: str | None, extra_domains: list[str] 
     return categories or None
 
 
-def _infer_domain(query: str) -> str:
-    normalized = query.casefold()
-    best: tuple[str, int, int] | None = None
-    for domain, keywords in DOMAIN_KEYWORDS.items():
-        count = sum(keyword.casefold() in normalized for keyword in keywords)
-        if count <= 0:
-            continue
-        priority = DOMAIN_PRIORITY.get(domain, 0)
-        if best is None or (priority, count) > (best[1], best[2]):
-            best = (domain, priority, count)
-    return best[0] if best else "default"
-
-
-def _infer_detail(query: str) -> str:
-    normalized = query.casefold()
-    for detail, keywords in DETAIL_KEYWORDS.items():
-        if any(keyword.casefold() in normalized for keyword in keywords):
-            return detail
-    return "unknown"
-
-
 def _normalize_domain(category: str | None) -> str | None:
     return normalize_domain(category)
 
@@ -469,11 +445,7 @@ def _effective_details(
     rag_detail: str | None,
     rag_details: list[str] | None,
 ) -> list[str]:
-    explicit_details = _normalize_details([detail, rag_detail, *(rag_details or [])])
-    if explicit_details:
-        return explicit_details
-    inferred = _normalize_detail(_infer_detail(query))
-    return [inferred] if inferred and inferred != "unknown" else []
+    return _normalize_details([detail, rag_detail, *(rag_details or [])])
 
 
 def _normalize_details(details: list[str | None]) -> list[str]:
@@ -542,30 +514,6 @@ def _domain_match_score(expected_domain: str | None, row_domain: object) -> floa
     if row == expected_domain:
         return 1.0
     return 0.35 if str(row_domain) in (_filter_categories(expected_domain) or []) else 0.0
-
-
-def _detail_boost(detail: str | None, row: Dict[str, Any]) -> float:
-    if not detail or detail == "unknown":
-        return 0.0
-    keywords = DETAIL_KEYWORDS.get(detail, ())
-    if not keywords:
-        return 0.0
-    title = str(row.get("title") or "").casefold()
-    text = str(row.get("text") or "").casefold()
-    matched = 0.0
-    for keyword in keywords:
-        needle = keyword.casefold()
-        if needle in title:
-            matched += 0.03
-        elif needle in text:
-            matched += 0.015
-    return min(matched, 0.09)
-
-
-def _details_boost(details: list[str], row: Dict[str, Any]) -> float:
-    if not details:
-        return 0.0
-    return min(sum(_detail_boost(detail, row) for detail in details), 0.14)
 
 
 def _scope_boost(source_scope: str | None, row: Dict[str, Any]) -> float:

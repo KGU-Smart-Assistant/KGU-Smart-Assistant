@@ -31,7 +31,7 @@ def test_search_documents_uses_explicit_category_filter(monkeypatch) -> None:
     assert "confidence" in results[0].score_breakdown
 
 
-def test_search_documents_infers_category_and_applies_filter(monkeypatch) -> None:
+def test_search_documents_requires_explicit_model_domain_for_filter(monkeypatch) -> None:
     captured = {}
 
     monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
@@ -45,7 +45,7 @@ def test_search_documents_infers_category_and_applies_filter(monkeypatch) -> Non
 
     search_service.search_documents(query="성적향상장학금 신청 기간 알려줘", top_k=3)
 
-    assert captured["categories"] == ["scholarship", "general_notice", "department_notice", None]
+    assert captured["categories"] == [None]
 
 
 def test_search_wraps_results_in_response(monkeypatch) -> None:
@@ -168,7 +168,7 @@ def test_keyword_signal_can_beat_weak_vector_match(monkeypatch) -> None:
 
     assert results[0].chunk_id == "exact-keyword"
     assert results[0].score_breakdown["lexical"] == 1.0
-    assert results[0].score_breakdown["category"] == 1.0
+    assert results[0].score_breakdown["category"] == 0.0
 
 
 def test_low_confidence_category_search_falls_back_to_broad_search(monkeypatch) -> None:
@@ -273,9 +273,7 @@ def test_search_documents_soft_boosts_department_scope(monkeypatch) -> None:
     assert [result.chunk_id for result in results] == ["department", "university"]
 
 
-def test_search_documents_boosts_secondary_rag_details(monkeypatch) -> None:
-    secondary_keyword = search_service.DETAIL_KEYWORDS["required_documents"][0]
-
+def test_search_documents_accepts_secondary_rag_details_without_keyword_boost(monkeypatch) -> None:
     monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
     monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])
 
@@ -294,8 +292,8 @@ def test_search_documents_boosts_secondary_rag_details(monkeypatch) -> None:
                 "chunk_id": "secondary-detail",
                 "doc_id": "doc-2",
                 "distance": 0.2,
-                "text": secondary_keyword,
-                "title": secondary_keyword,
+                "text": "required documents",
+                "title": "required documents",
                 "source_url": "https://example.com/detail",
                 "domain": domain,
             },
@@ -311,8 +309,8 @@ def test_search_documents_boosts_secondary_rag_details(monkeypatch) -> None:
         rag_details=["required_documents"],
     )
 
-    assert results[0].chunk_id == "secondary-detail"
-    assert results[0].score_breakdown["detail"] > 0.0
+    assert results
+    assert all(result.score_breakdown["detail"] == 0.0 for result in results)
 
 
 def test_search_documents_uses_rewritten_queries(monkeypatch) -> None:

@@ -92,15 +92,13 @@ If the model repository is private, the runtime environment also needs `HF_TOKEN
 
 ## Runtime Behavior
 
-The backend uses the KLUE-BERT classifier only when `INTENT_CLASSIFIER_MODEL_NAME` is configured and the prediction confidence is at least `INTENT_CLASSIFIER_CONFIDENCE_THRESHOLD`.
+The backend uses the KLUE-BERT classifier when `INTENT_CLASSIFIER_MODEL_NAME`
+is configured and the prediction confidence is at least
+`INTENT_CLASSIFIER_CONFIDENCE_THRESHOLD`.
 
-Otherwise it falls back to the existing LLM-based routing flow.
-
-Compound questions are planned before KLUE-BERT is used. The planner first
-splits obvious multi-part questions into atomic queries, routes each query, and
-then executes the resulting actions in order. Keep KLUE-BERT focused on
-single-query intent classification unless the model architecture is changed to
-multi-label classification.
+When KLUE-BERT is unavailable or below threshold, routing falls back to the LLM
+planner. Keyword-based route guardrails are not used. Compound questions are
+split only by the LLM planner response.
 
 RAG domain classification is a separate optional model. It runs only after the
 top-level route is `rag` and predicts multiple domain labels with sigmoid
@@ -111,14 +109,15 @@ domain is reported as `unknown`.
 After a query is routed to RAG, the orchestrator now treats intent enrichment as
 a six-stage pipeline:
 
-1. `routing`: choose `llm`, `relational_db`, `rag`, or `weather`.
+1. `routing`: choose `llm`, `relational_db`, `rag`, or `weather` with KLUE-BERT
+   or the LLM planner fallback.
 2. `rag_domain`: use the dedicated multi-label KLUE-BERT domain classifier.
 3. `rag_detail`: classify the detail axis such as `period`, `eligibility`, or
    `required_documents` with the optional RAG detail KLUE-BERT model. This
    stage intentionally does not fall back to keyword rules; when the model is
    not configured or returns a low-confidence detail, the detail is `unknown`.
-4. `confidence`: calculate a confidence score from domain score shape, detail
-   signal, and source scope.
+4. `confidence`: calculate a confidence score from domain score shape and the
+   detail model signal.
 5. `ambiguity`: report `clear`, `multi_domain`, `low_confidence`,
    `missing_detail`, or `needs_clarification`.
 6. `rewritten_queries`: expose retrieval-ready query variants for downstream

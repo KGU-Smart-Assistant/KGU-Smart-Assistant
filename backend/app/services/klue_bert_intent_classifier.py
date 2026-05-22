@@ -72,19 +72,21 @@ def classify_with_klue_bert(user_input: str) -> IntentClassifierPrediction | Non
 def _parse_classifier_label(label: str) -> tuple[ClassifierRoute, ClassifierDbIntent] | None:
     """Map model labels into route-only decisions.
 
-    Older models may still emit map/phone or relational_db:* labels. Treat those
-    labels as relational_db and leave map/phone selection to the DB resolver.
+    Older route-only models may emit relational_db without a subtype. Newer
+    routing models can emit map/phone or relational_db:* labels so DB subtype
+    selection stays in the learned classifier path.
     """
     normalized = label.strip().lower().replace("__", ":").replace("/", ":")
     if normalized in _LEGACY_LABELS:
-        route, _db_intent = _LEGACY_LABELS[normalized]
-        return route, "unknown"
+        return _LEGACY_LABELS[normalized]
 
     route, separator, db_intent = normalized.partition(":")
     if route not in _ROUTES:
         return None
-    if route == "relational_db" and separator and db_intent not in _DB_INTENTS:
-        return None
+    if route == "relational_db" and separator:
+        if db_intent not in _DB_INTENTS:
+            return None
+        return route, db_intent
     return route, "unknown"
 
 

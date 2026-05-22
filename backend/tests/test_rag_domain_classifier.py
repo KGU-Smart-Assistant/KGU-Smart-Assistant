@@ -48,10 +48,11 @@ def test_load_examples_reads_expected_domains_from_rag_eval_data() -> None:
 
 
 def test_rag_domain_classifier_scores_replace_rule_based_domain_scores(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(chat_orchestrator.settings, "intent_classifier_model_name", "test-model")
     monkeypatch.setattr(
         chat_orchestrator,
-        "_RAG_FORCE_GROUP_KEYWORDS",
-        (("scholarship_support", ("scholarship",)),),
+        "classify_with_klue_bert",
+        lambda _: type("Prediction", (), {"route": "rag", "db_intent": "unknown", "confidence": 0.99, "label": "rag"})(),
     )
     monkeypatch.setattr(
         chat_orchestrator,
@@ -78,10 +79,11 @@ def test_rag_domain_classifier_scores_replace_rule_based_domain_scores(monkeypat
 
 
 def test_rag_domain_is_unknown_without_model_predictions(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(chat_orchestrator.settings, "intent_classifier_model_name", "test-model")
     monkeypatch.setattr(
         chat_orchestrator,
-        "_RAG_FORCE_GROUP_KEYWORDS",
-        (("scholarship_support", ("scholarship",)),),
+        "classify_with_klue_bert",
+        lambda _: type("Prediction", (), {"route": "rag", "db_intent": "unknown", "confidence": 0.99, "label": "rag"})(),
     )
     monkeypatch.setattr(
         chat_orchestrator,
@@ -98,10 +100,11 @@ def test_rag_domain_is_unknown_without_model_predictions(monkeypatch: pytest.Mon
 
 
 def test_rag_domain_pipeline_marks_close_top_scores_as_multi_domain(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(chat_orchestrator.settings, "intent_classifier_model_name", "test-model")
     monkeypatch.setattr(
         chat_orchestrator,
-        "_RAG_FORCE_GROUP_KEYWORDS",
-        (("scholarship_support", ("scholarship",)),),
+        "classify_with_klue_bert",
+        lambda _: type("Prediction", (), {"route": "rag", "db_intent": "unknown", "confidence": 0.99, "label": "rag"})(),
     )
     monkeypatch.setattr(
         chat_orchestrator,
