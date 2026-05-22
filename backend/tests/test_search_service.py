@@ -273,6 +273,84 @@ def test_search_documents_soft_boosts_department_scope(monkeypatch) -> None:
     assert [result.chunk_id for result in results] == ["department", "university"]
 
 
+def test_search_documents_boosts_secondary_rag_details(monkeypatch) -> None:
+    secondary_keyword = search_service.DETAIL_KEYWORDS["required_documents"][0]
+
+    monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])
+
+    def _query_embedded_chunks(*, query_embedding, top_k, domain):
+        return [
+            {
+                "chunk_id": "generic",
+                "doc_id": "doc-1",
+                "distance": 0.2,
+                "text": "일반 안내",
+                "title": "일반 안내",
+                "source_url": "https://example.com/generic",
+                "domain": domain,
+            },
+            {
+                "chunk_id": "secondary-detail",
+                "doc_id": "doc-2",
+                "distance": 0.2,
+                "text": secondary_keyword,
+                "title": secondary_keyword,
+                "source_url": "https://example.com/detail",
+                "domain": domain,
+            },
+        ]
+
+    monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
+
+    results = search_service.search_documents(
+        query="장학금 신청 알려줘",
+        top_k=2,
+        rag_domain="scholarship",
+        rag_detail="period",
+        rag_details=["required_documents"],
+    )
+
+    assert results[0].chunk_id == "secondary-detail"
+    assert results[0].score_breakdown["detail"] > 0.0
+
+
+def test_search_documents_uses_rewritten_queries(monkeypatch) -> None:
+    captured_queries = []
+
+    monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])
+
+    def _query_embedded_chunks(*, query_embedding, top_k, domain):
+        query_index = len(captured_queries)
+        captured_queries.append(query_embedding)
+        return [
+            {
+                "chunk_id": f"chunk-{query_index}",
+                "doc_id": "doc-1",
+                "distance": 0.2,
+                "text": "등록금 환불 신청서 안내",
+                "title": "등록금 환불 신청서",
+                "source_url": "https://example.com/refund",
+                "domain": domain,
+            }
+        ]
+
+    monkeypatch.setattr(search_service, "embed_text", lambda query: captured_queries.append(query) or [0.1])
+    monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
+
+    results = search_service.search_documents(
+        query="등록금 환불",
+        top_k=2,
+        rag_domain="tuition",
+        rewritten_queries=["등록금 환불 신청서"],
+    )
+
+    assert "등록금 환불" in captured_queries
+    assert "등록금 환불 신청서" in captured_queries
+    assert results
+
+
 def test_merge_preserves_vector_and_keyword_signals() -> None:
     rows = search_service._merge_rows(
         vector_rows=[

@@ -152,6 +152,10 @@ def summarize_answer_eval_results(results: Sequence[AnswerEvalResult]) -> dict[s
 
 def load_eval_cases(path: str | Path) -> list[SearchEvalCase]:
     source = Path(path)
+    if not source.exists() and not source.is_absolute():
+        backend_relative_source = Path(__file__).resolve().parents[2] / source
+        if backend_relative_source.exists():
+            source = backend_relative_source
     if source.suffix.casefold() == ".csv":
         return _load_csv_cases(source)
     return _load_json_cases(source)

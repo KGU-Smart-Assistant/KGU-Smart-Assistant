@@ -12,6 +12,62 @@ from app.services import chat_orchestrator
 @pytest.fixture(autouse=True)
 def disable_configured_intent_classifier(monkeypatch) -> None:
     monkeypatch.setattr(chat_orchestrator.settings, "intent_classifier_model_name", None)
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_rag_domains_with_klue_bert",
+        _fake_rag_domain_classifier,
+    )
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_rag_details_with_klue_bert",
+        _fake_rag_detail_classifier,
+    )
+
+
+def _fake_rag_domain_classifier(text: str):
+    normalized = text.casefold()
+    scores = []
+    for domain, keywords in chat_orchestrator._RAG_ROUTE_TOPIC_KEYWORDS.items():
+        matched = tuple(keyword for keyword in keywords if keyword.casefold() in normalized)
+        if not matched:
+            continue
+        priority = chat_orchestrator._RAG_ROUTE_TOPIC_PRIORITY.get(domain, 0)
+        score = min(0.35 + len(matched) * 0.2 + priority * 0.01, 0.99)
+        scores.append(SimpleNamespace(domain=domain, score=round(score, 3)))
+    if any(score.domain not in {"general_notice", "department_notice"} for score in scores):
+        scores = [
+            SimpleNamespace(
+                domain=score.domain,
+                score=round(score.score * 0.7, 3),
+            )
+            if score.domain in {"general_notice", "department_notice"}
+            else score
+            for score in scores
+        ]
+    return tuple(
+        sorted(scores, key=lambda item: item.score, reverse=True)[:3]
+    )
+
+
+def _fake_rag_detail_classifier(text: str):
+    normalized = text.casefold()
+    detail_keywords = {
+        "period": ("기간", "일정", "언제", "마감", "시기", "deadline"),
+        "required_documents": ("서류", "제출", "제출서류", "증명", "첨부", "신청서", "양식", "서식", "자료", "파일"),
+        "eligibility": ("대상", "자격", "조건", "가능", "지원자격", "받을 수"),
+        "procedure": ("신청", "절차", "방법", "접수", "어떻게"),
+        "benefit": ("금액", "혜택", "지원액", "감면"),
+        "announcement_lookup": ("공지", "안내", "모집", "결과 발표", "확인"),
+        "summary": ("요약", "정리"),
+    }
+    scored = [
+        (detail, sum(keyword.casefold() in normalized for keyword in keywords))
+        for detail, keywords in detail_keywords.items()
+    ]
+    detail, count = max(scored, key=lambda item: item[1])
+    if count > 0:
+        return (SimpleNamespace(detail=detail, score=0.99),)
+    return ()
 
 
 def test_decide_chat_route_uses_relational_db_for_phone_question() -> None:
@@ -39,8 +95,7 @@ def test_decide_chat_route_uses_rag_for_notice_question() -> None:
     assert decision.rag_confidence > 0.0
     assert decision.rag_domains[0] == "scholarship"
     assert decision.intent_scores[0].domain == "scholarship"
-    assert "장학" in decision.matched_keywords
-    assert "기간" in decision.matched_keywords
+    assert decision.matched_keywords == ()
 
 
 def test_information_lookup_where_question_uses_rag_not_map() -> None:
@@ -526,7 +581,9 @@ def test_answer_chat_uses_rag_results_as_context(monkeypatch) -> None:
     assert result.rag_detail == "period"
     assert result.source_scope == "unknown"
     assert result.rag_confidence is not None
-    assert result.matched_keywords
+    assert result.rag_ambiguity == "clear"
+    assert result.rewritten_queries
+    assert result.matched_keywords == ()
     assert result.intent_scores
     assert result.answer_status == "answered"
     assert "장학 신청 안내" in captured["context"]

@@ -49,19 +49,24 @@ def search_documents(
     rag_domain: Optional[str] = None,
     rag_domains: Optional[List[str]] = None,
     rag_detail: Optional[str] = None,
+    rag_details: Optional[List[str]] = None,
     source_scope: Optional[str] = None,
+    rewritten_queries: Optional[List[str]] = None,
     enable_fallback: bool = True,
     low_confidence_threshold: float = LOW_CONFIDENCE_THRESHOLD,
 ) -> List[SearchResult]:
     """Search crawled chunks with domain filtering, detail boosting, and broad fallback."""
     effective_domain = _normalize_domain(category) or _normalize_domain(rag_domain) or _infer_domain(query)
-    effective_detail = _normalize_detail(detail) or _normalize_detail(rag_detail) or _infer_detail(query)
+    effective_details = _effective_details(query=query, detail=detail, rag_detail=rag_detail, rag_details=rag_details)
+    effective_detail = effective_details[0] if effective_details else None
     filter_categories = _filter_categories_for_domains(effective_domain, rag_domains)
-    primary_rows = _run_search_attempt(
-        query=query,
+    primary_rows = _run_search_attempts(
+        queries=_search_queries(query, rewritten_queries),
+        ranking_query=query,
         top_k=top_k,
         domain=effective_domain,
         detail=effective_detail,
+        details=effective_details,
         categories=filter_categories,
         source_scope=source_scope,
         attempt="primary",
@@ -73,11 +78,13 @@ def search_documents(
     if primary_rows:
         return [_row_to_search_result(row) for row in primary_rows[:top_k]]
 
-    fallback_rows = _run_search_attempt(
-        query=query,
+    fallback_rows = _run_search_attempts(
+        queries=_search_queries(query, rewritten_queries),
+        ranking_query=query,
         top_k=top_k,
         domain="default",
         detail=effective_detail,
+        details=effective_details,
         categories=None,
         source_scope=source_scope,
         attempt="fallback_broad",
@@ -87,9 +94,52 @@ def search_documents(
         query=query,
         category=effective_domain,
         detail=effective_detail,
+        details=effective_details,
         source_scope=source_scope,
     )
     return [_row_to_search_result(row) for row in merged_rows[:top_k]]
+
+
+def _search_queries(query: str, rewritten_queries: list[str] | None) -> list[str]:
+    return list(dict.fromkeys([query, *(rewritten_queries or [])]))
+
+
+def _run_search_attempts(
+    *,
+    queries: list[str],
+    ranking_query: str,
+    top_k: int,
+    domain: str | None,
+    detail: str | None,
+    details: list[str],
+    categories: list[str] | None,
+    source_scope: str | None,
+    attempt: str,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for index, attempt_query in enumerate(queries):
+        attempt_rows = _run_search_attempt(
+            query=attempt_query,
+            top_k=top_k,
+            domain=domain,
+            detail=detail,
+            details=details,
+            categories=categories,
+            source_scope=source_scope,
+            attempt=attempt if index == 0 else f"{attempt}_rewrite",
+        )
+        for row in attempt_rows:
+            if index > 0:
+                row["rewritten_query_used"] = attempt_query
+        rows = _merge_rows(rows, attempt_rows)
+    return rerank_candidate_rows(
+        rows=rows,
+        query=ranking_query,
+        category=domain,
+        detail=detail,
+        details=details,
+        source_scope=source_scope,
+    )
 
 
 def search(query: str, top_k: int = 5, category: Optional[str] = None, detail: Optional[str] = None) -> SearchResponse:
@@ -105,10 +155,12 @@ def rerank_candidate_rows(
     query: str,
     category: str | None,
     detail: str | None = None,
+    details: list[str] | None = None,
     source_scope: str | None = None,
 ) -> List[Dict[str, Any]]:
     effective_domain = _normalize_domain(category) or "default"
-    effective_detail = _normalize_detail(detail)
+    effective_details = _normalize_details([detail, *(details or [])])
+    effective_detail = effective_details[0] if effective_details else None
     weights = DOMAIN_WEIGHTS.get(effective_domain, DOMAIN_WEIGHTS["default"])
     tokens = _tokenize(query)
     ranked_rows: List[Dict[str, Any]] = []
@@ -122,7 +174,7 @@ def rerank_candidate_rows(
         freshness = _freshness_score(row.get("published_at"))
         title = _title_match_score(tokens=tokens, title=row.get("title") or "")
         domain_match = _domain_match_score(effective_domain, row.get("domain") or row.get("category"))
-        detail_boost = _detail_boost(effective_detail, row)
+        detail_boost = _details_boost(effective_details, row)
         scope_boost = _scope_boost(source_scope, row)
         exact = _exact_phrase_score(query=query, title=row.get("title") or "", text=row.get("text") or "")
         source_penalty = _source_penalty(row)
@@ -176,6 +228,7 @@ def _run_search_attempt(
     top_k: int,
     domain: str | None,
     detail: str | None,
+    details: list[str],
     categories: list[str] | None,
     source_scope: str | None,
     attempt: str,
@@ -202,6 +255,7 @@ def _run_search_attempt(
         query=query,
         category=domain,
         detail=detail,
+        details=details,
         source_scope=source_scope,
     )
 
@@ -408,6 +462,30 @@ def _normalize_detail(detail: str | None) -> str | None:
     return normalize_detail(detail)
 
 
+def _effective_details(
+    *,
+    query: str,
+    detail: str | None,
+    rag_detail: str | None,
+    rag_details: list[str] | None,
+) -> list[str]:
+    explicit_details = _normalize_details([detail, rag_detail, *(rag_details or [])])
+    if explicit_details:
+        return explicit_details
+    inferred = _normalize_detail(_infer_detail(query))
+    return [inferred] if inferred and inferred != "unknown" else []
+
+
+def _normalize_details(details: list[str | None]) -> list[str]:
+    normalized_details: list[str] = []
+    for detail in details:
+        normalized = _normalize_detail(detail)
+        if not normalized or normalized == "unknown" or normalized in normalized_details:
+            continue
+        normalized_details.append(normalized)
+    return normalized_details
+
+
 def _tokenize(text: str) -> list[str]:
     return [token.casefold() for token in re.findall(r"[0-9A-Za-z가-힣]+", text) if len(token) >= 2]
 
@@ -482,6 +560,12 @@ def _detail_boost(detail: str | None, row: Dict[str, Any]) -> float:
         elif needle in text:
             matched += 0.015
     return min(matched, 0.09)
+
+
+def _details_boost(details: list[str], row: Dict[str, Any]) -> float:
+    if not details:
+        return 0.0
+    return min(sum(_detail_boost(detail, row) for detail in details), 0.14)
 
 
 def _scope_boost(source_scope: str | None, row: Dict[str, Any]) -> float:

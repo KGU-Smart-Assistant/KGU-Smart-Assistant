@@ -29,8 +29,11 @@ class ChatResponse(BaseModel):
     rag_domain: str | None = None
     rag_domains: list[str] = Field(default_factory=list)
     rag_detail: str | None = None
+    rag_details: list[str] = Field(default_factory=list)
     source_scope: str | None = None
     rag_confidence: float | None = None
+    rag_ambiguity: str | None = None
+    rewritten_queries: list[str] = Field(default_factory=list)
     matched_keywords: list[str] = Field(default_factory=list)
     intent_scores: list[RagIntentScore] = Field(default_factory=list)
     answer_status: Literal["answered", "partial", "insufficient"] = "answered"

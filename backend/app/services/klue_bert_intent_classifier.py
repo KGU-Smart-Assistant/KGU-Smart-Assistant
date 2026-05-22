@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Literal
 from app.core.config import settings
 
 if TYPE_CHECKING:
-    from app.services.chat_orchestrator import ChatDecision, ChatRoute, DbIntent
+    from app.services.chat_orchestrator import ChatRoute, DbIntent
 
 
 ClassifierRoute = Literal["llm", "relational_db", "rag", "weather"]
@@ -70,21 +70,22 @@ def classify_with_klue_bert(user_input: str) -> IntentClassifierPrediction | Non
 
 
 def _parse_classifier_label(label: str) -> tuple[ClassifierRoute, ClassifierDbIntent] | None:
-    """Map model labels into the public route/db_intent decision shape."""
+    """Map model labels into route-only decisions.
+
+    Older models may still emit map/phone or relational_db:* labels. Treat those
+    labels as relational_db and leave map/phone selection to the DB resolver.
+    """
     normalized = label.strip().lower().replace("__", ":").replace("/", ":")
     if normalized in _LEGACY_LABELS:
-        return _LEGACY_LABELS[normalized]
+        route, _db_intent = _LEGACY_LABELS[normalized]
+        return route, "unknown"
 
     route, separator, db_intent = normalized.partition(":")
     if route not in _ROUTES:
         return None
-    if route != "relational_db":
-        return route, "unknown"
-    if not separator:
-        return "relational_db", "unknown"
-    if db_intent not in _DB_INTENTS:
+    if route == "relational_db" and separator and db_intent not in _DB_INTENTS:
         return None
-    return "relational_db", db_intent
+    return route, "unknown"
 
 
 @lru_cache(maxsize=1)
