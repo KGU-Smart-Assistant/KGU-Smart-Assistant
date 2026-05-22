@@ -22,8 +22,8 @@ from app.services.rag_domain_classifier import classify_rag_domains_with_klue_be
 from app.services.search_service import search_documents
 from app.services.weather_service import get_weather_response
 
-ChatRoute = Literal["llm", "relational_db", "rag", "weather", "multi"]
-AtomicChatRoute = Literal["llm", "relational_db", "rag", "weather"]
+ChatRoute = Literal["llm", "relational_db", "rag", "weather"]
+AtomicChatRoute = ChatRoute
 DbIntent = Literal["map", "phone", "unknown"]
 RagAmbiguity = Literal["clear", "multi_domain", "low_confidence", "missing_detail", "needs_clarification"]
 
@@ -478,7 +478,7 @@ _RAG_FORCE_GROUP_KEYWORDS = (
 def answer_chat(user_input: str, db: Session) -> ChatResult:
     plan = decide_chat_plan(user_input)
     if len(plan.actions) > 1:
-        return _answer_from_multi(user_input, plan.actions, db)
+        return _answer_from_compound(user_input, plan.actions, db)
 
     decision = plan.actions[0]
     return _answer_for_decision(user_input, decision, db)
@@ -735,7 +735,7 @@ def _answer_from_weather(user_input: str) -> ChatResult:
     )
 
 
-def _answer_from_multi(
+def _answer_from_compound(
     user_input: str,
     actions: tuple[ChatDecision, ...],
     db: Session,
@@ -756,7 +756,7 @@ def _answer_from_multi(
     return ChatResult(
         reply="\n\n".join(replies),
         intent="복합",
-        route="multi",
+        route=results[0].route if results else "llm",
         sources=sources,
     )
 

@@ -508,7 +508,7 @@ def test_answer_chat_uses_atomic_queries_for_compound_actions(monkeypatch) -> No
 
     result = chat_orchestrator.answer_chat("weather tomorrow, scholarship deadline", db=None)
 
-    assert result.route == "multi"
+    assert result.route == "weather"
     assert "weather query: weather tomorrow" in result.reply
     assert "rag query: scholarship deadline" in result.reply
     assert captured["rag_query"] == "scholarship deadline"
@@ -543,7 +543,7 @@ def test_answer_chat_combines_compound_map_and_phone(monkeypatch) -> None:
 
     result = chat_orchestrator.answer_chat("중앙도서관 위치랑 전화번호 알려줘", db=None)
 
-    assert result.route == "multi"
+    assert result.route == "relational_db"
     assert result.intent == "복합"
     assert "중앙도서관 위치" in result.reply
     assert "중앙도서관 전화번호" in result.reply

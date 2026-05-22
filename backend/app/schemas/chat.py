@@ -24,7 +24,7 @@ class RagIntentScore(BaseModel):
 class ChatResponse(BaseModel):
     reply: str
     intent: str
-    route: Literal["llm", "relational_db", "rag", "weather", "multi"] = "llm"
+    route: Literal["llm", "relational_db", "rag", "weather"] = "llm"
     sources: list[ChatSource] = Field(default_factory=list)
     rag_domain: str | None = None
     rag_domains: list[str] = Field(default_factory=list)
