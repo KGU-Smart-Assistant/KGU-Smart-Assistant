@@ -16,3 +16,74 @@ ehthumbs.db
 
 # Reference projects
 참조/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local runtime data
+.tmp/
+.crawl4ai-data/
+*.log
+*.sqlite
+*.sqlite3
+app.db
+servers/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+build/
+coverage/
+.vercel/
+
+# Local-only developer/runtime files
+.envrc
+*.local
+.local/
+.cache/
+tmp/
+temp/
+logs/
+*.pid
+*.seed
+*.local.json
+*.local.yaml
+*.local.yml
+
+# Tool/runtime state
+.claude/
+.cursor/
+.cursorignore
+.cursorindexingignore
+.mcp.json
+
+# Python environments
+.venv/
+venv/
+env/
+ENV/
+__pypackages__/
+.python-version
+
+# Package manager caches
+.pnpm-store/
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# Local agent files
+AGENTS.md
+.agents/
+.omx/
+.codex/

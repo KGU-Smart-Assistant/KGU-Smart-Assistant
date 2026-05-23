@@ -1,0 +1,23 @@
+# FastAPI server
+fastapi
+uvicorn[standard]
+python-dotenv
+pydantic
+pydantic-settings
+
+# HTTP clients
+requests
+httpx
+
+# AI / RAG runtime
+chromadb
+langchain-core
+google-genai
+
+# DB ORM / migrations
+SQLAlchemy
+Alembic
+psycopg2-binary
+
+# Shared utilities
+PyYAML

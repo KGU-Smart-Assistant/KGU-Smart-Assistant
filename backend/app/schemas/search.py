@@ -1,0 +1,56 @@
+from typing import Dict, List, Literal, Optional
+
+from pydantic import BaseModel, Field
+
+
+class SearchRequest(BaseModel):
+    query: str = Field(min_length=1)
+    top_k: int = Field(default=5, ge=1, le=20)
+    domain: Optional[
+        Literal[
+            "scholarship",
+            "tuition",
+            "course_registration",
+            "academic_calendar",
+            "document_materials",
+            "career_support",
+            "department_notice",
+            "general_notice",
+            "unknown",
+            "faq",
+            "graduation",
+            "student_life",
+        ]
+    ] = None
+    category: Optional[str] = Field(default=None, description="Deprecated. Use domain.")
+    detail: Optional[
+        Literal[
+            "period",
+            "eligibility",
+            "procedure",
+            "required_documents",
+            "benefit",
+            "announcement_lookup",
+            "summary",
+            "unknown",
+        ]
+    ] = None
+
+
+class SearchResult(BaseModel):
+    chunk_id: str
+    doc_id: str
+    score: float
+    text: str
+    title: str
+    source_url: str
+    domain: Optional[str] = None
+    category: Optional[str] = Field(default=None, description="Deprecated. Mirrors domain for old clients.")
+    department: Optional[str] = None
+    published_at: Optional[str] = None
+    score_breakdown: Dict[str, float] = Field(default_factory=dict)
+
+
+class SearchResponse(BaseModel):
+    query: str
+    results: List[SearchResult]

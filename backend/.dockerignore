@@ -1,0 +1,24 @@
+.git
+.gitignore
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.db
+.venv
+venv
+KGU chatbot
+.env
+docker-compose.yml
+Dockerfile
+.tmp
+.pytest_tmp
+.crawl4ai-data
+kGU-chatbot
+app.db
+*.db
+*.sqlite
+*.sqlite3
+servers
+docs
+tests

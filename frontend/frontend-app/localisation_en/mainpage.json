@@ -1,0 +1,16 @@
+{
+  "header": {
+    "title": "KGU Smart Assistant"
+  },
+  "quickActions": {
+    "academicCalendar": "Academic Calendar",
+    "exchangeStudent": "Exchange Student",
+    "tuition": "Tuition/Scholarship"
+  },
+  "chatInput": {
+    "placeholder": "Type your message..."
+  },
+  "chat": {
+    "initialMessage": "Hello! I am the Kyonggi University Chatbot. 🏫\nAsk me about academic calendars, exchange student programs (SEP), tuition payments, classroom guides, etc., for the Suwon and Seoul campuses!\n\n💡 You can also ask quickly by pressing the buttons below."
+  }
+}

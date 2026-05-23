@@ -1,0 +1,5 @@
+# Optional ML dependencies for KLUE-BERT intent classifier training/inference.
+# Install only when training or serving INTENT_CLASSIFIER_MODEL_NAME.
+torch
+transformers
+huggingface_hub

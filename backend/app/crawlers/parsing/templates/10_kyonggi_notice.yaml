@@ -1,0 +1,9 @@
+registry:
+  - name: kyonggi_notice_detail
+    priority: 10
+    url_patterns:
+      - "selectbbsnttview.do"
+    categories:
+      - "notice"
+      - "materials"
+    parser: notice_detail

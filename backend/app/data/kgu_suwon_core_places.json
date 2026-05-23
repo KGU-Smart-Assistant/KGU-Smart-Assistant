@@ -1,0 +1,26 @@
+[
+  {
+    "name": "경기대학교 수원캠퍼스 중앙도서관",
+    "description": "중앙도서관, 도서관, 도서",
+    "latitude": 37.30125,
+    "longitude": 127.03645
+  },
+  {
+    "name": "경기대학교 수원캠퍼스 학생회관",
+    "description": "학생회관, 학생회",
+    "latitude": 37.30095,
+    "longitude": 127.03685
+  },
+  {
+    "name": "경기대학교 수원캠퍼스 정문",
+    "description": "정문",
+    "latitude": 37.30105,
+    "longitude": 127.03590
+  },
+  {
+    "name": "경기대학교 수원캠퍼스 후문",
+    "description": "후문",
+    "latitude": 37.29985,
+    "longitude": 127.03810
+  }
+]

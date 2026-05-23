@@ -1,0 +1,9 @@
+registry:
+  - name: kyonggi_faq_list
+    priority: 20
+    url_patterns:
+      - "selectbbsnttlist.do"
+      - "faq"
+    categories:
+      - "faq"
+    parser: faq
