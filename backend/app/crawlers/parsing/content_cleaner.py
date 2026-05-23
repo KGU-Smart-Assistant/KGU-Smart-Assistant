@@ -61,6 +61,17 @@ PORTAL_CONTENT_MARKERS = (
 )
 
 FOOTER_MARKERS = (
+    "안전센터 소개",
+    "(우) 16227",
+    "Copyright(c)",
+    "전체메뉴 +",
+    "\n안전센터 소개",
+    "\n(우) 16227",
+    "\nCopyright(c)",
+    "\nCopyright (c)",
+    "\nCOPYRIGHT (C)",
+    "\n전체메뉴 +",
+    "\n**수원캠퍼스 :**",
     "\n[목록]",
     "\n게시물삭제",
     "\n이전글",
@@ -126,6 +137,7 @@ def _preclean_source_document(content: str, *, source_url: str) -> str:
     if host.endswith("kyonggi.ac.kr") or host.endswith("kgu.ac.kr"):
         content = _trim_by_markers(content, PORTAL_CONTENT_MARKERS)
         content = _trim_footer(content)
+        content = _trim_academic_affairs_contents_menu(content)
     return content
 
 
@@ -141,6 +153,15 @@ def _trim_footer(content: str) -> str:
     if not positions:
         return content
     return content[: min(positions)]
+
+
+def _trim_academic_affairs_contents_menu(content: str) -> str:
+    if "학사혁신팀소개" not in content:
+        return content
+    match = re.search(r"교육봉사\s+1\s*봉사시기", content)
+    if not match:
+        return content
+    return content[match.start() :]
 
 
 def _trim_to_content_region(lines: list[str]) -> list[str]:
@@ -189,6 +210,7 @@ def _trim_to_content_region(lines: list[str]) -> list[str]:
 
 
 def _strip_markdown_noise(line: str) -> str:
+    line = _trim_inline_footer(line)
     line = re.sub(r"!\\?\[[^\]]*\]\\?\([^)]+\)", "", line)
     line = re.sub(r"!\\?\[.*$", "", line)
     line = re.sub(r"\[([^\]]*)\]\(javascript:[^)]+\)", r"\1", line, flags=re.IGNORECASE)
@@ -202,12 +224,33 @@ def _strip_markdown_noise(line: str) -> str:
     line = re.sub(r"^(한국어\s+){2,}English\s+中文\s+日本語\s+(한국어\s+English\s+中文\s+日本語\s+)?", "", line)
     line = line.replace("카카오톡 닫기 인쇄", "")
     line = line.replace("SNS공유", "")
+    line = line.replace(";)", "")
+    line = re.sub(r"\s*이미지\s+\d+\s+이미지\s+확대보기", " ", line)
+    line = re.sub(r"\s+이미지\s+확대보기", " ", line)
+    line = line.replace("글자 축소", "")
+    line = line.replace("글자 확대", "")
+    line = line.replace("_규정 목차 여닫이 버튼_", "")
     line = re.sub(r"!\[[^\]]*\]\([^)]+\)", "", line)
     line = re.sub(r"\[([^\]]*)\]\([^)]+\)", r"\1", line)
     line = re.sub(r"\\?\]\\?\(https?://[^)]+\)", "", line)
     line = re.sub(r"^[-*]\s+", "", line)
     line = re.sub(r"^#+\s*", "", line)
     return re.sub(r"\s+", " ", line).strip()
+
+
+def _trim_inline_footer(line: str) -> str:
+    markers = (
+        "안전센터 소개",
+        "(우) 16227",
+        "Copyright(c)",
+        "전체메뉴 +",
+        "**수원캠퍼스 :**",
+        "COPYRIGHT (C)",
+    )
+    positions = [line.find(marker) for marker in markers if marker in line]
+    if not positions:
+        return line
+    return line[: min(positions)]
 
 
 def _should_drop_line(line: str, *, source_url: str) -> bool:

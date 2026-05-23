@@ -175,6 +175,7 @@ def build_crawler_config(source: Dict[str, Any]) -> Crawl4AICollectorConfig:
             else None
         ),
         collect_seed_pages=source.get("collect_seed_pages", True),
+        collect_attachment_documents=source.get("collect_attachment_documents", False),
         allowed_keyword_filters=(
             tuple(source["allowed_keyword_filters"])
             if "allowed_keyword_filters" in source

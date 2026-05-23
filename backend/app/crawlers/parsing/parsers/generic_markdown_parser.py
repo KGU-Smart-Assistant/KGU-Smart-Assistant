@@ -19,6 +19,15 @@ class GenericMarkdownParser(BaseParser):
         if not content:
             return None
 
+        if "rule.kyonggi.ac.kr" in context.url.casefold():
+            rule_title_match = re.search(r"\*\*([^*\n]+)\*\*", content)
+            if rule_title_match:
+                return ParsedDocument(
+                    title=rule_title_match.group(1).strip()[:300],
+                    content=content,
+                    attachment_urls=_extract_attachment_urls(context.url, result),
+                )
+
         for line in content.splitlines():
             stripped = line.strip()
             if not stripped or stripped.startswith("![") or stripped.startswith("["):

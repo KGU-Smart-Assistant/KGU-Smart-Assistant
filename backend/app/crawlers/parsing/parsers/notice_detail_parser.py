@@ -92,6 +92,16 @@ class NoticeDetailParser(BaseParser):
         return parsed
 
     def _extract_title_from_crawl_result(self, result, content: str) -> Optional[str]:
+        board_title_match = re.search(r"^\[.*?\]\s+(.+)$", content, re.MULTILINE)
+        if board_title_match:
+            normalized = self._normalize_title_candidate(board_title_match.group(1))
+            if normalized and not self._should_skip_title(normalized):
+                return normalized[:300]
+
+        detail_title = self._extract_title_after_print_action(content)
+        if detail_title:
+            return detail_title[:300]
+
         metadata = getattr(result, "metadata", None) or {}
         for key in ("title", "og:title"):
             value = metadata.get(key)
@@ -103,16 +113,6 @@ class NoticeDetailParser(BaseParser):
                     and not self._looks_like_generic_board_title(normalized)
                 ):
                     return normalized[:300]
-
-        board_title_match = re.search(r"^\[.*?\]\s+(.+)$", content, re.MULTILINE)
-        if board_title_match:
-            normalized = self._normalize_title_candidate(board_title_match.group(1))
-            if normalized and not self._should_skip_title(normalized):
-                return normalized[:300]
-
-        detail_title = self._extract_title_after_print_action(content)
-        if detail_title:
-            return detail_title[:300]
 
         for line in content.splitlines():
             normalized_line = line.strip()
@@ -139,6 +139,19 @@ class NoticeDetailParser(BaseParser):
         )
         for candidate in metadata_candidates:
             parsed = self._parse_datetime(candidate)
+            if parsed is not None:
+                return parsed
+
+        korean_date_patterns = (
+            r"_?작성일_?\s*[:：]?\s*([0-9]{4}\s*년\s*[0-9]{1,2}\s*월\s*[0-9]{1,2}\s*일(?:\s*[0-9]{1,2}\s*시\s*[0-9]{1,2}\s*분(?:\s*[0-9]{1,2}\s*초)?)?)",
+            r"_?등록일_?\s*[:：]?\s*([0-9]{4}\s*년\s*[0-9]{1,2}\s*월\s*[0-9]{1,2}\s*일(?:\s*[0-9]{1,2}\s*시\s*[0-9]{1,2}\s*분(?:\s*[0-9]{1,2}\s*초)?)?)",
+            r"([0-9]{4}\s*년\s*[0-9]{1,2}\s*월\s*[0-9]{1,2}\s*일(?:\s*[0-9]{1,2}\s*시\s*[0-9]{1,2}\s*분(?:\s*[0-9]{1,2}\s*초)?)?)",
+        )
+        for pattern in korean_date_patterns:
+            match = re.search(pattern, content)
+            if not match:
+                continue
+            parsed = self._parse_datetime(match.group(1))
             if parsed is not None:
                 return parsed
 
@@ -175,6 +188,19 @@ class NoticeDetailParser(BaseParser):
         for key in ("author", "department", "writer", "article:author"):
             candidate = metadata.get(key)
             normalized = self._normalize_text(str(candidate or ""))
+            if normalized and not self._looks_like_metadata_label(normalized):
+                return normalized[:200]
+
+        korean_author_patterns = (
+            r"_?작성자_?\s*[:：]?\s*([^\n]+)",
+            r"_?부서_?\s*[:：]?\s*([^\n]+)",
+            r"_?담당부서_?\s*[:：]?\s*([^\n]+)",
+        )
+        for pattern in korean_author_patterns:
+            match = re.search(pattern, content)
+            if not match:
+                continue
+            normalized = self._normalize_text(match.group(1))
             if normalized and not self._looks_like_metadata_label(normalized):
                 return normalized[:200]
 
@@ -224,6 +250,14 @@ class NoticeDetailParser(BaseParser):
         except ValueError:
             pass
 
+        text = (
+            text.replace("년", "-")
+            .replace("월", "-")
+            .replace("일", "")
+            .replace("시", ":")
+            .replace("분", ":")
+            .replace("초", "")
+        )
         normalized = (
             text.replace("년", "-")
             .replace("월", "-")

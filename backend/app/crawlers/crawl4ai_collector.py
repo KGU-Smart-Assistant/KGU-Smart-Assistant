@@ -85,6 +85,7 @@ class Crawl4AICollectorConfig:
     allowed_author_department_filters: Optional[Tuple[str, ...]] = None
     blocked_author_department_filters: Optional[Tuple[str, ...]] = None
     min_published_at: Optional[datetime] = None
+    collect_attachment_documents: bool = False
     docling_config: DoclingCollectorConfig = field(default_factory=DoclingCollectorConfig)
 
 
@@ -213,7 +214,7 @@ async def _collect_documents_with_crawl4ai(
                 if next_url not in visited_html_urls:
                     queue.append((next_url, depth + 1))
 
-    if collected_doc_urls:
+    if collected_doc_urls and config.collect_attachment_documents:
         docling_config = config.docling_config
         docling_config.category = config.category or docling_config.category
         docling_config.department = config.department or docling_config.department
@@ -609,6 +610,7 @@ def _canonical_board_detail_query(query_items: List[Tuple[str, str]]) -> str:
 def _canonical_board_list_query(query_items: List[Tuple[str, str]]) -> str:
     allowed_keys = {
         "bbsno",
+        "dc",
         "key",
         "pageindex",
         "selfat",

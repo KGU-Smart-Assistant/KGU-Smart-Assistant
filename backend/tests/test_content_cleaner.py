@@ -176,3 +176,82 @@ English
     assert "中文" not in cleaned
     assert "日本語" not in cleaned
     assert "방문학생 프로그램 안내" in cleaned
+
+
+def test_clean_crawled_markdown_trims_academic_affairs_contents_menu() -> None:
+    content = (
+        "FAQ 학사혁신팀소개 학사일정(학부) 교육과정 _교육실습·교육봉사_ "
+        "수업업무 성적안내 학적업무 교직이수 _교육실습·교육봉사_ "
+        "교육봉사 1봉사시기: 4학년 2학기 중 이수\n"
+        "교육실습 신청 절차 안내"
+    )
+
+    cleaned = clean_crawled_markdown(
+        content,
+        source_url="https://www.kyonggi.ac.kr/www/contents.do?key=8493",
+    )
+
+    assert "학사혁신팀소개" not in cleaned
+    assert cleaned.startswith("교육봉사")
+    assert "교육실습 신청 절차 안내" in cleaned
+
+
+def test_clean_crawled_markdown_trims_lab_safety_footer_menu() -> None:
+    content = """
+안전교육안내
+연구실안전교육 대상 대학·연구기관 등에서 과학기술분야 연구개발활동에 종사하는 연구원
+안전센터 소개 조직도 안전관리구조 오시는 길 긴급연락망
+자료실 문서양식 법정자료실 MSDS 안내
+(우) 16227 경기도 수원시 영통구 광교산로 154-42(이의동)
+Copyright(c) KyongGi University. All rights reserved.
+전체메뉴 + 내정보Close
+"""
+
+    cleaned = clean_crawled_markdown(
+        content,
+        source_url="https://safety.kyonggi.ac.kr/ushm/edu/info.do",
+    )
+
+    assert "연구실안전교육 대상" in cleaned
+    assert "안전센터 소개" not in cleaned
+    assert "전체메뉴" not in cleaned
+    assert "Copyright" not in cleaned
+
+
+def test_clean_crawled_markdown_trims_inline_lab_safety_footer_menu() -> None:
+    content = (
+        "안전교육안내 연구실안전교육 대상 대학·연구기관 등에서 과학기술분야 연구개발활동에 종사하는 연구원 "
+        "안전센터 소개 조직도 안전관리구조 오시는 길 긴급연락망 안전교육 안전교육안내 "
+        "(우) 16227 경기도 수원시 영통구 광교산로 154-42 Copyright(c) KyongGi University. 전체메뉴 +"
+    )
+
+    cleaned = clean_crawled_markdown(
+        content,
+        source_url="https://safety.kyonggi.ac.kr/ushm/edu/info.do",
+    )
+
+    assert "연구실안전교육 대상" in cleaned
+    assert "안전센터 소개" not in cleaned
+    assert "(우) 16227" not in cleaned
+    assert "전체메뉴" not in cleaned
+
+
+def test_clean_crawled_markdown_cleans_rule_site_controls_and_footer() -> None:
+    content = """
+규정정보 상세 HOME > 규정정보 > 제1편 학교법인
+1-0-1 학교법인 경기학원 정관 2026-04-13 개정 ;) ;) 글자 축소 글자 확대 ;)
+개정내역 (32) 담당부서 : 법인사무처 _규정 목차 여닫이 버튼_
+**수원캠퍼스 :** (16227) 경기도 수원시 영통구 광교산로 154-42
+COPYRIGHT (C) 2021 KYONGGI UNIVERSITY. ALL RIGHTS RESERVED.
+"""
+
+    cleaned = clean_crawled_markdown(
+        content,
+        source_url="http://rule.kyonggi.ac.kr/lmxsrv/law/lawDetail.do?SEQ=26",
+    )
+
+    assert "학교법인 경기학원 정관" in cleaned
+    assert ";)" not in cleaned
+    assert "글자 축소" not in cleaned
+    assert "규정 목차" not in cleaned
+    assert "수원캠퍼스" not in cleaned
