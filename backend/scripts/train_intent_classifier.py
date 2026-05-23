@@ -15,11 +15,9 @@ ROUTES = {"llm", "relational_db", "rag", "weather"}
 DB_INTENTS = {"map", "phone", "unknown"}
 LABELS = [
     "llm",
+    "relational_db",
     "rag",
     "weather",
-    "relational_db:map",
-    "relational_db:phone",
-    "relational_db:unknown",
 ]
 LABEL_TO_ID = {label: index for index, label in enumerate(LABELS)}
 ID_TO_LABEL = {index: label for label, index in LABEL_TO_ID.items()}
@@ -33,8 +31,6 @@ class IntentExample:
 
     @property
     def label(self) -> str:
-        if self.route == "relational_db":
-            return f"{self.route}:{self.db_intent}"
         return self.route
 
 

@@ -4,23 +4,25 @@ This backend can route chat requests with a fine-tuned KLUE-BERT classifier befo
 
 ## Decision Shape
 
-Public routing decisions use two fields:
+The KLUE-BERT classifier is responsible only for the top-level route:
 
 - `route`: `llm`, `relational_db`, `rag`, `weather`
-- `db_intent`: `map`, `phone`, `unknown`
 
-When `route` is not `relational_db`, `db_intent` should be `unknown`.
+When `route` is `relational_db`, the backend resolves `map` vs `phone` inside
+the relational DB resolver. The classifier should not be responsible for that
+second-stage DB decision.
 
-The model may use internal labels such as:
+The model should use these labels:
 
 - `llm`
+- `relational_db`
 - `rag`
 - `weather`
-- `relational_db:map`
-- `relational_db:phone`
-- `relational_db:unknown`
 
-The backend maps those labels back into the public decision shape.
+For backward compatibility, the backend still accepts legacy labels such as
+`map`, `phone`, and `relational_db:map`, but it normalizes them to
+`route=relational_db` with `db_intent=unknown`. The DB resolver then decides the
+final map/phone intent from the user query.
 
 ## Train Locally
 
@@ -47,12 +49,12 @@ python scripts/train_intent_classifier.py \
 
 The output directory is ignored by Git because model weights are too large for normal repository history.
 
-The current seed builder creates 818 examples:
+The current seed builder keeps `db_intent` metadata in the JSONL file for
+planner/resolver evaluation, but KLUE-BERT training collapses all
+`relational_db:*` rows into the single `relational_db` route label.
 
 - `rag`: 184
-- `relational_db:map`: 190
-- `relational_db:phone`: 154
-- `relational_db:unknown`: 90
+- `relational_db`: map/phone/unknown DB examples collapsed into one route
 - `weather`: 100
 - `llm`: 100
 
@@ -90,15 +92,101 @@ If the model repository is private, the runtime environment also needs `HF_TOKEN
 
 ## Runtime Behavior
 
-The backend uses the KLUE-BERT classifier only when `INTENT_CLASSIFIER_MODEL_NAME` is configured and the prediction confidence is at least `INTENT_CLASSIFIER_CONFIDENCE_THRESHOLD`.
+The backend uses the KLUE-BERT classifier when `INTENT_CLASSIFIER_MODEL_NAME`
+is configured and the prediction confidence is at least
+`INTENT_CLASSIFIER_CONFIDENCE_THRESHOLD`.
 
-Otherwise it falls back to the existing LLM-based routing flow.
+When KLUE-BERT is unavailable or below threshold, routing falls back to the LLM
+planner. Keyword-based route guardrails are not used. Compound questions are
+split only by the LLM planner response.
 
-Compound questions are planned before KLUE-BERT is used. The planner first
-splits obvious multi-part questions into atomic queries, routes each query, and
-then executes the resulting actions in order. Keep KLUE-BERT focused on
-single-query intent classification unless the model architecture is changed to
-multi-label classification.
+RAG domain classification is a separate optional model. It runs only after the
+top-level route is `rag` and predicts multiple domain labels with sigmoid
+scores. RAG domain classification intentionally does not fall back to keyword
+rules; when this model is not configured or returns no accepted labels, the
+domain is reported as `unknown`.
+
+After a query is routed to RAG, the orchestrator now treats intent enrichment as
+a six-stage pipeline:
+
+1. `routing`: choose `llm`, `relational_db`, `rag`, or `weather` with KLUE-BERT
+   or the LLM planner fallback.
+2. `rag_domain`: use the dedicated multi-label KLUE-BERT domain classifier.
+3. `rag_detail`: classify the detail axis such as `period`, `eligibility`, or
+   `required_documents` with the optional RAG detail KLUE-BERT model. This
+   stage intentionally does not fall back to keyword rules; when the model is
+   not configured or returns a low-confidence detail, the detail is `unknown`.
+4. `confidence`: calculate a confidence score from domain score shape and the
+   detail model signal.
+5. `ambiguity`: report `clear`, `multi_domain`, `low_confidence`,
+   `missing_detail`, or `needs_clarification`.
+6. `rewritten_queries`: expose retrieval-ready query variants for downstream
+   search improvements.
+
+The API response includes `rag_ambiguity` and `rewritten_queries` alongside the
+existing `rag_domain`, `rag_domains`, `rag_detail`, and `rag_confidence` fields.
+The current domain stage is model-only; the remaining stages are separated so
+they can be replaced by trained models without changing the response contract.
+
+Configure it separately:
+
+```env
+RAG_DOMAIN_CLASSIFIER_MODEL_NAME=models/rag-domain-klue-bert-v2
+RAG_DOMAIN_CLASSIFIER_CONFIDENCE_THRESHOLD=0.5
+RAG_DOMAIN_CLASSIFIER_TOP_K=3
+RAG_DOMAIN_CLASSIFIER_DEVICE=-1
+RAG_DETAIL_CLASSIFIER_MODEL_NAME=models/rag-detail-klue-bert-v5
+RAG_DETAIL_CLASSIFIER_CONFIDENCE_THRESHOLD=0.45
+RAG_DETAIL_CLASSIFIER_TOP_K=3
+RAG_DETAIL_CLASSIFIER_DEVICE=-1
+```
+
+Train it from the RAG intent evaluation data:
+
+```bash
+python scripts/train_rag_domain_classifier.py \
+  --data app/data/rag_domain_train.jsonl \
+  --output-dir models/rag-domain-klue-bert-v2 \
+  --epochs 3
+```
+
+Regenerate the expanded training data before retraining:
+
+```bash
+python scripts/build_rag_domain_training_data.py
+```
+
+Evaluate it on the held-out domain test set:
+
+```bash
+python scripts/evaluate_rag_domain_classifier.py \
+  --data app/data/rag_domain_test.jsonl \
+  --model models/rag-domain-klue-bert-v2 \
+  --threshold 0.5 \
+  --pretty
+```
+
+Train the optional detail classifier from the same expanded data. The detail
+axis is multi-label, so rows can use `expected_details` when one question spans
+multiple details:
+
+```bash
+python scripts/train_rag_detail_classifier.py \
+  --data app/data/rag_detail_train.jsonl \
+  --output-dir models/rag-detail-klue-bert-v5 \
+  --epochs 3
+```
+
+Evaluate the detail model separately:
+
+```bash
+python scripts/evaluate_rag_detail_classifier.py \
+  --data app/data/rag_detail_test.jsonl \
+  --model models/rag-detail-klue-bert-v5 \
+  --threshold 0.45 \
+  --top-k 3 \
+  --pretty
+```
 
 ## Validate One Input
 
@@ -110,24 +198,23 @@ python scripts/validate_intent_classifier.py \
   --model models/intent-klue-bert \
   --text "성적향상 장학금은 어디에서 정보를 찾을 수 있어?" \
   --expected-route rag \
-  --expected-db-intent unknown \
   --pretty
 ```
 
-Example map intent check:
+Example relational DB route check:
 
 ```bash
 python scripts/validate_intent_classifier.py \
   --model models/intent-klue-bert \
   --text "8강의동은 어디야?" \
   --expected-route relational_db \
-  --expected-db-intent map \
   --pretty
 ```
 
-The script exits with code `1` when `--expected-route` or
-`--expected-db-intent` does not match the model prediction, so it can also be
-used in quick local regression checks.
+The script exits with code `1` when `--expected-route` does not match the model
+prediction, so it can also be used in quick local regression checks. Use the
+chat planner validation script when you specifically need to verify
+`relational_db:map` or `relational_db:phone` resolver behavior.
 
 ## Validate The Chat Planner
 

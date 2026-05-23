@@ -1,0 +1,72 @@
+{"text":"장학금 신청 마감일이 언제야?","rag_detail":"period"}
+{"text":"수강정정은 언제부터 할 수 있어?","rag_detail":"period"}
+{"text":"학기말 시험 기간이 학사일정에 나와 있어?","rag_detail":"period"}
+{"text":"복학 신청 접수는 언제 시작해?","rag_detail":"period"}
+{"text":"현장실습 지원 자격이 어떻게 돼?","rag_detail":"eligibility"}
+{"text":"졸업 인증 기준을 확인하고 싶어","rag_detail":"eligibility"}
+{"text":"편입생도 교내장학금을 신청할 수 있어?","rag_detail":"eligibility"}
+{"text":"교직과정 이수 조건과 졸업학점 관계 알려줘","rag_detail":"eligibility"}
+{"text":"군휴학 신청하려면 어떤 절차가 필요해?","rag_detail":"procedure"}
+{"text":"학생증을 잃어버렸을 때 재발급 방법 알려줘","rag_detail":"procedure"}
+{"text":"등록금 분납 신청 방법과 기간 알려줘","rag_detail":"procedure","expected_details":["procedure","period"]}
+{"text":"부전공 포기 신청은 어떻게 해?","rag_detail":"procedure"}
+{"text":"교원자격증 신청에 필요한 서류 알려줘","rag_detail":"required_documents"}
+{"text":"수강취소 신청 양식은 어디서 받아?","rag_detail":"required_documents"}
+{"text":"졸업요건 관련 제출서류가 있는지 알려줘","rag_detail":"required_documents"}
+{"text":"교환학생 신청할 때 제출해야 하는 서류가 뭐야?","rag_detail":"required_documents"}
+{"text":"국가장학금 지원 금액 알려줘","rag_detail":"benefit"}
+{"text":"등록금 감면 혜택이 있는지 궁금해","rag_detail":"benefit"}
+{"text":"근로장학 지원액은 얼마야?","rag_detail":"benefit"}
+{"text":"해외파견 장학금 혜택 알려줘","rag_detail":"benefit"}
+{"text":"해외파견 프로그램 모집 공지 찾아줘","rag_detail":"announcement_lookup"}
+{"text":"학교 전체 공지사항에서 채용 안내를 보고 싶어","rag_detail":"announcement_lookup"}
+{"text":"전과 신청 공지가 학과 게시판에 올라왔는지 확인해줘","rag_detail":"announcement_lookup"}
+{"text":"국제교류 프로그램 결과 발표 공지 찾아줘","rag_detail":"announcement_lookup"}
+{"text":"졸업요건 공지 핵심만 정리해줘","rag_detail":"summary"}
+{"text":"학사일정 내용을 요약해줘","rag_detail":"summary"}
+{"text":"장학금 안내문 중요한 내용만 알려줘","rag_detail":"summary"}
+{"text":"다전공 공지 요약 가능해?","rag_detail":"summary"}
+{"text":"휴학 중 장학금 유지 여부랑 등록금 환불 기준 알려줘","rag_detail":"unknown"}
+{"text":"복수전공을 하면 졸업학점이 달라지는지 궁금해","rag_detail":"unknown"}
+{"text":"재입학하면 등록금은 다시 내야 해?","rag_detail":"unknown"}
+{"text":"전과하면 장학금 유지돼?","rag_detail":"unknown"}
+{"text":"장학금 신청 방법이랑 기간 같이 알려줘","rag_detail":"procedure","expected_details":["procedure","period"]}
+{"text":"휴학 신청 절차와 마감일을 알려줘","rag_detail":"procedure","expected_details":["procedure","period"]}
+{"text":"등록금 환불 신청서와 제출 기간 알려줘","rag_detail":"required_documents","expected_details":["required_documents","period"]}
+{"text":"교환학생 지원 조건이랑 장학 혜택 알려줘","rag_detail":"eligibility","expected_details":["eligibility","benefit"]}
+{"text":"졸업요건 공지는 어디서 확인해?","rag_detail":"announcement_lookup"}
+{"text":"전과 신청 관련 안내문 찾아줘","rag_detail":"announcement_lookup"}
+{"text":"복학 신청서 양식 받을 수 있어?","rag_detail":"required_documents"}
+{"text":"현장실습 모집공고 핵심만 정리해줘","rag_detail":"summary"}
+{"text":"등록금 분납 혜택이나 감면이 있어?","rag_detail":"benefit"}
+{"text":"근로장학 지원액이 얼마인지 알려줘","rag_detail":"benefit"}
+{"text":"편입 모집요강 요약해줘","rag_detail":"summary"}
+{"text":"수강취소가 졸업학점에 영향 있어?","rag_detail":"unknown"}
+{"text":"다전공 신청 대상과 자격 알려줘","rag_detail":"eligibility"}
+{"text":"학생증 재발급 신청서 서식 찾아줘","rag_detail":"required_documents"}
+{"text":"학과 공지에 올라온 채용 결과 발표 확인해줘","rag_detail":"announcement_lookup"}
+{"text":"학사일정에서 수강정정 마감일 알려줘","rag_detail":"period"}
+{"text":"교직이수 신청 방법 알려줘","rag_detail":"procedure"}
+{"text":"졸업인증 제출파일 어디에 있어?","rag_detail":"required_documents"}
+{"text":"해외파견 프로그램 지원액과 혜택 알려줘","rag_detail":"benefit"}
+{"text":"재입학하면 졸업요건이 바뀌어?","rag_detail":"unknown"}
+{"text":"기숙사 신청 공지 요약 가능해?","rag_detail":"summary"}
+{"text":"등록금 납부 안내문 어디서 봐?","rag_detail":"announcement_lookup"}
+{"text":"전공변경 신청 자격이 되는지 궁금해","rag_detail":"eligibility"}
+{"text":"수강신청 접수 절차 알려줘","rag_detail":"procedure"}
+{"text":"복수전공 포기 기간은 언제야?","rag_detail":"period"}
+{"text":"장학금 감면 기준 알려줘","rag_detail":"benefit"}
+{"text":"편입 지원서 양식 찾아줘","rag_detail":"required_documents"}
+{"text":"교환학생 선발 결과 발표 공지 있어?","rag_detail":"announcement_lookup"}
+{"text":"졸업학점 기준과 전공학점 관계 알려줘","rag_detail":"unknown"}
+{"text":"동아리 모집 안내 요약해줘","rag_detail":"summary"}
+{"text":"자퇴 신청하면 등록금 환불되나요?","rag_detail":"unknown"}
+{"text":"수업 신청 가능한 대상 알려줘","rag_detail":"eligibility"}
+{"text":"교직과정 이수 신청 마감일 알려줘","rag_detail":"period"}
+{"text":"현장실습 신청 절차랑 제출서류 알려줘","rag_detail":"required_documents","expected_details":["required_documents","procedure"]}
+{"text":"학교 공지에서 장학금 안내 찾아줘","rag_detail":"announcement_lookup"}
+{"text":"등록금 고지서 확인 방법 알려줘","rag_detail":"procedure"}
+{"text":"학사일정 중요한 내용 정리해줘","rag_detail":"summary"}
+{"text":"해외파견 지원 조건과 신청 방법 알려줘","rag_detail":"eligibility","expected_details":["eligibility","procedure"]}
+{"text":"전과하면 복수전공도 다시 신청해야 해?","rag_detail":"unknown"}
+{"text":"학생상담 신청 가능 시간 알려줘","rag_detail":"period"}

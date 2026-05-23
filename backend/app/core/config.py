@@ -28,6 +28,14 @@ class Settings(BaseSettings):
     intent_classifier_model_name: str | None = None
     intent_classifier_confidence_threshold: float = 0.7
     intent_classifier_device: int = -1
+    rag_domain_classifier_model_name: str | None = None
+    rag_domain_classifier_confidence_threshold: float = 0.5
+    rag_domain_classifier_top_k: int = 3
+    rag_domain_classifier_device: int = -1
+    rag_detail_classifier_model_name: str | None = None
+    rag_detail_classifier_confidence_threshold: float = 0.45
+    rag_detail_classifier_top_k: int = 3
+    rag_detail_classifier_device: int = -1
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

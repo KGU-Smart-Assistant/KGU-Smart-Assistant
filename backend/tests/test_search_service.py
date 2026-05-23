@@ -31,7 +31,7 @@ def test_search_documents_uses_explicit_category_filter(monkeypatch) -> None:
     assert "confidence" in results[0].score_breakdown
 
 
-def test_search_documents_infers_category_and_applies_filter(monkeypatch) -> None:
+def test_search_documents_requires_explicit_model_domain_for_filter(monkeypatch) -> None:
     captured = {}
 
     monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
@@ -45,7 +45,7 @@ def test_search_documents_infers_category_and_applies_filter(monkeypatch) -> Non
 
     search_service.search_documents(query="성적향상장학금 신청 기간 알려줘", top_k=3)
 
-    assert captured["categories"] == ["scholarship", "general_notice", "department_notice", None]
+    assert captured["categories"] == [None]
 
 
 def test_search_wraps_results_in_response(monkeypatch) -> None:
@@ -168,7 +168,7 @@ def test_keyword_signal_can_beat_weak_vector_match(monkeypatch) -> None:
 
     assert results[0].chunk_id == "exact-keyword"
     assert results[0].score_breakdown["lexical"] == 1.0
-    assert results[0].score_breakdown["category"] == 1.0
+    assert results[0].score_breakdown["category"] == 0.0
 
 
 def test_low_confidence_category_search_falls_back_to_broad_search(monkeypatch) -> None:
@@ -271,6 +271,82 @@ def test_search_documents_soft_boosts_department_scope(monkeypatch) -> None:
     )
 
     assert [result.chunk_id for result in results] == ["department", "university"]
+
+
+def test_search_documents_accepts_secondary_rag_details_without_keyword_boost(monkeypatch) -> None:
+    monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])
+
+    def _query_embedded_chunks(*, query_embedding, top_k, domain):
+        return [
+            {
+                "chunk_id": "generic",
+                "doc_id": "doc-1",
+                "distance": 0.2,
+                "text": "일반 안내",
+                "title": "일반 안내",
+                "source_url": "https://example.com/generic",
+                "domain": domain,
+            },
+            {
+                "chunk_id": "secondary-detail",
+                "doc_id": "doc-2",
+                "distance": 0.2,
+                "text": "required documents",
+                "title": "required documents",
+                "source_url": "https://example.com/detail",
+                "domain": domain,
+            },
+        ]
+
+    monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
+
+    results = search_service.search_documents(
+        query="장학금 신청 알려줘",
+        top_k=2,
+        rag_domain="scholarship",
+        rag_detail="period",
+        rag_details=["required_documents"],
+    )
+
+    assert results
+    assert all(result.score_breakdown["detail"] == 0.0 for result in results)
+
+
+def test_search_documents_uses_rewritten_queries(monkeypatch) -> None:
+    captured_queries = []
+
+    monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])
+
+    def _query_embedded_chunks(*, query_embedding, top_k, domain):
+        query_index = len(captured_queries)
+        captured_queries.append(query_embedding)
+        return [
+            {
+                "chunk_id": f"chunk-{query_index}",
+                "doc_id": "doc-1",
+                "distance": 0.2,
+                "text": "등록금 환불 신청서 안내",
+                "title": "등록금 환불 신청서",
+                "source_url": "https://example.com/refund",
+                "domain": domain,
+            }
+        ]
+
+    monkeypatch.setattr(search_service, "embed_text", lambda query: captured_queries.append(query) or [0.1])
+    monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
+
+    results = search_service.search_documents(
+        query="등록금 환불",
+        top_k=2,
+        rag_domain="tuition",
+        rewritten_queries=["등록금 환불 신청서"],
+    )
+
+    assert "등록금 환불" in captured_queries
+    assert "등록금 환불 신청서" in captured_queries
+    assert results
 
 
 def test_merge_preserves_vector_and_keyword_signals() -> None:

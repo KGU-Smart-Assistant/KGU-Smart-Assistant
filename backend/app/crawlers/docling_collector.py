@@ -52,7 +52,7 @@ def collect_documents_with_docling(
 ) -> List[Document]:
     """Convert file paths or URLs into normalized documents using Docling."""
     config = config or DoclingCollectorConfig()
-    converter = _create_converter()
+    converter = None
     collected_at = datetime.now()
     documents: List[Document] = []
 
@@ -90,6 +90,7 @@ def collect_documents_with_docling(
                     max_pages=config.pdf_text_max_pages,
                 )
                 if not content:
+                    converter = converter or _create_converter()
                     result = _run_with_timeout(
                         converter.convert,
                         local_source,
@@ -98,6 +99,7 @@ def collect_documents_with_docling(
                     )
                     content = result.document.export_to_markdown().strip()
             else:
+                converter = converter or _create_converter()
                 result = _run_with_timeout(
                     converter.convert,
                     local_source,

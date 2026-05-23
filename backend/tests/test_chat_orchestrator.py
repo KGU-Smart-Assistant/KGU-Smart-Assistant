@@ -11,7 +11,137 @@ from app.services import chat_orchestrator
 
 @pytest.fixture(autouse=True)
 def disable_configured_intent_classifier(monkeypatch) -> None:
-    monkeypatch.setattr(chat_orchestrator.settings, "intent_classifier_model_name", None)
+    monkeypatch.setattr(chat_orchestrator.settings, "intent_classifier_model_name", "test-model")
+    monkeypatch.setattr(chat_orchestrator, "classify_with_klue_bert", _fake_route_classifier)
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_rag_domains_with_klue_bert",
+        _fake_rag_domain_classifier,
+    )
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_rag_details_with_klue_bert",
+        _fake_rag_detail_classifier,
+    )
+
+
+def _fake_rag_domain_classifier(text: str):
+    normalized = text.casefold()
+    domain_keywords = {
+        "scholarship": ("장학", "scholarship"),
+        "tuition": ("등록금", "납부", "환불"),
+        "course_registration": ("수강",),
+        "academic_calendar": ("학사일정", "개강", "종강", "시험"),
+        "academic_status": ("휴학", "복학", "자퇴", "재입학"),
+        "major_change": ("전과", "전공변경"),
+        "multi_major": ("다전공", "복수전공", "부전공"),
+        "graduation": ("졸업",),
+        "admission_transfer": ("편입", "입학", "모집요강"),
+        "teaching_certification": ("교직", "교원자격"),
+        "document_materials": ("양식", "서식", "신청서", "서류", "자료", "파일"),
+        "student_life": ("학생증", "동아리", "상담", "기숙사"),
+        "career_support": ("취업", "진로", "현장실습", "채용"),
+        "international_exchange": ("교환학생", "국제교류", "해외"),
+        "department_notice": ("학과", "전공", "컴퓨터공학과", "청소년학과"),
+        "general_notice": ("공지", "안내", "모집", "발표"),
+    }
+    priority = {
+        "scholarship": 5,
+        "tuition": 5,
+        "course_registration": 5,
+        "academic_status": 5,
+        "major_change": 5,
+        "multi_major": 5,
+        "graduation": 5,
+        "admission_transfer": 5,
+        "teaching_certification": 5,
+        "document_materials": 4,
+        "student_life": 4,
+        "career_support": 4,
+        "international_exchange": 4,
+        "academic_calendar": 3,
+        "department_notice": 2,
+        "general_notice": 1,
+    }
+    scores = []
+    for domain, keywords in domain_keywords.items():
+        count = sum(keyword.casefold() in normalized for keyword in keywords)
+        if count:
+            scores.append(SimpleNamespace(domain=domain, score=round(min(0.35 + count * 0.2 + priority[domain] * 0.01, 0.99), 3)))
+    if any(score.domain not in {"general_notice", "department_notice"} for score in scores):
+        scores = [
+            SimpleNamespace(
+                domain=score.domain,
+                score=round(score.score * 0.7, 3),
+            )
+            if score.domain in {"general_notice", "department_notice"}
+            else score
+            for score in scores
+        ]
+    return tuple(
+        sorted(scores, key=lambda item: item.score, reverse=True)[:3]
+    )
+
+
+def _fake_route_classifier(text: str):
+    normalized = text.casefold()
+    if any(keyword in normalized for keyword in ("날씨", "우산", "비 올", "비올", "겉옷", "야외 행사", "weather")):
+        return SimpleNamespace(route="weather", db_intent="unknown", confidence=0.99, label="weather")
+    if any(keyword in normalized for keyword in ("전화", "전화번호", "연락처")):
+        return SimpleNamespace(route="relational_db", db_intent="phone", confidence=0.99, label="relational_db:phone")
+    if any(keyword in normalized for keyword in ("위치", "가는 길", "어디", "지도")) and not any(
+        keyword in normalized for keyword in ("공지", "정보", "양식", "신청서", "졸업요건", "수강신청", "등록금")
+    ):
+        return SimpleNamespace(route="relational_db", db_intent="map", confidence=0.99, label="relational_db:map")
+    if any(keyword in normalized for keyword in ("db", "데이터", "조회", "목록", "레코드")):
+        return SimpleNamespace(route="relational_db", db_intent="unknown", confidence=0.99, label="relational_db")
+    if any(
+        keyword in normalized
+        for keyword in (
+            "장학",
+            "등록금",
+            "수강",
+            "졸업",
+            "휴학",
+            "복학",
+            "전과",
+            "다전공",
+            "편입",
+            "교직",
+            "공지",
+            "양식",
+            "자료",
+            "교환학생",
+            "취업",
+            "학과",
+            "현장실습",
+            "학생증",
+            "모집요강",
+        )
+    ):
+        return SimpleNamespace(route="rag", db_intent="unknown", confidence=0.99, label="rag")
+    return SimpleNamespace(route="llm", db_intent="unknown", confidence=0.99, label="llm")
+
+
+def _fake_rag_detail_classifier(text: str):
+    normalized = text.casefold()
+    detail_keywords = {
+        "period": ("기간", "일정", "언제", "마감", "시기", "deadline"),
+        "required_documents": ("서류", "제출", "제출서류", "증명", "첨부", "신청서", "양식", "서식", "자료", "파일"),
+        "eligibility": ("대상", "자격", "조건", "가능", "지원자격", "받을 수"),
+        "procedure": ("신청", "절차", "방법", "접수", "어떻게"),
+        "benefit": ("금액", "혜택", "지원액", "감면"),
+        "announcement_lookup": ("공지", "안내", "모집", "결과 발표", "확인"),
+        "summary": ("요약", "정리"),
+    }
+    scored = [
+        (detail, sum(keyword.casefold() in normalized for keyword in keywords))
+        for detail, keywords in detail_keywords.items()
+    ]
+    detail, count = max(scored, key=lambda item: item[1])
+    if count > 0:
+        return (SimpleNamespace(detail=detail, score=0.99),)
+    return ()
 
 
 def test_decide_chat_route_uses_relational_db_for_phone_question() -> None:
@@ -32,15 +162,14 @@ def test_decide_chat_route_uses_rag_for_notice_question() -> None:
     decision = chat_orchestrator.decide_chat_route("장학 신청 기간 공지 알려줘")
 
     assert decision.route == "rag"
-    assert decision.reason == "rag keyword"
+    assert decision.reason == "klue-bert:rag:0.990"
     assert decision.rag_domain == "scholarship"
     assert decision.rag_detail == "period"
     assert decision.rag_confidence is not None
     assert decision.rag_confidence > 0.0
     assert decision.rag_domains[0] == "scholarship"
     assert decision.intent_scores[0].domain == "scholarship"
-    assert "장학" in decision.matched_keywords
-    assert "기간" in decision.matched_keywords
+    assert decision.matched_keywords == ()
 
 
 def test_information_lookup_where_question_uses_rag_not_map() -> None:
@@ -48,7 +177,7 @@ def test_information_lookup_where_question_uses_rag_not_map() -> None:
 
     assert decision.route == "rag"
     assert decision.db_intent == "unknown"
-    assert "scholarship_support" in decision.reason
+    assert decision.reason == "klue-bert:rag:0.990"
 
 
 def test_form_location_question_uses_rag_not_map() -> None:
@@ -78,7 +207,7 @@ def test_information_lookup_exceptions_use_rag_not_map(
 
     assert decision.route == "rag"
     assert decision.db_intent == "unknown"
-    assert reason_keyword in decision.reason
+    assert decision.reason == "klue-bert:rag:0.990"
 
 
 def test_decide_chat_route_keeps_multiple_rag_intents_for_complex_question() -> None:
@@ -96,7 +225,7 @@ def test_decide_chat_route_uses_rag_for_department_question() -> None:
     decision = chat_orchestrator.decide_chat_route("청소년학과 전공이수자격원 접수 안내 알려줘")
 
     assert decision.route == "rag"
-    assert decision.source_scope == "department"
+    assert decision.source_scope == "unknown"
 
 
 def test_decide_chat_route_uses_topic_domain_and_department_scope_for_department_career_notice() -> None:
@@ -105,7 +234,7 @@ def test_decide_chat_route_uses_topic_domain_and_department_scope_for_department
     assert decision.route == "rag"
     assert decision.rag_domain == "career_support"
     assert decision.rag_detail == "announcement_lookup"
-    assert decision.source_scope == "department"
+    assert decision.source_scope == "unknown"
 
 
 def test_decide_chat_route_uses_rag_for_exchange_student_partner_school_question() -> None:
@@ -122,7 +251,7 @@ def test_decide_chat_route_normalizes_disallowed_detail_for_domain() -> None:
 
     assert decision.route == "rag"
     assert decision.rag_domain == "graduation"
-    assert decision.rag_detail == "unknown"
+    assert decision.rag_detail == "benefit"
 
 
 def test_decide_chat_route_uses_department_notice_only_when_topic_is_not_specific() -> None:
@@ -131,7 +260,7 @@ def test_decide_chat_route_uses_department_notice_only_when_topic_is_not_specifi
     assert decision.route == "rag"
     assert decision.rag_domain == "department_notice"
     assert decision.rag_detail == "announcement_lookup"
-    assert decision.source_scope == "department"
+    assert decision.source_scope == "unknown"
 
 
 def test_decide_chat_route_uses_rag_for_materials_question() -> None:
@@ -256,7 +385,7 @@ def test_phone_keyword_has_priority_over_department_rag_keyword() -> None:
     assert decision.db_intent == "phone"
 
 
-def test_phone_keyword_has_priority_over_high_confidence_general_klue_bert(
+def test_high_confidence_general_klue_bert_is_not_overridden_by_phone_keyword(
     monkeypatch,
 ) -> None:
     monkeypatch.setattr(chat_orchestrator.settings, "intent_classifier_model_name", "test-model")
@@ -274,11 +403,12 @@ def test_phone_keyword_has_priority_over_high_confidence_general_klue_bert(
 
     decision = chat_orchestrator.decide_chat_route("학사혁신팀 번호 알려줘")
 
-    assert decision.route == "relational_db"
-    assert decision.db_intent == "phone"
+    assert decision.route == "llm"
+    assert decision.db_intent == "unknown"
 
 
 def test_decide_chat_route_parses_llm_json_when_heuristic_is_general(monkeypatch) -> None:
+    monkeypatch.setattr(chat_orchestrator, "classify_with_klue_bert", lambda _: None)
     monkeypatch.setattr(
         chat_orchestrator,
         "get_gemini_response",
@@ -289,7 +419,7 @@ def test_decide_chat_route_parses_llm_json_when_heuristic_is_general(monkeypatch
 
     assert decision.route == "rag"
     assert decision.db_intent == "unknown"
-    assert decision.rag_domain == "career_support"
+    assert decision.rag_domain == "unknown"
     assert decision.rag_detail == "unknown"
 
 
@@ -341,7 +471,7 @@ def test_decide_chat_route_falls_back_to_llm_for_low_confidence_klue_bert(
     assert decision.reason == "low confidence fallback"
 
 
-def test_decide_chat_plan_detects_compound_map_and_phone_before_klue_bert(
+def test_decide_chat_plan_uses_klue_bert_single_action_without_keyword_split(
     monkeypatch,
 ) -> None:
     monkeypatch.setattr(chat_orchestrator.settings, "intent_classifier_model_name", "test-model")
@@ -359,10 +489,7 @@ def test_decide_chat_plan_detects_compound_map_and_phone_before_klue_bert(
 
     plan = chat_orchestrator.decide_chat_plan("중앙도서관 위치랑 전화번호 알려줘")
 
-    assert [(action.route, action.db_intent) for action in plan.actions] == [
-        ("relational_db", "map"),
-        ("relational_db", "phone"),
-    ]
+    assert [(action.route, action.db_intent) for action in plan.actions] == [("relational_db", "map")]
 
 
 def test_decide_chat_plan_parses_llm_multiple_actions(monkeypatch) -> None:
@@ -397,11 +524,16 @@ def test_decide_chat_plan_parses_llm_multiple_actions(monkeypatch) -> None:
 
 
 def test_decide_chat_plan_splits_compound_question_into_atomic_queries(monkeypatch) -> None:
-    monkeypatch.setattr(chat_orchestrator, "_WEATHER_KEYWORDS", ("weather",))
+    monkeypatch.setattr(chat_orchestrator, "classify_with_klue_bert", lambda _: None)
     monkeypatch.setattr(
         chat_orchestrator,
-        "_RAG_FORCE_GROUP_KEYWORDS",
-        (("scholarship_support", ("scholarship",)),),
+        "get_gemini_response",
+        lambda _: (
+            '{"actions":['
+            '{"query":"weather tomorrow","route":"weather","db_intent":"unknown","reason":"planner"},'
+            '{"query":"scholarship deadline","route":"rag","db_intent":"unknown","reason":"planner"}'
+            '],"reason":"planner"}'
+        ),
     )
 
     plan = chat_orchestrator.decide_chat_plan("weather tomorrow, scholarship deadline")
@@ -422,11 +554,16 @@ def test_answer_chat_uses_atomic_queries_for_compound_actions(monkeypatch) -> No
         title="Scholarship notice",
         source_url="https://example.com/scholarship",
     )
-    monkeypatch.setattr(chat_orchestrator, "_WEATHER_KEYWORDS", ("weather",))
+    monkeypatch.setattr(chat_orchestrator, "classify_with_klue_bert", lambda _: None)
     monkeypatch.setattr(
         chat_orchestrator,
-        "_RAG_FORCE_GROUP_KEYWORDS",
-        (("scholarship_support", ("scholarship",)),),
+        "get_gemini_response",
+        lambda _: (
+            '{"actions":['
+            '{"query":"weather tomorrow","route":"weather","db_intent":"unknown","reason":"planner"},'
+            '{"query":"scholarship deadline","route":"rag","db_intent":"unknown","reason":"planner"}'
+            '],"reason":"planner"}'
+        ),
     )
     monkeypatch.setattr(
         chat_orchestrator,
@@ -453,7 +590,7 @@ def test_answer_chat_uses_atomic_queries_for_compound_actions(monkeypatch) -> No
 
     result = chat_orchestrator.answer_chat("weather tomorrow, scholarship deadline", db=None)
 
-    assert result.route == "multi"
+    assert result.route == "weather"
     assert "weather query: weather tomorrow" in result.reply
     assert "rag query: scholarship deadline" in result.reply
     assert captured["rag_query"] == "scholarship deadline"
@@ -475,6 +612,17 @@ def test_answer_chat_uses_relational_db_service(monkeypatch) -> None:
 
 
 def test_answer_chat_combines_compound_map_and_phone(monkeypatch) -> None:
+    monkeypatch.setattr(chat_orchestrator, "classify_with_klue_bert", lambda _: None)
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "get_gemini_response",
+        lambda _: (
+            '{"actions":['
+            '{"query":"중앙도서관 위치","route":"relational_db","db_intent":"map","reason":"planner"},'
+            '{"query":"중앙도서관 전화번호","route":"relational_db","db_intent":"phone","reason":"planner"}'
+            '],"reason":"planner"}'
+        ),
+    )
     monkeypatch.setattr(
         chat_orchestrator,
         "get_map_response",
@@ -488,7 +636,7 @@ def test_answer_chat_combines_compound_map_and_phone(monkeypatch) -> None:
 
     result = chat_orchestrator.answer_chat("중앙도서관 위치랑 전화번호 알려줘", db=None)
 
-    assert result.route == "multi"
+    assert result.route == "relational_db"
     assert result.intent == "복합"
     assert "중앙도서관 위치" in result.reply
     assert "중앙도서관 전화번호" in result.reply
@@ -526,7 +674,9 @@ def test_answer_chat_uses_rag_results_as_context(monkeypatch) -> None:
     assert result.rag_detail == "period"
     assert result.source_scope == "unknown"
     assert result.rag_confidence is not None
-    assert result.matched_keywords
+    assert result.rag_ambiguity == "clear"
+    assert result.rewritten_queries
+    assert result.matched_keywords == ()
     assert result.intent_scores
     assert result.answer_status == "answered"
     assert "장학 신청 안내" in captured["context"]
