@@ -1,0 +1,151 @@
+{
+  "header": {
+    "title": "KGU Smart Assistant"
+  },
+  "newChat": "New Chat",
+  "quickActions": {
+    "academicCalendar": "Academic Calendar",
+    "exchangeStudent": "Exchange Student",
+    "tuition": "Tuition/Scholarship"
+  },
+  "chatInput": {
+    "placeholder": "Type your message..."
+  },
+  "mockBot": {
+    "initialMessage": "Hello! I am the Kyonggi University Chatbot. 🏫\nAsk me about academic calendars, exchange student programs (SEP), tuition payments, classroom guides, etc., for the Suwon and Seoul campuses!\n\n💡 You can also ask quickly by pressing the buttons below.",
+    "academicCalendar": "Here is the academic calendar for 2026.\n\n[1st Semester]\n- Course Registration: Mid-Feb\n- Classes Begin: 1st week of March\n- Midterms: 3rd week of April\n- Finals: 3rd week of June\n\nPlease check the university website for details!",
+    "exchangeStudent": "Here is information on the Exchange Student (SEP) program. You can check the current semester's recruitment notice and eligibility on the Office of International Affairs website.",
+    "tuition": "Here is the guide for tuition payment and scholarships. The regular registration period is early to late February, and scholarship applications are processed through the Korea Student Aid Foundation and the Comprehensive Information System.",
+    "map": "I will guide you to the location you requested.",
+    "phone": "Here are the department phone numbers. (Main number: 031-249-9114)",
+    "cafeteria": "Today's menu at Gamseong Core cafeteria is Tonkatsu and Spicy Stir-fried Pork.",
+    "fallback": "I'm sorry. I am still learning about that topic. Please ask another question!",
+    "thinking": "Thinking for {{time}} seconds...."
+  },
+  "infoLinks": {
+    "title": "More Info",
+    "categories": " groups",
+    "links": " links",
+    "learnMore": " Info",
+    "moreInfo": "Here's info about ",
+    "whichInfo": "What would you like to know?",
+    "curious": " info?"
+  },
+  "kguInfo": {
+    "notice": {
+      "title": "Notice",
+      "integrated": "Integrated Notice",
+      "materials": "Integrated Materials"
+    },
+    "academicCalendar": {
+      "title": "Academic Calendar",
+      "schedule": "Academic Calendar"
+    },
+    "classes": {
+      "title": "Classes/Registration/Grades",
+      "classTime": "Class Time",
+      "registration": "Course Registration",
+      "creditTransfer": "Credit Transfer System",
+      "elearning": "On-Campus E-Learning",
+      "virtualUniv": "Off-Campus Virtual University",
+      "crossCampus": "Cross-Campus Registration",
+      "retake": "Credit Withdrawal/Retake",
+      "deptPhone": "Department Office Phone",
+      "registrationLink": "Course Registration Link",
+      "grades": "Grade Information"
+    },
+    "schoolRegister": {
+      "title": "Academic Records/Leave",
+      "readmission": "Readmission",
+      "leaveOfAbsence": "Leave of Absence",
+      "returnToSchool": "Return to School",
+      "withdrawal": "Voluntary Withdrawal",
+      "doubleMajor": "Double Major",
+      "transfer": "Transfer Department",
+      "majorChange": "Major Selection Flexibility",
+      "integrated": "Bachelor-Master Program",
+      "majorAssignment": "Major Assignment",
+      "warning": "Academic Warning",
+      "creditRecognition": "Transfer Credit Recognition",
+      "summerSession": "Summer/Winter Session",
+      "degreeDelay": "Degree Acquisition Deferment",
+      "recordCorrection": "Academic Record Correction"
+    },
+    "graduation": {
+      "title": "Graduation",
+      "requirements": "Graduation Requirements",
+      "early": "Early Graduation"
+    },
+    "scholarship": {
+      "title": "Scholarship/Financial Aid",
+      "intro": "Scholarship Support Team",
+      "internal": "Internal Scholarship",
+      "external": "External Scholarship",
+      "national": "National Scholarship",
+      "loan": "Student Loan",
+      "notice": "Scholarship Notice",
+      "materials": "Scholarship Materials",
+      "faq": "Scholarship FAQ",
+      "website": "Scholarship Website",
+      "future": "Future KGU Scholarship"
+    },
+    "tuition": {
+      "title": "Tuition",
+      "payment": "Tuition Payment Guide",
+      "committee": "Tuition Review Committee"
+    },
+    "certificate": {
+      "title": "Certificates/Forms",
+      "issuance": "Certificate Issuance",
+      "various": "Various Certificates",
+      "forms": "Forms Archive"
+    },
+    "career": {
+      "title": "Career/Internship",
+      "support": "Career Support",
+      "intro": "Career Support Team",
+      "services": "Career Services",
+      "facilities": "Online Facilities",
+      "notice": "Career Notice",
+      "materials": "Career Materials",
+      "faq": "Career FAQ",
+      "website": "Career Development",
+      "jobCenter": "University Job Center",
+      "jobCenterIntro": "Job Center Info",
+      "programs": "Career Programs",
+      "internshipIntro": "Internship Center",
+      "internshipNotice": "Internship Notice",
+      "internshipMaterials": "Internship Materials",
+      "internshipFaq": "Internship FAQ",
+      "fieldPractice": "Field Practice",
+      "system": "Industry Cooperation System"
+    },
+    "studentLife": {
+      "title": "Student Life",
+      "menu": "Cafeteria Menu",
+      "phone": "Suwon Campus Phone",
+      "shuttle": "Shuttle Bus",
+      "lms": "LMS",
+      "barun": "BARUN System",
+      "kutis": "KUTIS Information System",
+      "attendance": "Electronic Attendance",
+      "heyoung": "Heyoung Guide",
+      "plagiarism": "Plagiarism Check",
+      "virtualUniv": "Virtual University",
+      "survey": "Learning Survey",
+      "library": "Electronic Library",
+      "cloud": "Mail & Cloud",
+      "tuitionPrint": "Tuition Bill Print",
+      "news": "KGU News",
+      "safety": "Lab Safety Education",
+      "whistleblow": "Public Interest Report",
+      "parking": "Parking Information",
+      "wifi": "Wireless Internet",
+      "remoteSupport": "Remote Support",
+      "dorm": "Dormitory (Dream Tower)",
+      "reserve": "Reserve Forces",
+      "sw": "SW-Centered University",
+      "admission": "Admissions Office"
+    }
+  }
+}
