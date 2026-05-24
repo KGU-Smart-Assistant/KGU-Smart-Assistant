@@ -1,5 +1,7 @@
 # Optional ML dependencies for KLUE-BERT intent classifier training/inference.
-# Install only when training or serving INTENT_CLASSIFIER_MODEL_NAME.
+# Docker/runtime uses CPU-only PyTorch to avoid pulling large CUDA wheels.
+--index-url https://download.pytorch.org/whl/cpu
+--extra-index-url https://pypi.org/simple
 torch
 transformers
 huggingface_hub
