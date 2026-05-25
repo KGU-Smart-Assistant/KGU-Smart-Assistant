@@ -1,0 +1,147 @@
+{
+  "header": { "title": "KGU Smart Assistant" },
+  "newChat": "新对话",
+  "quickActions": {
+    "academicCalendar": "校历",
+    "exchangeStudent": "交换生",
+    "tuition": "学费/奖学金"
+  },
+  "chatInput": { "placeholder": "输入消息..." },
+  "mockBot": {
+    "initialMessage": "你好！我是京畿大学聊天机器人。🏫\n可询问水原/首尔校区校历、交换生(SEP)、学费、教室指南等！\n\n💡 可点击下方按钮快速提问。",
+    "academicCalendar": "2026学年校历如下：\n\n[第一学期]\n- 选课：2月中旬\n- 开学：3月初\n- 期中考：4月下旬\n- 期末考：6月下旬\n\n详情请查看学校官网！",
+    "exchangeStudent": "交换生(SEP)项目介绍。请访问国际交流处网站查看招生公告。",
+    "tuition": "学费缴纳及奖学金指南。注册期间：2月初至下旬。通过奖学财团和学校系统申请。",
+    "map": "为您指引位置。",
+    "phone": "部门电话。(总机：031-249-9114)",
+    "cafeteria": "今日菜单：炸猪排、辣炒猪肉饭。",
+    "fallback": "抱歉，正在学习中。请提其他问题！",
+    "thinking": "思考中{{time}}秒...."
+  },
+  "infoLinks": {
+    "title": "了解更多",
+    "categories": "个分类",
+    "links": "个链接",
+    "learnMore": "详情",
+    "moreInfo": "为您介绍",
+    "whichInfo": "您想了解哪方面？",
+    "curious": "想了解"
+  },
+  "kguInfo": {
+    "notice": {
+      "title": "公告",
+      "integrated": "综合公告",
+      "materials": "综合资料室"
+    },
+    "academicCalendar": {
+      "title": "校历",
+      "schedule": "校历"
+    },
+    "classes": {
+      "title": "课程/选课/成绩",
+      "classTime": "上课时间",
+      "registration": "选课",
+      "creditTransfer": "学分转移制",
+      "elearning": "校内在线课程",
+      "virtualUniv": "校外虚拟大学在线课程",
+      "crossCampus": "跨校区选课",
+      "retake": "放弃学分/重修",
+      "deptPhone": "学院教务组电话",
+      "registrationLink": "选课链接",
+      "grades": "成绩指南"
+    },
+    "schoolRegister": {
+      "title": "学籍/休复学",
+      "readmission": "重新入学",
+      "leaveOfAbsence": "休学",
+      "returnToSchool": "复学",
+      "withdrawal": "自愿退学",
+      "doubleMajor": "双专业",
+      "transfer": "转系(部)",
+      "majorChange": "专业选择灵活化",
+      "integrated": "本硕连读课程",
+      "majorAssignment": "专业分配",
+      "warning": "学业警告",
+      "creditRecognition": "转学生学分认定",
+      "summerSession": "季节学期",
+      "degreeDelay": "学士学位获得延期",
+      "recordCorrection": "学籍簿记载事项更正"
+    },
+    "graduation": {
+      "title": "毕业",
+      "requirements": "毕业要求",
+      "early": "提前毕业"
+    },
+    "scholarship": {
+      "title": "奖学金/助学金",
+      "intro": "奖学支持组介绍",
+      "internal": "校内奖学金",
+      "external": "校外奖学金",
+      "national": "国家奖学金",
+      "loan": "助学贷款",
+      "notice": "奖学支持组公告",
+      "materials": "奖学支持组资料室",
+      "faq": "奖学支持组FAQ",
+      "website": "奖学支持组网站",
+      "future": "未来抓住奖学金"
+    },
+    "tuition": {
+      "title": "学费",
+      "payment": "学费缴纳指南",
+      "committee": "学费审议委员会"
+    },
+    "certificate": {
+      "title": "证明/表格",
+      "issuance": "证明发行",
+      "various": "各种证明发行",
+      "forms": "表格资料室"
+    },
+    "career": {
+      "title": "就业/现场实习",
+      "support": "就业支持",
+      "intro": "就业管理支持组介绍",
+      "services": "就业支持服务",
+      "facilities": "在线设施基础设施",
+      "notice": "就业支持公告",
+      "materials": "就业支持资料室",
+      "faq": "就业支持FAQ",
+      "website": "人才开发处网站",
+      "jobCenter": "大学就业Plus中心业务指南",
+      "jobCenterIntro": "大学就业Plus中心介绍",
+      "programs": "职业、就业能力强化项目",
+      "internshipIntro": "职业发展、现场实习中心介绍",
+      "internshipNotice": "职业发展、现场实习中心公告",
+      "internshipMaterials": "职业发展、现场实习中心资料室",
+      "internshipFaq": "职业发展、现场实习中心FAQ",
+      "fieldPractice": "学校现场实习",
+      "system": "产学合作综合信息系统"
+    },
+    "studentLife": {
+      "title": "学生生活",
+      "menu": "食堂菜单",
+      "phone": "水原校区电话",
+      "shuttle": "通学巴士",
+      "lms": "LMS",
+      "barun": "BARUN系统",
+      "kutis": "KUTIS综合信息服务",
+      "attendance": "电子出勤",
+      "heyoung": "Heyoung使用指南",
+      "plagiarism": "抄袭检索",
+      "virtualUniv": "虚拟大学",
+      "survey": "学习者需求调查",
+      "library": "电子图书馆",
+      "cloud": "邮件、云",
+      "tuitionPrint": "学费通知单打印",
+      "news": "京畿大新闻",
+      "safety": "实验室在线安全教育",
+      "whistleblow": "公益举报",
+      "parking": "停车指南",
+      "wifi": "有线/无线网络",
+      "remoteSupport": "远程支持",
+      "dorm": "生活馆(Dream Tower)",
+      "reserve": "职场预备役联队",
+      "sw": "软件中心事业团",
+      "admission": "入学处"
+    }
+  }
+}

@@ -1,0 +1,145 @@
+{
+  "map": {
+    "campus": {
+      "name": "京畿大学 水原キャンパス",
+      "address": "京畿道 水原市 霊通区 光教山路 154-42",
+      "description": "京畿大学の公式水原キャンパス案内ページとKakao Mapsの場所情報をもとに整理したキャンパスマップです。マーカーや建物一覧を選択すると、位置と説明をすばやく確認できます。",
+      "sourceLabel": "京畿大学 水原キャンパス案内を見る",
+      "coordinateSourceLabel": "Kakao Maps 場所検索",
+      "coordinateNote": "建物紹介文は京畿大学の公式ページを、緯度・経度はKakao Mapsに登録された場所座標を基準にしています。"
+    },
+    "tag": {
+      "study": "学習スペース",
+      "college": "学部棟",
+      "welfare": "福利厚生スペース",
+      "lecture": "講義スペース",
+      "research": "研究スペース",
+      "engineering": "工学棟",
+      "convenience": "便利施設スペース"
+    },
+    "filter": {
+      "all": "すべて"
+    },
+    "building": {
+      "centralLibrary": {
+        "shortName": "中央図書館",
+        "name": "中央図書館",
+        "summary": "代表的な学習スペース",
+        "officialGuide": "正門から直進120m",
+        "description": "正門から最初に見える主要な学習スペースの一つで、閲覧室と資料室を中心に学生の利用が多い代表的な建物です。",
+        "searchKeyword": "京畿大学 水原キャンパス 中央図書館",
+        "kakaoPlaceName": "京畿大学 水原キャンパス 中央図書館"
+      },
+      "yejiHall": {
+        "shortName": "叡智館",
+        "name": "叡智館（人文学部／経商学部）",
+        "summary": "人文学部 · 経商学部",
+        "officialGuide": "正門から直進250m",
+        "description": "人文学部と経商学部の授業が集まる建物で、正門から直進する動線でアクセスしやすい主要講義棟です。",
+        "searchKeyword": "京畿大学 水原キャンパス 叡智館",
+        "kakaoPlaceName": "京畿大学 叡智館 4講義棟"
+      },
+      "eSquare": {
+        "shortName": "Eスクエア",
+        "name": "Eスクエア（第2福利館）",
+        "summary": "学生食堂 · 学生福利スペース",
+        "officialGuide": "正門から直進320m",
+        "description": "学生食堂と生活便利施設が集まる福利厚生の中心空間で、授業の前後によく利用されるキャンパスの拠点です。",
+        "searchKeyword": "京畿大学 水原キャンパス Eスクエア",
+        "kakaoPlaceName": "京畿大学 水原キャンパス Eスクエア"
+      },
+      "lectureHall": {
+        "shortName": "総合講義棟",
+        "name": "総合講義棟",
+        "summary": "授業中心の建物",
+        "officialGuide": "正門から直進350m後、左側の道へ50m。または中央図書館の裏道から450m",
+        "description": "多様な専攻授業が行われる中心講義棟で、中央図書館の裏側ルートと正門直進ルートの両方からアクセスできます。",
+        "searchKeyword": "京畿大学 水原キャンパス 総合講義棟",
+        "kakaoPlaceName": "京畿大学 水原キャンパス 総合講義棟"
+      },
+      "facultyResearchHall": {
+        "shortName": "教授研究棟",
+        "name": "教授研究棟",
+        "summary": "教員研究スペース",
+        "officialGuide": "正門から中央図書館の裏道へ300m",
+        "description": "中央図書館の裏側の学術エリアに位置する研究中心の建物で、教授研究室と学術活動スペースが集まっています。",
+        "searchKeyword": "京畿大学 水原キャンパス 教授研究棟",
+        "kakaoPlaceName": "京畿大学 教授研究棟"
+      },
+      "gwanggyoHall": {
+        "shortName": "光教館",
+        "name": "光教館（自然科学大学）",
+        "summary": "自然科学大学",
+        "officialGuide": "正門から直進450m。または中央図書館の裏道から550m",
+        "description": "自然科学系の授業が集まる建物で、総合講義棟と工学系エリアの間に位置する主要講義棟です。",
+        "searchKeyword": "京畿大学 水原キャンパス 光教館",
+        "kakaoPlaceName": "京畿大学 光教館 6講義棟"
+      },
+      "jiphyeonHall": {
+        "shortName": "集賢館",
+        "name": "集賢館（工学館）",
+        "summary": "工学館",
+        "officialGuide": "正門から直進500m。または中央図書館の裏道から500m",
+        "description": "工学系の授業、実習、プロジェクトが集まる建物で、キャンパス東側の学事エリアの主要拠点です。",
+        "searchKeyword": "京畿大学 水原キャンパス 集賢館",
+        "kakaoPlaceName": "京畿大学 水原キャンパス 集賢館 7講義棟"
+      },
+      "studentCenter": {
+        "shortName": "学生会館",
+        "name": "学生会館",
+        "summary": "学生活動 · 生活便利施設",
+        "officialGuide": "正門から中央図書館の裏道へ250m。または正門から左へ200m進み、右へ100m",
+        "description": "学生の便利機能が集まる生活中心の空間で、休憩と学生自治活動を支援する代表的な建物です。",
+        "searchKeyword": "京畿大学 水原キャンパス 学生会館",
+        "kakaoPlaceName": "京畿大学 水原キャンパス 学生会館"
+      }
+      
+    },
+    "ui": {
+  "badge": "モバイル / PC対応キャンパスマップ",
+  "mobileDescription": "水原キャンパスの建物位置と説明を素早く確認できます。",
+  "buildingCount": "建物",
+  "coordinate": "実際の座標基準",
+  "campusInfo": "キャンパス情報",
+  "official": "公式案内を見る",
+
+  "search": "検索",
+  "showingBuildings": "件表示中",
+  "coordinateApplied": "実際の座標を反映",
+  "searchPlaceholder": "建物名または用途で検索",
+  "categoryFilter": "カテゴリフィルター",
+
+  "campusMap": "キャンパスマップ",
+  "markerGuide": "マーカーで建物を選択",
+  "selectedBuilding": "選択建物",
+  "filter": "フィルター",
+  "none": "なし",
+  "coordinateNotice": "座標の誤差を減らすため実際の座標を使用しています。",
+
+  "noMatchingBuilding": "該当する建物がありません。",
+  "locating": "現在位置確認中...",
+  "currentLocation": "現在位置",
+  "loading": "地図を読み込み中...",
+
+  "officialLocationGuide": "公式位置案内",
+  "latitude": "緯度",
+  "longitude": "経度",
+  "viewOnMap": "地図で見る",
+  "openKakao": "Kakaoマップで開く",
+
+  "buildingList": "建物一覧",
+  "searchResult": "検索結果",
+  "realCoordinateBuildings": "建物",
+  "countUnit": "件",
+  "noResult": "結果がありません。",
+
+  "dataSource": "データ基準",
+
+  "selected": "選択建物",
+"list": "建物一覧",
+"source": "データ基準"
+
+  
+}
+  }
+}

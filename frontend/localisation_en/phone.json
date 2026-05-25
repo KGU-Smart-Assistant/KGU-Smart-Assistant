@@ -1,0 +1,139 @@
+{
+  "phone": {
+    "page": {
+      "eyebrow": "Campus Contacts",
+      "title": "Phone Directory",
+      "description": "Find key department phone numbers by campus and place a call right away.",
+      "allCategory": "All",
+      "categoryStat": "Categories",
+      "contactsStat": "Contacts",
+      "searchPlaceholder": "Search by department or phone number",
+      "clearSearchAria": "Clear search",
+      "callAction": "Call",
+      "noResultsTitle": "No results found",
+      "noResultsDescription": "Try searching again by department, phone number, or category."
+    },
+    "units": {
+      "departments": " departments"
+    },
+    "campuses": {
+      "suwon": {
+        "label": "Suwon Campus",
+        "address": "154-42 Gwanggyosan-ro, Yeongtong-gu, Suwon-si, Gyeonggi-do",
+        "description": "Browse frequently used contacts from the main line to student support."
+      },
+      "seoul": {
+        "label": "Seoul Campus",
+        "address": "57 Daehak-ro, Jongno-gu, Seoul",
+        "description": "See academic, admissions, student support, and facilities contacts at a glance."
+      }
+    },
+    "categories": {
+      "all": "All",
+      "mainLine": "Main Line",
+      "administration": "Administration",
+      "academics": "Academics",
+      "admissions": "Admissions",
+      "studentSupport": "Student Support",
+      "facilities": "Facilities"
+    },
+    "departments": {
+      "suwon-main-switchboard": {
+        "name": "Main Operator",
+        "description": "General campus operator and basic guidance."
+      },
+      "suwon-info-center": {
+        "name": "Information Center",
+        "description": "Visitor guidance, directions, and general inquiries."
+      },
+      "suwon-general-affairs": {
+        "name": "General Affairs Team",
+        "description": "General affairs, documents, and campus administration support."
+      },
+      "suwon-finance": {
+        "name": "Finance and Accounting Team",
+        "description": "Tuition, accounting, and budget-related inquiries."
+      },
+      "suwon-academic-affairs": {
+        "name": "Office of Academic Affairs",
+        "description": "Course operations, academic calendar, and registration inquiries."
+      },
+      "suwon-academic-support": {
+        "name": "Academic Support Team",
+        "description": "Leave of absence, return, grades, and graduation support."
+      },
+      "suwon-admissions-office": {
+        "name": "Admissions Office",
+        "description": "Freshman, transfer, and admissions schedule guidance."
+      },
+      "suwon-admissions-center": {
+        "name": "Admissions Help Center",
+        "description": "Application consultations and document submission inquiries."
+      },
+      "suwon-student-support": {
+        "name": "Student Support Team",
+        "description": "Student services, certificates, and campus life support."
+      },
+      "suwon-scholarship": {
+        "name": "Scholarship and Welfare Team",
+        "description": "Scholarships, welfare, and student benefits guidance."
+      },
+      "suwon-facility-management": {
+        "name": "Facilities Management Team",
+        "description": "Classroom, building, and facility maintenance inquiries."
+      },
+      "suwon-facility-center": {
+        "name": "Facility Service Center",
+        "description": "Heating, cooling, lighting, and equipment service requests."
+      },
+      "seoul-main-switchboard": {
+        "name": "Main Operator",
+        "description": "Seoul campus operator and basic guidance."
+      },
+      "seoul-info-desk": {
+        "name": "Campus Information Desk",
+        "description": "Visitor guidance and routing to major departments."
+      },
+      "seoul-admin-support": {
+        "name": "Administrative Support Office",
+        "description": "General administration, documents, and campus support services."
+      },
+      "seoul-human-resources": {
+        "name": "HR and General Affairs Team",
+        "description": "Human resources, general affairs, and staff administration inquiries."
+      },
+      "seoul-academic-support": {
+        "name": "Academic Support Team",
+        "description": "Academic operations, classes, and student record inquiries."
+      },
+      "seoul-curriculum": {
+        "name": "Curriculum Support Office",
+        "description": "Curriculum, degree path, and graduation requirement guidance."
+      },
+      "seoul-admissions-office": {
+        "name": "Admissions Management Team",
+        "description": "Admissions process, applications, and schedule inquiries."
+      },
+      "seoul-transfer-center": {
+        "name": "Transfer Admissions Desk",
+        "description": "Transfer admissions and required documents guidance."
+      },
+      "seoul-student-service": {
+        "name": "Student Service Center",
+        "description": "Student services, leave of absence, and certificate inquiries."
+      },
+      "seoul-scholarship-center": {
+        "name": "Scholarship Support Center",
+        "description": "Scholarship selection, national scholarships, and support counseling."
+      },
+      "seoul-facility-support": {
+        "name": "Facilities Support Team",
+        "description": "Building, space, and classroom maintenance support."
+      },
+      "seoul-control-room": {
+        "name": "Integrated Control Room",
+        "description": "Security, access control, and emergency facility support."
+      }
+    }
+  }
+}
