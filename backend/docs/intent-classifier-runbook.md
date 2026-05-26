@@ -4,25 +4,29 @@ This backend can route chat requests with a fine-tuned KLUE-BERT classifier befo
 
 ## Decision Shape
 
-The KLUE-BERT classifier is responsible only for the top-level route:
+The KLUE-BERT classifier is responsible for the top-level route and can also
+carry the relational DB subtype when the label includes it:
 
 - `route`: `llm`, `relational_db`, `rag`, `weather`
+- optional `db_intent`: `map`, `phone`, `unknown`
 
-When `route` is `relational_db`, the backend resolves `map` vs `phone` inside
-the relational DB resolver. The classifier should not be responsible for that
-second-stage DB decision.
+When `route` is `relational_db`, the backend uses the classifier-provided
+`db_intent`. This keeps the chat path rule-base-free; uncertain relational DB
+queries should use `relational_db` with `db_intent=unknown` and ask the user to
+clarify rather than guessing map vs phone from keywords.
 
 The model should use these labels:
 
 - `llm`
 - `relational_db`
+- `relational_db:map`
+- `relational_db:phone`
 - `rag`
 - `weather`
 
 For backward compatibility, the backend still accepts legacy labels such as
-`map`, `phone`, and `relational_db:map`, but it normalizes them to
-`route=relational_db` with `db_intent=unknown`. The DB resolver then decides the
-final map/phone intent from the user query.
+`map` and `phone`; it normalizes them to `route=relational_db` with the matching
+`db_intent`.
 
 ## Train Locally
 
@@ -49,12 +53,13 @@ python scripts/train_intent_classifier.py \
 
 The output directory is ignored by Git because model weights are too large for normal repository history.
 
-The current seed builder keeps `db_intent` metadata in the JSONL file for
-planner/resolver evaluation, but KLUE-BERT training collapses all
-`relational_db:*` rows into the single `relational_db` route label.
+The current seed builder keeps `db_intent` metadata in the JSONL file so
+training can preserve `relational_db:map` and `relational_db:phone` labels.
 
 - `rag`: 184
-- `relational_db`: map/phone/unknown DB examples collapsed into one route
+- `relational_db`: unknown DB examples
+- `relational_db:map`: campus location/path examples
+- `relational_db:phone`: campus phone/contact examples
 - `weather`: 100
 - `llm`: 100
 
@@ -139,7 +144,17 @@ RAG_DETAIL_CLASSIFIER_MODEL_NAME=models/rag-detail-klue-bert-v5
 RAG_DETAIL_CLASSIFIER_CONFIDENCE_THRESHOLD=0.45
 RAG_DETAIL_CLASSIFIER_TOP_K=3
 RAG_DETAIL_CLASSIFIER_DEVICE=-1
+RAG_CLARIFY_ON_LOW_CONFIDENCE=true
+RAG_CLARIFY_ON_MULTI_DOMAIN=true
+RAG_CLARIFY_ON_MISSING_DETAIL=false
 ```
+
+`RAG_CLARIFY_ON_LOW_CONFIDENCE` and `RAG_CLARIFY_ON_MULTI_DOMAIN` should stay
+enabled in production. They prevent the bot from searching and generating an
+answer when the model-only RAG intent is uncertain. `missing_detail` is allowed
+by default because many domain-only questions can still be answered from the
+retrieved documents; enable `RAG_CLARIFY_ON_MISSING_DETAIL` only if the frontend
+wants a stricter guided-chat flow.
 
 Train it from the RAG intent evaluation data:
 

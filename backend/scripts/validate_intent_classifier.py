@@ -127,14 +127,15 @@ def validate_text(
 def parse_model_label(label: str) -> tuple[Route, DbIntent]:
     normalized = label.strip().lower().replace("__", ":").replace("/", ":")
     if normalized in LEGACY_LABELS:
-        route, _db_intent = LEGACY_LABELS[normalized]
-        return route, "unknown"
+        return LEGACY_LABELS[normalized]
 
     route, separator, db_intent = normalized.partition(":")
     if route not in ROUTES:
         raise ValueError(f"Unsupported classifier label: {label!r}")
     if route == "relational_db" and separator and db_intent not in DB_INTENTS:
         raise ValueError(f"Unsupported relational_db intent label: {label!r}")
+    if route == "relational_db" and separator:
+        return route, db_intent  # type: ignore[return-value]
     return route, "unknown"  # type: ignore[return-value]
 
 

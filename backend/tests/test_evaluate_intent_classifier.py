@@ -22,7 +22,7 @@ def test_load_examples_normalizes_non_db_intents_to_unknown(tmp_path: Path) -> N
 
     assert examples == [
         EvalExample(text="장학금 안내 알려줘", route="rag", db_intent="unknown"),
-        EvalExample(text="8강의동 어디야?", route="relational_db", db_intent="unknown"),
+        EvalExample(text="8강의동 어디야?", route="relational_db", db_intent="map"),
     ]
 
 
@@ -42,9 +42,9 @@ def test_build_report_counts_accuracy_and_errors() -> None:
         EvalPrediction(
             text="중앙도서관 위치 알려줘",
             expected_route="relational_db",
-            expected_db_intent="unknown",
+            expected_db_intent="map",
             predicted_route="relational_db",
-            predicted_db_intent="unknown",
+            predicted_db_intent="map",
             predicted_label="relational_db:map",
             confidence=0.91,
             accepted=True,
@@ -54,7 +54,7 @@ def test_build_report_counts_accuracy_and_errors() -> None:
             expected_route="rag",
             expected_db_intent="unknown",
             predicted_route="relational_db",
-            predicted_db_intent="unknown",
+            predicted_db_intent="map",
             predicted_label="relational_db:map",
             confidence=0.81,
             accepted=True,
@@ -82,17 +82,17 @@ def test_build_report_counts_accuracy_and_errors() -> None:
     assert report["expected_counts"] == {
         "llm": 1,
         "rag": 1,
-        "relational_db": 1,
+        "relational_db:map": 1,
     }
     assert report["predicted_counts"] == {
         "llm": 1,
-        "relational_db": 2,
+        "relational_db:map": 2,
     }
     assert report["errors"] == [
         {
             "text": "장학금 안내 어디서 봐?",
             "expected": "rag",
-            "predicted": "relational_db",
+            "predicted": "relational_db:map",
             "raw_label": "relational_db:map",
             "confidence": 0.81,
             "accepted": True,

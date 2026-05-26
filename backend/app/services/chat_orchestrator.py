@@ -223,6 +223,9 @@ def _answer_from_relational_db(
 
 
 def _answer_from_rag(user_input: str, decision: ChatDecision) -> ChatResult:
+    if _should_request_rag_clarification(decision):
+        return _rag_clarification_result(decision)
+
     try:
         search_parameters = inspect.signature(search_documents).parameters
         search_kwargs = {"query": user_input, "top_k": 5}
@@ -326,6 +329,56 @@ def _answer_from_rag(user_input: str, decision: ChatDecision) -> ChatResult:
         intent_scores=decision.intent_scores,
         answer_status=answer_status,
         unverified=() if answer_status == "answered" else (_unverified_reason(decision),),
+    )
+
+
+def _should_request_rag_clarification(decision: ChatDecision) -> bool:
+    if decision.rag_ambiguity == "needs_clarification":
+        return True
+    if decision.rag_ambiguity == "low_confidence":
+        return settings.rag_clarify_on_low_confidence
+    if decision.rag_ambiguity == "multi_domain":
+        return settings.rag_clarify_on_multi_domain
+    if decision.rag_ambiguity == "missing_detail":
+        return settings.rag_clarify_on_missing_detail
+    return False
+
+
+def _rag_clarification_result(decision: ChatDecision) -> ChatResult:
+    return ChatResult(
+        reply=_rag_clarification_reply(decision),
+        intent="RAG",
+        route="rag",
+        rag_domain=decision.rag_domain,
+        rag_domains=decision.rag_domains,
+        rag_detail=decision.rag_detail,
+        rag_details=decision.rag_details,
+        source_scope=decision.source_scope,
+        rag_confidence=decision.rag_confidence,
+        rag_ambiguity=decision.rag_ambiguity,
+        rewritten_queries=decision.rewritten_queries,
+        matched_keywords=decision.matched_keywords,
+        intent_scores=decision.intent_scores,
+        answer_status="insufficient",
+        unverified=(_unverified_reason(decision),),
+    )
+
+
+def _rag_clarification_reply(decision: ChatDecision) -> str:
+    domains = tuple(domain for domain in decision.rag_domains[:3] if domain != "unknown")
+    if decision.rag_ambiguity == "multi_domain" and domains:
+        return (
+            "질문이 여러 업무 범위에 걸쳐 있어 바로 답변하기 어렵습니다. "
+            f"{', '.join(domains)} 중 어느 내용인지 조금 더 구체적으로 알려주세요."
+        )
+    if decision.rag_ambiguity == "missing_detail":
+        return (
+            "질문에서 필요한 정보 종류가 분명하지 않습니다. "
+            "기간, 자격, 제출서류, 신청방법, 금액처럼 원하는 항목을 함께 알려주세요."
+        )
+    return (
+        "질문 의도를 충분히 확신하지 못했습니다. "
+        "찾고 싶은 업무나 공지 범위를 조금 더 구체적으로 알려주세요."
     )
 
 

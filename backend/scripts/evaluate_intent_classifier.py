@@ -26,6 +26,8 @@ class EvalExample:
 
     @property
     def label(self) -> str:
+        if self.route == "relational_db" and self.db_intent in {"map", "phone"}:
+            return f"{self.route}:{self.db_intent}"
         return self.route
 
 
@@ -42,15 +44,22 @@ class EvalPrediction:
 
     @property
     def expected_label(self) -> str:
+        if self.expected_route == "relational_db" and self.expected_db_intent in {"map", "phone"}:
+            return f"{self.expected_route}:{self.expected_db_intent}"
         return self.expected_route
 
     @property
     def predicted_public_label(self) -> str:
+        if self.predicted_route == "relational_db" and self.predicted_db_intent in {"map", "phone"}:
+            return f"{self.predicted_route}:{self.predicted_db_intent}"
         return self.predicted_route
 
     @property
     def correct(self) -> bool:
-        return self.expected_route == self.predicted_route
+        return (
+            self.expected_route == self.predicted_route
+            and self.expected_db_intent == self.predicted_db_intent
+        )
 
 
 def main() -> None:
@@ -125,7 +134,8 @@ def load_examples(path: Path) -> list[EvalExample]:
             raise ValueError(f"Unsupported route {route!r} at {path}:{line_number}")
         if db_intent not in DB_INTENTS:
             raise ValueError(f"Unsupported db_intent {db_intent!r} at {path}:{line_number}")
-        db_intent = "unknown"
+        if route != "relational_db":
+            db_intent = "unknown"
         examples.append(EvalExample(text=text, route=route, db_intent=db_intent))  # type: ignore[arg-type]
 
     if not examples:

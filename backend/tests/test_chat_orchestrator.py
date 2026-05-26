@@ -684,6 +684,99 @@ def test_answer_chat_uses_rag_results_as_context(monkeypatch) -> None:
     assert result.sources[0].source_url == "https://example.com/scholarship"
 
 
+def test_answer_chat_requests_clarification_when_rag_domain_is_unknown(monkeypatch) -> None:
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_with_klue_bert",
+        lambda _: SimpleNamespace(route="rag", db_intent="unknown", confidence=0.99, label="rag"),
+    )
+    monkeypatch.setattr(chat_orchestrator, "classify_rag_domains_with_klue_bert", lambda _: ())
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "search_documents",
+        lambda **kwargs: pytest.fail("RAG search should wait for clarification"),
+    )
+
+    result = chat_orchestrator.answer_chat("scholarship deadline", db=None)
+
+    assert result.route == "rag"
+    assert result.answer_status == "insufficient"
+    assert result.rag_ambiguity == "needs_clarification"
+    assert result.sources == []
+    assert result.unverified
+
+
+def test_answer_chat_requests_clarification_for_multi_domain_rag(monkeypatch) -> None:
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_with_klue_bert",
+        lambda _: SimpleNamespace(route="rag", db_intent="unknown", confidence=0.99, label="rag"),
+    )
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_rag_domains_with_klue_bert",
+        lambda _: (
+            SimpleNamespace(domain="tuition", score=0.74),
+            SimpleNamespace(domain="scholarship", score=0.69),
+        ),
+    )
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_rag_details_with_klue_bert",
+        lambda _: (SimpleNamespace(detail="period", score=0.99),),
+    )
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "search_documents",
+        lambda **kwargs: pytest.fail("RAG search should wait for clarification"),
+    )
+
+    result = chat_orchestrator.answer_chat("tuition scholarship deadline", db=None)
+
+    assert result.route == "rag"
+    assert result.answer_status == "insufficient"
+    assert result.rag_ambiguity == "multi_domain"
+    assert result.rag_domains[:2] == ("tuition", "scholarship")
+    assert "tuition" in result.reply
+    assert "scholarship" in result.reply
+
+
+def test_answer_chat_allows_missing_rag_detail_by_default(monkeypatch) -> None:
+    search_result = SearchResult(
+        chunk_id="chunk-1",
+        doc_id="doc-1",
+        score=0.91,
+        text="Scholarship notices are available on the scholarship board.",
+        title="Scholarship notice",
+        source_url="https://example.com/scholarship",
+    )
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_with_klue_bert",
+        lambda _: SimpleNamespace(route="rag", db_intent="unknown", confidence=0.99, label="rag"),
+    )
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_rag_domains_with_klue_bert",
+        lambda _: (SimpleNamespace(domain="scholarship", score=0.92),),
+    )
+    monkeypatch.setattr(chat_orchestrator, "classify_rag_details_with_klue_bert", lambda _: ())
+    monkeypatch.setattr(chat_orchestrator, "search_documents", lambda query, top_k: [search_result])
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "get_gemini_response_with_context",
+        lambda user_input, context: "Scholarship answer",
+    )
+
+    result = chat_orchestrator.answer_chat("scholarship information", db=None)
+
+    assert result.route == "rag"
+    assert result.answer_status == "answered"
+    assert result.rag_ambiguity == "missing_detail"
+    assert result.rag_detail == "unknown"
+    assert result.reply == "Scholarship answer"
+
+
 def test_answer_chat_returns_insufficient_when_results_do_not_ground_answer(monkeypatch) -> None:
     search_result = SearchResult(
         chunk_id="chunk-1",
@@ -699,6 +792,7 @@ def test_answer_chat_returns_insufficient_when_results_do_not_ground_answer(monk
         lambda query, top_k, rag_domain, rag_domains, rag_detail, source_scope: [search_result],
     )
 
+    monkeypatch.setattr(chat_orchestrator.settings, "rag_clarify_on_multi_domain", False)
     result = chat_orchestrator.answer_chat("휴학하면 장학금은 어떻게 돼?", db=None)
 
     assert result.route == "rag"
