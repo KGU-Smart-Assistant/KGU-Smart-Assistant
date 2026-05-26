@@ -1,7 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
+import json
 import logging
+import os
+from pathlib import Path
 import re
 from typing import Any, Dict, List, Optional
 
@@ -10,6 +13,7 @@ from app.db.vector_store import query_embedded_chunks
 from app.schemas import SearchResponse, SearchResult
 from app.services.domain_taxonomy import (
     DOMAIN_FILTERS,
+    DETAIL_KEYWORDS,
     normalize_detail,
     normalize_domain,
 )
@@ -20,6 +24,10 @@ DEFAULT_CANDIDATE_MULTIPLIER = 4
 MAX_CANDIDATES = 50
 MAX_KEYWORD_CANDIDATES = 30
 LOW_CONFIDENCE_THRESHOLD = 0.35
+PRIMARY_DETAIL_BOOST = 0.08
+SECONDARY_DETAIL_BOOST = 0.04
+HARD_FILTER_CONFIDENCE_THRESHOLD = 0.75
+PARENT_EXPANSION_WINDOW = 1
 
 DOMAIN_WEIGHTS: dict[str, dict[str, float]] = {
     "scholarship": {"semantic": 0.35, "lexical": 0.25, "freshness": 0.25, "title": 0.10, "domain": 0.05},
@@ -47,16 +55,30 @@ def search_documents(
     rag_domains: Optional[List[str]] = None,
     rag_detail: Optional[str] = None,
     rag_details: Optional[List[str]] = None,
+    rag_confidence: Optional[float] = None,
     source_scope: Optional[str] = None,
     rewritten_queries: Optional[List[str]] = None,
     enable_fallback: bool = True,
     low_confidence_threshold: float = LOW_CONFIDENCE_THRESHOLD,
+    enable_parent_expansion: bool = True,
+    trace_id: str | None = None,
+    trace_path: str | None = None,
 ) -> List[SearchResult]:
     """Search crawled chunks with domain filtering, detail boosting, and broad fallback."""
     effective_domain = _normalize_domain(category) or _normalize_domain(rag_domain) or "default"
     effective_details = _effective_details(query=query, detail=detail, rag_detail=rag_detail, rag_details=rag_details)
     effective_detail = effective_details[0] if effective_details else None
-    filter_categories = _filter_categories_for_domains(effective_domain, rag_domains)
+    hard_filter = _should_hard_filter(effective_domain, rag_confidence)
+    filter_categories = _filter_categories_for_domains(effective_domain, rag_domains) if hard_filter else None
+    trace: dict[str, Any] = {
+        "query": query,
+        "effective_domain": effective_domain,
+        "rag_confidence": rag_confidence,
+        "hard_filter": hard_filter,
+        "filter_categories": filter_categories,
+        "rewritten_queries": list(rewritten_queries or []),
+        "low_confidence_threshold": low_confidence_threshold,
+    }
     primary_rows = _run_search_attempts(
         queries=_search_queries(query, rewritten_queries),
         ranking_query=query,
@@ -68,12 +90,33 @@ def search_documents(
         source_scope=source_scope,
         attempt="primary",
     )
+    trace["primary_rows"] = _trace_rows(primary_rows)
 
     if not enable_fallback or effective_domain == "default":
-        return [_row_to_search_result(row) for row in primary_rows[:top_k]]
+        trace["deduped_rows"] = _trace_rows(_dedupe_canonical_rows(primary_rows, effective_domain))
+        final_rows = _finalize_rows(
+            primary_rows,
+            effective_domain,
+            top_k,
+            low_confidence_threshold=low_confidence_threshold,
+            enable_parent_expansion=enable_parent_expansion,
+        )
+        trace["final_rows"] = _trace_rows(final_rows)
+        _write_search_trace(trace, trace_id=trace_id, trace_path=trace_path)
+        return [_row_to_search_result(row) for row in final_rows]
 
     if primary_rows:
-        return [_row_to_search_result(row) for row in primary_rows[:top_k]]
+        trace["deduped_rows"] = _trace_rows(_dedupe_canonical_rows(primary_rows, effective_domain))
+        final_rows = _finalize_rows(
+            primary_rows,
+            effective_domain,
+            top_k,
+            low_confidence_threshold=low_confidence_threshold,
+            enable_parent_expansion=enable_parent_expansion,
+        )
+        trace["final_rows"] = _trace_rows(final_rows)
+        _write_search_trace(trace, trace_id=trace_id, trace_path=trace_path)
+        return [_row_to_search_result(row) for row in final_rows]
 
     fallback_rows = _run_search_attempts(
         queries=_search_queries(query, rewritten_queries),
@@ -86,6 +129,7 @@ def search_documents(
         source_scope=source_scope,
         attempt="fallback_broad",
     )
+    trace["fallback_rows"] = _trace_rows(fallback_rows)
     merged_rows = rerank_candidate_rows(
         rows=_merge_rows(primary_rows, _mark_fallback_rows(fallback_rows)),
         query=query,
@@ -94,7 +138,17 @@ def search_documents(
         details=effective_details,
         source_scope=source_scope,
     )
-    return [_row_to_search_result(row) for row in merged_rows[:top_k]]
+    trace["deduped_rows"] = _trace_rows(_dedupe_canonical_rows(merged_rows, effective_domain))
+    final_rows = _finalize_rows(
+        merged_rows,
+        effective_domain,
+        top_k,
+        low_confidence_threshold=low_confidence_threshold,
+        enable_parent_expansion=enable_parent_expansion,
+    )
+    trace["final_rows"] = _trace_rows(final_rows)
+    _write_search_trace(trace, trace_id=trace_id, trace_path=trace_path)
+    return [_row_to_search_result(row) for row in final_rows]
 
 
 def _search_queries(query: str, rewritten_queries: list[str] | None) -> list[str]:
@@ -171,7 +225,7 @@ def rerank_candidate_rows(
         freshness = _freshness_score(row.get("published_at"))
         title = _title_match_score(tokens=tokens, title=row.get("title") or "")
         domain_match = _domain_match_score(effective_domain, row.get("domain") or row.get("category"))
-        detail_boost = 0.0
+        detail_boost = _detail_boost(effective_details, row)
         scope_boost = _scope_boost(source_scope, row)
         exact = _exact_phrase_score(query=query, title=row.get("title") or "", text=row.get("text") or "")
         source_penalty = _source_penalty(row)
@@ -217,6 +271,243 @@ def rerank_candidate_rows(
         ),
         reverse=True,
     )
+
+
+def _finalize_rows(
+    rows: list[dict[str, Any]],
+    domain: str | None,
+    top_k: int,
+    *,
+    low_confidence_threshold: float = LOW_CONFIDENCE_THRESHOLD,
+    enable_parent_expansion: bool = True,
+) -> list[dict[str, Any]]:
+    deduped = _dedupe_canonical_rows(rows, domain)
+    ranked = sorted(
+        deduped,
+        key=lambda row: (
+            float(row.get("score") or 0.0),
+            _canonical_priority(row, domain),
+            "keyword" in row.get("retrieval_sources", set()),
+            "vector" in row.get("retrieval_sources", set()),
+        ),
+        reverse=True,
+    )
+    marked = [_mark_low_confidence(row, low_confidence_threshold) for row in ranked]
+    confident = [row for row in marked if not row.get("low_confidence")]
+    selected = (confident or marked)[:top_k]
+    return _expand_parent_chunks(selected, top_k=top_k, enabled=enable_parent_expansion)
+
+
+def _dedupe_canonical_rows(rows: list[dict[str, Any]], domain: str | None) -> list[dict[str, Any]]:
+    selected: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        key = _canonical_dedupe_key(row, domain)
+        existing = selected.get(key)
+        if existing is None or _canonical_selection_key(row, domain) > _canonical_selection_key(existing, domain):
+            selected[key] = row
+    return list(selected.values())
+
+
+def _canonical_dedupe_key(row: dict[str, Any], domain: str | None) -> str:
+    for field in ("content_hash", "text_hash"):
+        value = str(row.get(field) or "").strip()
+        if value:
+            return f"{field}:{value}"
+    normalized_text = _normalize_text(str(row.get("text") or ""))
+    if domain == "academic_calendar" and normalized_text:
+        return f"text:{normalized_text}"
+    chunk_id = str(row.get("chunk_id") or "").strip()
+    if chunk_id:
+        return f"chunk:{chunk_id}"
+    source_url = _normalize_source_url(str(row.get("source_url") or ""))
+    title = _normalize_text(str(row.get("title") or ""))
+    return f"url-title:{source_url}:{title}"
+
+
+def _canonical_selection_key(row: dict[str, Any], domain: str | None) -> tuple[float, float, float]:
+    return (
+        _canonical_priority(row, domain),
+        float(row.get("score") or 0.0),
+        _distance_to_score(row.get("distance")),
+    )
+
+
+def _canonical_priority(row: dict[str, Any], domain: str | None) -> float:
+    row_domain = _normalize_domain(str(row.get("domain") or row.get("category") or "")) or ""
+    department = str(row.get("department") or "").strip().casefold()
+    title = str(row.get("title") or "")
+    priority = 0.0
+    if row_domain == domain:
+        priority += 1.0
+    if domain == "academic_calendar":
+        if row_domain == "academic_calendar":
+            priority += 2.0
+        elif row_domain == "general_notice":
+            priority += 0.4
+        elif row_domain == "department_notice":
+            priority -= 0.2
+        if department in {"university", "학교", "본교", ""}:
+            priority += 0.6
+        else:
+            priority -= 0.3
+        if "학사일정" in title:
+            priority += 0.5
+    return priority
+
+
+def _normalize_source_url(source_url: str) -> str:
+    return re.sub(r"([?&])(utm_[^=&]+|fbclid|gclid)=[^&]+", "", source_url.strip().casefold()).rstrip("?&")
+
+
+def _mark_low_confidence(row: dict[str, Any], threshold: float) -> dict[str, Any]:
+    marked = dict(row)
+    score = float(marked.get("score") or 0.0)
+    is_low = score < threshold
+    marked["low_confidence"] = is_low
+    breakdown = dict(marked.get("score_breakdown") or {})
+    breakdown["low_confidence"] = 1.0 if is_low else 0.0
+    breakdown["low_confidence_threshold"] = threshold
+    marked["score_breakdown"] = breakdown
+    return marked
+
+
+def _should_hard_filter(domain: str | None, rag_confidence: float | None) -> bool:
+    if not domain or domain == "default":
+        return False
+    if rag_confidence is None:
+        return True
+    return rag_confidence >= HARD_FILTER_CONFIDENCE_THRESHOLD
+
+
+def _expand_parent_chunks(rows: list[dict[str, Any]], *, top_k: int, enabled: bool) -> list[dict[str, Any]]:
+    if not enabled or not rows:
+        return rows
+    anchors = [
+        row
+        for row in rows
+        if row.get("doc_id") and row.get("chunk_index") is not None
+    ]
+    if not anchors:
+        return rows
+    expanded = _query_adjacent_chunk_rows(anchors, window=PARENT_EXPANSION_WINDOW)
+    if not expanded:
+        return rows
+    merged = _merge_rows(rows, expanded)
+    expanded_chunk_ids = {expanded_row.get("chunk_id") for expanded_row in expanded}
+    for row in merged:
+        if row.get("chunk_id") in expanded_chunk_ids:
+            row["parent_expanded"] = True
+            row.setdefault("score", max(float(row.get("score") or 0.0), 0.01))
+            breakdown = dict(row.get("score_breakdown") or {})
+            breakdown["parent_expanded"] = 1.0
+            row["score_breakdown"] = breakdown
+    return sorted(
+        merged,
+        key=lambda row: (
+            row.get("parent_expanded") is not True,
+            float(row.get("score") or 0.0),
+            _distance_to_score(row.get("distance")),
+        ),
+        reverse=True,
+    )[: max(top_k, len(rows) + len(expanded))]
+
+
+def _query_adjacent_chunk_rows(anchors: list[dict[str, Any]], *, window: int) -> list[dict[str, Any]]:
+    try:
+        from sqlalchemy import and_, or_, select
+
+        from app.db.session import SessionLocal
+        from app.models import CrawlerDocument, CrawlerDocumentChunk
+    except ImportError:
+        logger.exception("Parent chunk expansion dependencies are unavailable")
+        return []
+
+    clauses = []
+    anchor_chunk_ids = {str(row.get("chunk_id")) for row in anchors if row.get("chunk_id")}
+    for row in anchors:
+        doc_id = row.get("doc_id")
+        try:
+            chunk_index = int(row.get("chunk_index"))
+        except (TypeError, ValueError):
+            continue
+        clauses.append(
+            and_(
+                CrawlerDocumentChunk.doc_id == doc_id,
+                CrawlerDocumentChunk.chunk_index.between(chunk_index - window, chunk_index + window),
+            )
+        )
+    if not clauses:
+        return []
+
+    try:
+        with SessionLocal() as db:
+            result_rows = db.execute(
+                select(CrawlerDocumentChunk, CrawlerDocument.domain, CrawlerDocument.department, CrawlerDocument.published_at)
+                .join(CrawlerDocument, CrawlerDocument.doc_id == CrawlerDocumentChunk.doc_id)
+                .where(CrawlerDocumentChunk.status.in_(("active", "updated")))
+                .where(CrawlerDocument.status.in_(("active", "updated")))
+                .where(or_(*clauses))
+                .order_by(CrawlerDocumentChunk.doc_id, CrawlerDocumentChunk.chunk_index)
+            ).all()
+    except Exception:
+        logger.exception("Parent chunk expansion failed")
+        return []
+
+    rows: list[dict[str, Any]] = []
+    for chunk, chunk_domain, department, published_at in result_rows:
+        if chunk.chunk_id in anchor_chunk_ids:
+            continue
+        rows.append(
+            {
+                "chunk_id": chunk.chunk_id,
+                "doc_id": chunk.doc_id,
+                "chunk_index": chunk.chunk_index,
+                "text": chunk.text,
+                "title": chunk.title,
+                "source_url": chunk.source_url,
+                "source_type": chunk.source_type,
+                "retrieval_sources": {"parent"},
+                "domain": chunk_domain,
+                "department": department,
+                "published_at": published_at.isoformat() if published_at else None,
+            }
+        )
+    return rows
+
+
+def _write_search_trace(trace: dict[str, Any], *, trace_id: str | None, trace_path: str | None) -> None:
+    path = trace_path or os.getenv("RAG_SEARCH_TRACE_PATH")
+    if not path:
+        return
+    if os.getenv("RAG_SEARCH_TRACE_ENABLED", "true").casefold() in {"0", "false", "no"}:
+        return
+    payload = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "trace_id": trace_id,
+        **trace,
+    }
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.open("a", encoding="utf-8") as file:
+        file.write(json.dumps(payload, ensure_ascii=False) + "\n")
+
+
+def _trace_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "chunk_id": row.get("chunk_id"),
+            "doc_id": row.get("doc_id"),
+            "chunk_index": row.get("chunk_index"),
+            "title": row.get("title"),
+            "source_url": row.get("source_url"),
+            "domain": row.get("domain") or row.get("category"),
+            "score": row.get("score"),
+            "low_confidence": row.get("low_confidence", False),
+            "parent_expanded": row.get("parent_expanded", False),
+            "retrieval_sources": sorted(row.get("retrieval_sources", set())),
+        }
+        for row in rows
+    ]
 
 
 def _run_search_attempt(
@@ -456,6 +747,23 @@ def _normalize_details(details: list[str | None]) -> list[str]:
             continue
         normalized_details.append(normalized)
     return normalized_details
+
+
+def _detail_boost(details: list[str], row: dict[str, Any]) -> float:
+    if not details:
+        return 0.0
+    title = str(row.get("title") or "").casefold()
+    text = str(row.get("text") or "").casefold()
+    boost = 0.0
+    for index, detail in enumerate(details):
+        keywords = DETAIL_KEYWORDS.get(detail, ())
+        if not keywords:
+            continue
+        if any(keyword.casefold() in title for keyword in keywords):
+            boost += PRIMARY_DETAIL_BOOST if index == 0 else SECONDARY_DETAIL_BOOST
+        elif any(keyword.casefold() in text for keyword in keywords):
+            boost += (PRIMARY_DETAIL_BOOST if index == 0 else SECONDARY_DETAIL_BOOST) * 0.75
+    return min(boost, 0.12)
 
 
 def _tokenize(text: str) -> list[str]:
