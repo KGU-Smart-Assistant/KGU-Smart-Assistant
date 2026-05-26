@@ -7,6 +7,7 @@ from pathlib import Path
 
 
 OUTPUT_PATH = Path("app/data/intent_training_seed.jsonl")
+FAILURE_CASES_PATH = Path(__file__).resolve().parents[1] / "app" / "data" / "intent_failure_cases.jsonl"
 
 
 @dataclass(frozen=True)
@@ -44,6 +45,7 @@ def build_examples() -> list[Example]:
         *build_weather_examples(),
         *build_llm_examples(),
         *build_edge_case_examples(),
+        *build_failure_case_examples(),
     ]
 
 
@@ -417,6 +419,24 @@ def dedupe(examples: list[Example]) -> list[Example]:
         seen.add(key)
         deduped.append(example)
     return deduped
+
+
+def build_failure_case_examples() -> list[Example]:
+    if not FAILURE_CASES_PATH.exists():
+        return []
+
+    examples: list[Example] = []
+    for line_number, line in enumerate(FAILURE_CASES_PATH.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            continue
+        payload = json.loads(line)
+        text = str(payload.get("text", "")).strip()
+        route = str(payload.get("expected_route", "")).strip()
+        db_intent = str(payload.get("expected_db_intent", "unknown")).strip()
+        if not text:
+            raise ValueError(f"Missing text at {FAILURE_CASES_PATH}:{line_number}")
+        examples.append(Example(text=text, route=route, db_intent=db_intent))
+    return examples
 
 
 if __name__ == "__main__":

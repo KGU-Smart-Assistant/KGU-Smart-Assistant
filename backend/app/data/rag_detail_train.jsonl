@@ -18,7 +18,7 @@
 {"text": "청소년학과 전공 공지 알려줘", "route": "rag", "rag_detail": "announcement_lookup", "expected_details": ["announcement_lookup"]}
 {"text": "컴퓨터공학과 취업 공지 알려줘", "route": "rag", "rag_detail": "announcement_lookup", "expected_details": ["announcement_lookup"]}
 {"text": "교환학생 지원 가능한 학교를 알려줘", "route": "rag", "rag_detail": "eligibility", "expected_details": ["eligibility"]}
-{"text": "휴학하면 등록금이랑 장학금은 어떻게 돼?", "route": "rag", "rag_detail": "procedure", "expected_details": ["procedure"]}
+{"text": "휴학하면 등록금이랑 장학금은 어떻게 돼?", "route": "rag", "rag_detail": "unknown", "expected_details": ["unknown"]}
 {"text": "복학 신청하면 기숙사도 자동 신청돼?", "route": "rag", "rag_detail": "procedure", "expected_details": ["procedure"]}
 {"text": "수강취소하면 장학금에 영향 있어?", "route": "rag", "rag_detail": "unknown", "expected_details": ["unknown"]}
 {"text": "졸업요건이랑 다전공 이수 조건 알려줘", "route": "rag", "rag_detail": "eligibility", "expected_details": ["eligibility"]}
@@ -43,6 +43,27 @@
 {"text": "복수전공 포기하면 졸업요건은 어떻게 돼?", "route": "rag", "rag_detail": "unknown", "expected_details": ["unknown"]}
 {"text": "해외파견 장학금 신청 조건 알려줘", "route": "rag", "rag_detail": "eligibility", "expected_details": ["eligibility"]}
 {"text": "학생증 재발급 신청서 어디서 받아?", "route": "rag", "rag_detail": "required_documents", "expected_details": ["required_documents"]}
+{"text": "장학금 신청 언제까지야?", "route": "rag", "rag_detail": "period", "expected_details": ["period"]}
+{"text": "장학금 어디서 봐?", "route": "rag", "rag_detail": "announcement_lookup", "expected_details": ["announcement_lookup"]}
+{"text": "등록금 환불 신청서 어디 있어?", "route": "rag", "rag_detail": "required_documents", "expected_details": ["required_documents"]}
+{"text": "등록금 납부 언제까지야?", "route": "rag", "rag_detail": "period", "expected_details": ["period"]}
+{"text": "수강신청 언제야?", "route": "rag", "rag_detail": "period", "expected_details": ["period"]}
+{"text": "수강신청 취소하면 장학금 영향 있어?", "route": "rag", "rag_detail": "unknown", "expected_details": ["unknown"]}
+{"text": "휴학 신청 어떻게 해?", "route": "rag", "rag_detail": "procedure", "expected_details": ["procedure"]}
+{"text": "졸업요건 어디서 확인해?", "route": "rag", "rag_detail": "announcement_lookup", "expected_details": ["announcement_lookup"]}
+{"text": "졸업학점 기준 알려줘", "route": "rag", "rag_detail": "eligibility", "expected_details": ["eligibility"]}
+{"text": "편입 모집요강 어디서 봐?", "route": "rag", "rag_detail": "announcement_lookup", "expected_details": ["announcement_lookup"]}
+{"text": "교직이수 신청 자격 알려줘", "route": "rag", "rag_detail": "eligibility", "expected_details": ["eligibility"]}
+{"text": "교환학생 지원 가능한 학교 알려줘", "route": "rag", "rag_detail": "eligibility", "expected_details": ["eligibility"]}
+{"text": "교환학생 제출서류 뭐야?", "route": "rag", "rag_detail": "required_documents", "expected_details": ["required_documents"]}
+{"text": "취업 프로그램 모집 공지 보여줘", "route": "rag", "rag_detail": "announcement_lookup", "expected_details": ["announcement_lookup"]}
+{"text": "현장실습 신청 절차 알려줘", "route": "rag", "rag_detail": "procedure", "expected_details": ["procedure"]}
+{"text": "학생증 재발급 신청서 어디 있어?", "route": "rag", "rag_detail": "required_documents", "expected_details": ["required_documents"]}
+{"text": "기숙사 신청 기간 알려줘", "route": "rag", "rag_detail": "period", "expected_details": ["period"]}
+{"text": "컴퓨터공학과 공지 어디서 봐?", "route": "rag", "rag_detail": "announcement_lookup", "expected_details": ["announcement_lookup"]}
+{"text": "공지사항에서 비교과 프로그램 찾아줘", "route": "rag", "rag_detail": "announcement_lookup", "expected_details": ["announcement_lookup"]}
+{"text": "비교과 프로그램 내용 요약해줘", "route": "rag", "rag_detail": "summary", "expected_details": ["summary"]}
+{"text": "전과하면 장학금 신청 자격도 바뀌어?", "route": "rag", "rag_detail": "unknown", "expected_details": ["unknown"]}
 {"text": "장학금 신청 기간 알려줘", "route": "rag", "rag_detail": "period", "expected_details": ["period"]}
 {"text": "장학금 지원 자격 알려줘", "route": "rag", "rag_detail": "eligibility", "expected_details": ["eligibility"]}
 {"text": "장학금 신청 절차 설명해줘", "route": "rag", "rag_detail": "procedure", "expected_details": ["procedure"]}
@@ -2010,7 +2031,6 @@
 {"text": "학생증 관련해서 알려줘", "route": "rag", "rag_detail": "unknown", "expected_details": ["unknown"]}
 {"text": "학생증은 어떻게 되는 거야?", "route": "rag", "rag_detail": "unknown", "expected_details": ["unknown"]}
 {"text": "학생증에 영향이 있어?", "route": "rag", "rag_detail": "unknown", "expected_details": ["unknown"]}
-{"text": "기숙사 신청 기간 알려줘", "route": "rag", "rag_detail": "period", "expected_details": ["period"]}
 {"text": "기숙사 일정 확인하고 싶어", "route": "rag", "rag_detail": "period", "expected_details": ["period"]}
 {"text": "기숙사 접수는 언제부터야?", "route": "rag", "rag_detail": "period", "expected_details": ["period"]}
 {"text": "기숙사 지원 자격 알려줘", "route": "rag", "rag_detail": "eligibility", "expected_details": ["eligibility"]}
@@ -2157,7 +2177,6 @@
 {"text": "현장실습 신청 조건이 뭐야?", "route": "rag", "rag_detail": "eligibility", "expected_details": ["eligibility"]}
 {"text": "현장실습 대상자가 누구야?", "route": "rag", "rag_detail": "eligibility", "expected_details": ["eligibility"]}
 {"text": "현장실습 받을 수 있는 기준 알려줘", "route": "rag", "rag_detail": "eligibility", "expected_details": ["eligibility"]}
-{"text": "현장실습 신청 절차 알려줘", "route": "rag", "rag_detail": "procedure", "expected_details": ["procedure"]}
 {"text": "현장실습 접수 방법 설명해줘", "route": "rag", "rag_detail": "procedure", "expected_details": ["procedure"]}
 {"text": "현장실습 처리 절차가 궁금해", "route": "rag", "rag_detail": "procedure", "expected_details": ["procedure"]}
 {"text": "현장실습 제출서류 알려줘", "route": "rag", "rag_detail": "required_documents", "expected_details": ["required_documents"]}

@@ -34,6 +34,8 @@ async def chat_with_gemini(request: ChatRequest, db: Session = Depends(get_db)):
             )
             for score in result.intent_scores
         ],
+        suggested_domains=list(result.suggested_domains),
+        suggested_details=list(result.suggested_details),
         answer_status=result.answer_status,
         unverified=list(result.unverified),
     )

@@ -703,6 +703,8 @@ def test_answer_chat_requests_clarification_when_rag_domain_is_unknown(monkeypat
     assert result.answer_status == "insufficient"
     assert result.rag_ambiguity == "needs_clarification"
     assert result.sources == []
+    assert result.suggested_domains == ()
+    assert result.suggested_details == ("period",)
     assert result.unverified
 
 
@@ -737,6 +739,8 @@ def test_answer_chat_requests_clarification_for_multi_domain_rag(monkeypatch) ->
     assert result.answer_status == "insufficient"
     assert result.rag_ambiguity == "multi_domain"
     assert result.rag_domains[:2] == ("tuition", "scholarship")
+    assert result.suggested_domains == ("tuition", "scholarship")
+    assert result.suggested_details == ("period",)
     assert "tuition" in result.reply
     assert "scholarship" in result.reply
 
@@ -775,6 +779,34 @@ def test_answer_chat_allows_missing_rag_detail_by_default(monkeypatch) -> None:
     assert result.rag_ambiguity == "missing_detail"
     assert result.rag_detail == "unknown"
     assert result.reply == "Scholarship answer"
+
+
+def test_answer_chat_suggests_details_when_missing_detail_requires_clarification(monkeypatch) -> None:
+    monkeypatch.setattr(chat_orchestrator.settings, "rag_clarify_on_missing_detail", True)
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_with_klue_bert",
+        lambda _: SimpleNamespace(route="rag", db_intent="unknown", confidence=0.99, label="rag"),
+    )
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_rag_domains_with_klue_bert",
+        lambda _: (SimpleNamespace(domain="scholarship", score=0.92),),
+    )
+    monkeypatch.setattr(chat_orchestrator, "classify_rag_details_with_klue_bert", lambda _: ())
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "search_documents",
+        lambda **kwargs: pytest.fail("RAG search should wait for detail clarification"),
+    )
+
+    result = chat_orchestrator.answer_chat("scholarship information", db=None)
+
+    assert result.route == "rag"
+    assert result.answer_status == "insufficient"
+    assert result.rag_ambiguity == "missing_detail"
+    assert result.suggested_domains == ("scholarship",)
+    assert result.suggested_details[:3] == ("period", "eligibility", "required_documents")
 
 
 def test_answer_chat_returns_insufficient_when_results_do_not_ground_answer(monkeypatch) -> None:

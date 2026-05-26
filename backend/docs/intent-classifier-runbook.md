@@ -130,6 +130,9 @@ a six-stage pipeline:
 
 The API response includes `rag_ambiguity` and `rewritten_queries` alongside the
 existing `rag_domain`, `rag_domains`, `rag_detail`, and `rag_confidence` fields.
+When the answer is blocked for clarification, it also includes
+`suggested_domains` and `suggested_details` so the frontend can render guided
+choice buttons instead of treating the response as a generic failure.
 The current domain stage is model-only; the remaining stages are separated so
 they can be replaced by trained models without changing the response contract.
 
@@ -294,3 +297,35 @@ Use the report to tune `INTENT_CLASSIFIER_CONFIDENCE_THRESHOLD`:
 Compound questions such as `중앙도서관 위치랑 전화번호 알려줘` are handled by the
 backend planner before KLUE-BERT. Keep those out of the single-label classifier
 training/evaluation set unless the model architecture is changed to multi-label.
+
+## Add Production Failure Cases
+
+Add real failed questions to `app/data/intent_failure_cases.jsonl`. This is the
+single hand-maintained file for production-like intent errors. Each row should
+include:
+
+- `text`: the exact user question.
+- `expected_route`: `llm`, `relational_db`, `rag`, or `weather`.
+- `expected_db_intent`: `map`, `phone`, or `unknown`.
+- `expected_rag_domain`, `expected_rag_domains`, `expected_rag_detail`, and
+  `expected_ambiguity` for RAG rows.
+- `failure_type`: a short bucket such as `where_rag_not_map`, `multi_domain`,
+  `short_detail`, `procedure`, or `phone_contact`.
+- `memo`: why the case matters.
+
+The training data builders automatically include these rows:
+
+```bash
+python scripts/build_intent_training_seed.py
+python scripts/build_rag_domain_training_data.py
+python scripts/build_rag_detail_training_data.py
+```
+
+Before retraining, inspect the collected production-like cases:
+
+```bash
+python scripts/evaluate_intent_failure_cases.py \
+  --data app/data/intent_failure_cases.jsonl \
+  --pretty \
+  --show-errors
+```

@@ -828,3 +828,31 @@
 {"text": "학사일정 시험 기간 공지 알려줘", "route": "rag", "db_intent": "unknown"}
 {"text": "청소년학과 공지사항은 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
 {"text": "청소년학과 전공이수자격원 공지 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "장학금 신청 언제까지야?", "route": "rag", "db_intent": "unknown"}
+{"text": "장학금 어디서 봐?", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 환불 신청서 어디 있어?", "route": "rag", "db_intent": "unknown"}
+{"text": "등록금 납부 언제까지야?", "route": "rag", "db_intent": "unknown"}
+{"text": "수강신청 언제야?", "route": "rag", "db_intent": "unknown"}
+{"text": "수강신청 취소하면 장학금 영향 있어?", "route": "rag", "db_intent": "unknown"}
+{"text": "휴학 신청 어떻게 해?", "route": "rag", "db_intent": "unknown"}
+{"text": "휴학하면 등록금이랑 장학금은 어떻게 돼?", "route": "rag", "db_intent": "unknown"}
+{"text": "복학 신청 기간 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "졸업요건 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
+{"text": "졸업학점 기준 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "다전공 신청 방법 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "전과 지원 조건 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "편입 모집요강 어디서 봐?", "route": "rag", "db_intent": "unknown"}
+{"text": "교직이수 신청 자격 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "교환학생 지원 가능한 학교 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "교환학생 제출서류 뭐야?", "route": "rag", "db_intent": "unknown"}
+{"text": "취업 프로그램 모집 공지 보여줘", "route": "rag", "db_intent": "unknown"}
+{"text": "현장실습 신청 절차 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "학생증 재발급 신청서 어디 있어?", "route": "rag", "db_intent": "unknown"}
+{"text": "기숙사 신청 기간 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "컴퓨터공학과 공지 어디서 봐?", "route": "rag", "db_intent": "unknown"}
+{"text": "컴퓨터공학과 사무실 어디야?", "route": "relational_db", "db_intent": "map"}
+{"text": "컴퓨터공학과 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "공지사항에서 비교과 프로그램 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "비교과 프로그램 내용 요약해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "전과하면 장학금 신청 자격도 바뀌어?", "route": "rag", "db_intent": "unknown"}
+{"text": "내일 수원 날씨 어때?", "route": "weather", "db_intent": "unknown"}

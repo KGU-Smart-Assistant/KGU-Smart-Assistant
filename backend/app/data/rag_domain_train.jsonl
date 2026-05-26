@@ -43,6 +43,27 @@
 {"text": "복수전공 포기하면 졸업요건은 어떻게 돼?", "route": "rag", "rag_domain": "multi_major", "rag_detail": "unknown", "source_scope": "unknown", "expected_domains": ["multi_major", "graduation"]}
 {"text": "해외파견 장학금 신청 조건 알려줘", "route": "rag", "rag_domain": "international_exchange", "rag_detail": "eligibility", "source_scope": "unknown", "expected_domains": ["international_exchange", "scholarship"]}
 {"text": "학생증 재발급 신청서 어디서 받아?", "route": "rag", "rag_domain": "student_life", "rag_detail": "required_documents", "source_scope": "unknown", "expected_domains": ["student_life", "document_materials"]}
+{"text": "장학금 신청 언제까지야?", "route": "rag", "rag_domain": "scholarship", "rag_detail": "period", "source_scope": "unknown", "expected_domains": ["scholarship"]}
+{"text": "장학금 어디서 봐?", "route": "rag", "rag_domain": "scholarship", "rag_detail": "announcement_lookup", "source_scope": "unknown", "expected_domains": ["scholarship"]}
+{"text": "등록금 환불 신청서 어디 있어?", "route": "rag", "rag_domain": "tuition", "rag_detail": "required_documents", "source_scope": "unknown", "expected_domains": ["tuition", "document_materials"]}
+{"text": "등록금 납부 언제까지야?", "route": "rag", "rag_domain": "tuition", "rag_detail": "period", "source_scope": "unknown", "expected_domains": ["tuition"]}
+{"text": "수강신청 언제야?", "route": "rag", "rag_domain": "course_registration", "rag_detail": "period", "source_scope": "unknown", "expected_domains": ["course_registration"]}
+{"text": "수강신청 취소하면 장학금 영향 있어?", "route": "rag", "rag_domain": "course_registration", "rag_detail": "unknown", "source_scope": "unknown", "expected_domains": ["course_registration", "scholarship"]}
+{"text": "휴학 신청 어떻게 해?", "route": "rag", "rag_domain": "academic_status", "rag_detail": "procedure", "source_scope": "unknown", "expected_domains": ["academic_status"]}
+{"text": "졸업요건 어디서 확인해?", "route": "rag", "rag_domain": "graduation", "rag_detail": "announcement_lookup", "source_scope": "unknown", "expected_domains": ["graduation"]}
+{"text": "졸업학점 기준 알려줘", "route": "rag", "rag_domain": "graduation", "rag_detail": "eligibility", "source_scope": "unknown", "expected_domains": ["graduation"]}
+{"text": "편입 모집요강 어디서 봐?", "route": "rag", "rag_domain": "admission_transfer", "rag_detail": "announcement_lookup", "source_scope": "unknown", "expected_domains": ["admission_transfer"]}
+{"text": "교직이수 신청 자격 알려줘", "route": "rag", "rag_domain": "teaching_certification", "rag_detail": "eligibility", "source_scope": "unknown", "expected_domains": ["teaching_certification"]}
+{"text": "교환학생 지원 가능한 학교 알려줘", "route": "rag", "rag_domain": "international_exchange", "rag_detail": "eligibility", "source_scope": "unknown", "expected_domains": ["international_exchange"]}
+{"text": "교환학생 제출서류 뭐야?", "route": "rag", "rag_domain": "international_exchange", "rag_detail": "required_documents", "source_scope": "unknown", "expected_domains": ["international_exchange", "document_materials"]}
+{"text": "취업 프로그램 모집 공지 보여줘", "route": "rag", "rag_domain": "career_support", "rag_detail": "announcement_lookup", "source_scope": "unknown", "expected_domains": ["career_support"]}
+{"text": "현장실습 신청 절차 알려줘", "route": "rag", "rag_domain": "career_support", "rag_detail": "procedure", "source_scope": "unknown", "expected_domains": ["career_support"]}
+{"text": "학생증 재발급 신청서 어디 있어?", "route": "rag", "rag_domain": "student_life", "rag_detail": "required_documents", "source_scope": "unknown", "expected_domains": ["student_life", "document_materials"]}
+{"text": "기숙사 신청 기간 알려줘", "route": "rag", "rag_domain": "student_life", "rag_detail": "period", "source_scope": "unknown", "expected_domains": ["student_life"]}
+{"text": "컴퓨터공학과 공지 어디서 봐?", "route": "rag", "rag_domain": "department_notice", "rag_detail": "announcement_lookup", "source_scope": "unknown", "expected_domains": ["department_notice"]}
+{"text": "공지사항에서 비교과 프로그램 찾아줘", "route": "rag", "rag_domain": "general_notice", "rag_detail": "announcement_lookup", "source_scope": "unknown", "expected_domains": ["general_notice"]}
+{"text": "비교과 프로그램 내용 요약해줘", "route": "rag", "rag_domain": "general_notice", "rag_detail": "summary", "source_scope": "unknown", "expected_domains": ["general_notice"]}
+{"text": "전과하면 장학금 신청 자격도 바뀌어?", "route": "rag", "rag_domain": "major_change", "rag_detail": "unknown", "source_scope": "unknown", "expected_domains": ["major_change", "scholarship"]}
 {"text": "장학금 신청 기간 알려줘", "route": "rag", "rag_domain": "scholarship", "rag_detail": "period", "source_scope": "unknown", "expected_domains": ["scholarship"]}
 {"text": "장학금 지원 자격 알려줘", "route": "rag", "rag_domain": "scholarship", "rag_detail": "eligibility", "source_scope": "unknown", "expected_domains": ["scholarship"]}
 {"text": "장학금 신청 절차 설명해줘", "route": "rag", "rag_domain": "scholarship", "rag_detail": "procedure", "source_scope": "unknown", "expected_domains": ["scholarship"]}

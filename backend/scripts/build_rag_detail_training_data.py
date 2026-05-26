@@ -130,11 +130,13 @@ MULTI_DETAIL_EXAMPLES: tuple[tuple[str, tuple[str, ...]], ...] = (
 def main() -> None:
     backend_root = Path(__file__).resolve().parents[1]
     domain_train = backend_root / "app" / "data" / "rag_domain_train.jsonl"
+    failure_cases_path = backend_root / "app" / "data" / "intent_failure_cases.jsonl"
     output_path = backend_root / "app" / "data" / "rag_detail_train.jsonl"
 
     rows: list[dict[str, object]] = []
     if domain_train.exists():
         rows.extend(_load_existing(domain_train))
+    rows.extend(_load_failure_cases(failure_cases_path))
     rows.extend(_generated_detail_rows())
     rows.extend(
         {"text": text, "route": "rag", "rag_detail": detail, "expected_details": [detail]}
@@ -161,6 +163,29 @@ def _load_existing(path: Path) -> list[dict[str, object]]:
         row = json.loads(line)
         detail = row.get("rag_detail", "unknown")
         rows.append({"text": row["text"], "route": "rag", "rag_detail": detail, "expected_details": [detail]})
+    return rows
+
+
+def _load_failure_cases(path: Path) -> list[dict[str, object]]:
+    if not path.exists():
+        return []
+
+    rows: list[dict[str, object]] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        if row.get("expected_route") != "rag":
+            continue
+        detail = row.get("expected_rag_detail", "unknown")
+        rows.append(
+            {
+                "text": row["text"],
+                "route": "rag",
+                "rag_detail": detail,
+                "expected_details": [detail],
+            }
+        )
     return rows
 
 

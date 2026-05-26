@@ -76,6 +76,8 @@ class ChatResult:
     rewritten_queries: tuple[str, ...] = ()
     matched_keywords: tuple[str, ...] = ()
     intent_scores: tuple["RagIntentScore", ...] = ()
+    suggested_domains: tuple[str, ...] = ()
+    suggested_details: tuple[str, ...] = ()
     answer_status: Literal["answered", "partial", "insufficient"] = "answered"
     unverified: tuple[str, ...] = ()
 
@@ -359,13 +361,15 @@ def _rag_clarification_result(decision: ChatDecision) -> ChatResult:
         rewritten_queries=decision.rewritten_queries,
         matched_keywords=decision.matched_keywords,
         intent_scores=decision.intent_scores,
+        suggested_domains=_suggested_rag_domains(decision),
+        suggested_details=_suggested_rag_details(decision),
         answer_status="insufficient",
         unverified=(_unverified_reason(decision),),
     )
 
 
 def _rag_clarification_reply(decision: ChatDecision) -> str:
-    domains = tuple(domain for domain in decision.rag_domains[:3] if domain != "unknown")
+    domains = _suggested_rag_domains(decision)
     if decision.rag_ambiguity == "multi_domain" and domains:
         return (
             "질문이 여러 업무 범위에 걸쳐 있어 바로 답변하기 어렵습니다. "
@@ -380,6 +384,18 @@ def _rag_clarification_reply(decision: ChatDecision) -> str:
         "질문 의도를 충분히 확신하지 못했습니다. "
         "찾고 싶은 업무나 공지 범위를 조금 더 구체적으로 알려주세요."
     )
+
+
+def _suggested_rag_domains(decision: ChatDecision) -> tuple[str, ...]:
+    return tuple(domain for domain in decision.rag_domains[:3] if domain != "unknown")
+
+
+def _suggested_rag_details(decision: ChatDecision) -> tuple[str, ...]:
+    if decision.rag_details:
+        return decision.rag_details[:3]
+    if decision.rag_ambiguity == "missing_detail":
+        return ("period", "eligibility", "required_documents", "procedure", "benefit")
+    return ()
 
 
 def _answer_from_weather(user_input: str) -> ChatResult:

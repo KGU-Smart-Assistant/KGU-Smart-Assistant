@@ -67,10 +67,12 @@ MULTI_DOMAIN_EXAMPLES: tuple[tuple[str, tuple[str, ...], str], ...] = (
 def main() -> None:
     backend_root = Path(__file__).resolve().parents[1]
     eval_path = backend_root / "app" / "data" / "rag_intent_eval.jsonl"
+    failure_cases_path = backend_root / "app" / "data" / "intent_failure_cases.jsonl"
     output_path = backend_root / "app" / "data" / "rag_domain_train.jsonl"
 
     rows: list[dict[str, object]] = []
     rows.extend(_load_existing(eval_path))
+    rows.extend(_load_failure_cases(failure_cases_path))
     rows.extend(_single_domain_rows())
     rows.extend(_multi_domain_rows())
 
@@ -90,6 +92,31 @@ def _load_existing(path: Path) -> list[dict[str, object]]:
         row = json.loads(line)
         row["expected_domains"] = row.get("expected_domains") or [row["rag_domain"]]
         rows.append(row)
+    return rows
+
+
+def _load_failure_cases(path: Path) -> list[dict[str, object]]:
+    if not path.exists():
+        return []
+
+    rows: list[dict[str, object]] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        if row.get("expected_route") != "rag":
+            continue
+        expected_domains = row.get("expected_rag_domains") or [row["expected_rag_domain"]]
+        rows.append(
+            {
+                "text": row["text"],
+                "route": "rag",
+                "rag_domain": row["expected_rag_domain"],
+                "rag_detail": row.get("expected_rag_detail", "unknown"),
+                "source_scope": "unknown",
+                "expected_domains": expected_domains,
+            }
+        )
     return rows
 
 
