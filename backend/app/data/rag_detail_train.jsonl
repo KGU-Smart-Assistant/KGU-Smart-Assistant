@@ -63,7 +63,7 @@
 {"text": "컴퓨터공학과 공지 어디서 봐?", "route": "rag", "rag_detail": "announcement_lookup", "expected_details": ["announcement_lookup"]}
 {"text": "공지사항에서 비교과 프로그램 찾아줘", "route": "rag", "rag_detail": "announcement_lookup", "expected_details": ["announcement_lookup"]}
 {"text": "비교과 프로그램 내용 요약해줘", "route": "rag", "rag_detail": "summary", "expected_details": ["summary"]}
-{"text": "전과하면 장학금 신청 자격도 바뀌어?", "route": "rag", "rag_detail": "unknown", "expected_details": ["unknown"]}
+{"text": "전과하면 장학금 신청 자격도 바뀌어?", "route": "rag", "rag_detail": "eligibility", "expected_details": ["eligibility"]}
 {"text": "장학금 신청 기간 알려줘", "route": "rag", "rag_detail": "period", "expected_details": ["period"]}
 {"text": "장학금 지원 자격 알려줘", "route": "rag", "rag_detail": "eligibility", "expected_details": ["eligibility"]}
 {"text": "장학금 신청 절차 설명해줘", "route": "rag", "rag_detail": "procedure", "expected_details": ["procedure"]}
@@ -465,6 +465,10 @@
 {"text": "학교 전체 공지에서 교환학생 모집 찾아줘", "route": "rag", "rag_detail": "announcement_lookup", "expected_details": ["announcement_lookup"]}
 {"text": "학과 공지에 올라온 현장실습 모집 알려줘", "route": "rag", "rag_detail": "announcement_lookup", "expected_details": ["announcement_lookup"]}
 {"text": "등록금 고지서랑 분납 신청서 둘 다 필요해", "route": "rag", "rag_detail": "required_documents", "expected_details": ["required_documents"]}
+{"text": "비교과 프로그램 요약해줘", "route": "rag", "rag_detail": "summary", "expected_details": ["summary"]}
+{"text": "비교과 프로그램 모집 공지 찾아줘", "route": "rag", "rag_detail": "announcement_lookup", "expected_details": ["announcement_lookup"]}
+{"text": "비교과 활동 내용 알려줘", "route": "rag", "rag_detail": "summary", "expected_details": ["summary"]}
+{"text": "비교과 프로그램 어디서 확인해?", "route": "rag", "rag_detail": "announcement_lookup", "expected_details": ["announcement_lookup"]}
 {"text": "장학금 마감일이 언제야?", "route": "rag", "rag_detail": "period", "expected_details": ["period"]}
 {"text": "장학금 일정 확인하고 싶어", "route": "rag", "rag_detail": "period", "expected_details": ["period"]}
 {"text": "장학금 접수는 언제부터야?", "route": "rag", "rag_detail": "period", "expected_details": ["period"]}

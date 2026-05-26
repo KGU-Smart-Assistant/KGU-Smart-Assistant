@@ -63,7 +63,11 @@
 {"text": "컴퓨터공학과 공지 어디서 봐?", "route": "rag", "rag_domain": "department_notice", "rag_detail": "announcement_lookup", "source_scope": "unknown", "expected_domains": ["department_notice"]}
 {"text": "공지사항에서 비교과 프로그램 찾아줘", "route": "rag", "rag_domain": "general_notice", "rag_detail": "announcement_lookup", "source_scope": "unknown", "expected_domains": ["general_notice"]}
 {"text": "비교과 프로그램 내용 요약해줘", "route": "rag", "rag_domain": "general_notice", "rag_detail": "summary", "source_scope": "unknown", "expected_domains": ["general_notice"]}
-{"text": "전과하면 장학금 신청 자격도 바뀌어?", "route": "rag", "rag_domain": "major_change", "rag_detail": "unknown", "source_scope": "unknown", "expected_domains": ["major_change", "scholarship"]}
+{"text": "비교과 프로그램 요약해줘", "route": "rag", "rag_domain": "general_notice", "rag_detail": "summary", "source_scope": "unknown", "expected_domains": ["general_notice"]}
+{"text": "비교과 프로그램 모집 공지 찾아줘", "route": "rag", "rag_domain": "general_notice", "rag_detail": "announcement_lookup", "source_scope": "unknown", "expected_domains": ["general_notice"]}
+{"text": "비교과 활동 내용 알려줘", "route": "rag", "rag_domain": "general_notice", "rag_detail": "summary", "source_scope": "unknown", "expected_domains": ["general_notice"]}
+{"text": "비교과 프로그램 어디서 확인해?", "route": "rag", "rag_domain": "general_notice", "rag_detail": "announcement_lookup", "source_scope": "unknown", "expected_domains": ["general_notice"]}
+{"text": "전과하면 장학금 신청 자격도 바뀌어?", "route": "rag", "rag_domain": "major_change", "rag_detail": "eligibility", "source_scope": "unknown", "expected_domains": ["major_change", "scholarship"]}
 {"text": "장학금 신청 기간 알려줘", "route": "rag", "rag_domain": "scholarship", "rag_detail": "period", "source_scope": "unknown", "expected_domains": ["scholarship"]}
 {"text": "장학금 지원 자격 알려줘", "route": "rag", "rag_domain": "scholarship", "rag_detail": "eligibility", "source_scope": "unknown", "expected_domains": ["scholarship"]}
 {"text": "장학금 신청 절차 설명해줘", "route": "rag", "rag_domain": "scholarship", "rag_detail": "procedure", "source_scope": "unknown", "expected_domains": ["scholarship"]}

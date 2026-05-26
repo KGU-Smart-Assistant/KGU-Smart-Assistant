@@ -852,7 +852,15 @@
 {"text": "컴퓨터공학과 공지 어디서 봐?", "route": "rag", "db_intent": "unknown"}
 {"text": "컴퓨터공학과 사무실 어디야?", "route": "relational_db", "db_intent": "map"}
 {"text": "컴퓨터공학과 전화번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "입학처 문의처가 뭐야?", "route": "relational_db", "db_intent": "phone"}
+{"text": "입학처 전화 문의 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "교무처 문의처 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "학생지원팀 문의처가 어디야?", "route": "relational_db", "db_intent": "phone"}
 {"text": "공지사항에서 비교과 프로그램 찾아줘", "route": "rag", "db_intent": "unknown"}
 {"text": "비교과 프로그램 내용 요약해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "비교과 프로그램 요약해줘", "route": "rag", "db_intent": "unknown"}
+{"text": "비교과 프로그램 모집 공지 찾아줘", "route": "rag", "db_intent": "unknown"}
+{"text": "비교과 활동 내용 알려줘", "route": "rag", "db_intent": "unknown"}
+{"text": "비교과 프로그램 어디서 확인해?", "route": "rag", "db_intent": "unknown"}
 {"text": "전과하면 장학금 신청 자격도 바뀌어?", "route": "rag", "db_intent": "unknown"}
 {"text": "내일 수원 날씨 어때?", "route": "weather", "db_intent": "unknown"}
