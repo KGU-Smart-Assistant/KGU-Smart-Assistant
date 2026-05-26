@@ -2,24 +2,20 @@ from __future__ import annotations
 
 import json
 import re
-import inspect
 from dataclasses import dataclass, field
 from typing import Literal
 
 from sqlalchemy.orm import Session
 
-from app.schemas.search import SearchResult
 from app.services.call_service import get_phone
-from app.services.gemini_service import (
-    get_gemini_response,
-    get_gemini_response_with_context,
-)
+from app.services.gemini_service import get_gemini_response
 from app.core.config import settings
 from app.services.klue_bert_intent_classifier import classify_with_klue_bert
 from app.services.map_service import get_map_response
 from app.services.rag_detail_classifier import classify_rag_details_with_klue_bert
 from app.services.rag_domain_classifier import classify_rag_domains_with_klue_bert
-from app.services.search_service import search_documents
+from app.services.langchain_rag_service import answer_with_langchain_rag
+from app.services.search_service import LOW_CONFIDENCE_THRESHOLD, search_documents
 from app.services.weather_service import get_weather_response
 
 ChatRoute = Literal["llm", "relational_db", "rag", "weather"]
@@ -107,8 +103,6 @@ class RagClassification:
     matched_keywords: tuple[str, ...] = ()
     intent_scores: tuple[RagIntentScore, ...] = ()
 
-
-MIN_GROUNDED_RESULT_SCORE = 0.18
 
 
 
@@ -224,21 +218,22 @@ def _answer_from_relational_db(
 
 def _answer_from_rag(user_input: str, decision: ChatDecision) -> ChatResult:
     try:
-        search_parameters = inspect.signature(search_documents).parameters
-        search_kwargs = {"query": user_input, "top_k": 5}
-        if "rag_domain" in search_parameters:
-            search_kwargs["rag_domain"] = decision.rag_domain
-        if "rag_domains" in search_parameters:
-            search_kwargs["rag_domains"] = list(decision.rag_domains)
-        if "rag_detail" in search_parameters:
-            search_kwargs["rag_detail"] = decision.rag_detail
-        if "rag_details" in search_parameters:
-            search_kwargs["rag_details"] = list(decision.rag_details)
-        if "source_scope" in search_parameters:
-            search_kwargs["source_scope"] = decision.source_scope
-        if "rewritten_queries" in search_parameters:
-            search_kwargs["rewritten_queries"] = list(decision.rewritten_queries)
-        results = search_documents(**search_kwargs)
+        rag_result = answer_with_langchain_rag(
+            user_input,
+            top_k=5,
+            category=decision.rag_domain,
+            detail=decision.rag_detail,
+            rag_domain=decision.rag_domain,
+            rag_domains=decision.rag_domains,
+            rag_detail=decision.rag_detail,
+            rag_details=decision.rag_details,
+            rag_confidence=decision.rag_confidence,
+            source_scope=decision.source_scope,
+            rewritten_queries=decision.rewritten_queries,
+            search_fn=search_documents,
+            answer_fn=get_gemini_response,
+            confidence_threshold=LOW_CONFIDENCE_THRESHOLD,
+        )
     except NotImplementedError:
         return ChatResult(
             reply=(
@@ -261,9 +256,10 @@ def _answer_from_rag(user_input: str, decision: ChatDecision) -> ChatResult:
             unverified=(_unverified_reason(decision),),
         )
 
-    if not results:
+    sources = _chat_sources_from_documents(rag_result.documents)
+    if not rag_result.documents:
         return ChatResult(
-            reply="관련 문서를 찾지 못했습니다. 질문을 더 구체적으로 입력해 주세요.",
+            reply=rag_result.reply,
             intent="RAG",
             route="rag",
             rag_domain=decision.rag_domain,
@@ -280,35 +276,14 @@ def _answer_from_rag(user_input: str, decision: ChatDecision) -> ChatResult:
             unverified=(_unverified_reason(decision),),
         )
 
-    grounded_results = [
-        result for result in results if result.score >= MIN_GROUNDED_RESULT_SCORE
-    ]
-    if not grounded_results:
-        return ChatResult(
-            reply=_insufficient_rag_reply(decision),
-            intent="RAG",
-            route="rag",
-            sources=_chat_sources_from_results(results),
-            rag_domain=decision.rag_domain,
-            rag_domains=decision.rag_domains,
-            rag_detail=decision.rag_detail,
-            rag_details=decision.rag_details,
-            source_scope=decision.source_scope,
-            rag_confidence=decision.rag_confidence,
-            rag_ambiguity=decision.rag_ambiguity,
-            rewritten_queries=decision.rewritten_queries,
-            matched_keywords=decision.matched_keywords,
-            intent_scores=decision.intent_scores,
-            answer_status="insufficient",
-            unverified=(_unverified_reason(decision),),
-        )
+    answer_status: Literal["answered", "partial", "insufficient"] = "answered"
+    unverified: tuple[str, ...] = ()
+    reply = rag_result.reply
+    if rag_result.low_confidence:
+        answer_status = "insufficient"
+        unverified = (_unverified_reason(decision),)
+        reply = _insufficient_rag_reply(decision)
 
-    answer_status: Literal["answered", "partial", "insufficient"] = (
-        "partial" if len(grounded_results) < len(results) else "answered"
-    )
-    context = _format_rag_context(grounded_results)
-    reply = get_gemini_response_with_context(user_input=user_input, context=context)
-    sources = _chat_sources_from_results(results)
     return ChatResult(
         reply=reply,
         intent="RAG",
@@ -325,7 +300,7 @@ def _answer_from_rag(user_input: str, decision: ChatDecision) -> ChatResult:
         matched_keywords=decision.matched_keywords,
         intent_scores=decision.intent_scores,
         answer_status=answer_status,
-        unverified=() if answer_status == "answered" else (_unverified_reason(decision),),
+        unverified=unverified,
     )
 
 
@@ -570,25 +545,103 @@ def _rewrite_rag_queries(
     detail: str,
     source_scope: str,
 ) -> tuple[str, ...]:
-    query_parts = [normalized_text]
-    if domains:
-        query_parts.append(" ".join(domains[:3]))
-    if detail != "unknown":
-        query_parts.append(detail)
-    if source_scope != "unknown":
-        query_parts.append(source_scope)
-
+    template_queries: list[str] = []
+    years = re.findall(r"(?:20)?[0-9]{2}", normalized_text)
+    year = next((f"20{value}" if len(value) == 2 else value for value in years if value), "")
+    for domain in domains[:3] or ("unknown",):
+        template_queries.extend(_rag_query_templates(domain=domain, detail=detail, year=year))
+    scoped_query = _source_scope_query(normalized_text, source_scope)
     expanded = tuple(
         dict.fromkeys(
             query
-            for query in (
-                normalized_text,
-                " ".join(part for part in query_parts if part),
-            )
+            for query in (normalized_text, scoped_query, *template_queries)
             if query
         )
     )
     return expanded or (normalized_text,)
+
+
+def _rag_query_templates(*, domain: str, detail: str, year: str) -> tuple[str, ...]:
+    year_prefix = f"{year} " if year else ""
+    templates: dict[tuple[str, str], tuple[str, ...]] = {
+        ("academic_calendar", "period"): (
+            f"{year_prefix}경기대학교 학사일정",
+            f"{year_prefix}학사일정 개강 종강 시험 성적",
+        ),
+        ("academic_calendar", "unknown"): (
+            f"{year_prefix}경기대학교 학사일정",
+            f"{year_prefix}학사일정 개강 종강 시험 성적",
+        ),
+        ("scholarship", "period"): (
+            "경기대학교 장학금 신청 기간",
+            "경기대학교 교내장학금 신청 안내",
+        ),
+        ("scholarship", "procedure"): (
+            "경기대학교 장학금 신청 방법",
+            "경기대학교 장학금 신청 안내",
+        ),
+        ("scholarship", "required_documents"): (
+            "경기대학교 장학금 제출서류",
+            "경기대학교 장학금 신청서 서류",
+        ),
+        ("tuition", "period"): (
+            "경기대학교 등록금 납부 기간",
+            "경기대학교 등록금 분납 환불 일정",
+        ),
+        ("tuition", "procedure"): (
+            "경기대학교 등록금 납부 방법",
+            "경기대학교 등록금 환불 신청 방법",
+        ),
+        ("course_registration", "period"): (
+            f"{year_prefix}경기대학교 수강신청 기간",
+            f"{year_prefix}수강신청 정정 취소 일정",
+        ),
+        ("graduation", "eligibility"): (
+            "경기대학교 졸업요건 졸업학점",
+            "경기대학교 졸업인증 전공 교양 학점",
+        ),
+        ("academic_status", "procedure"): (
+            "경기대학교 휴학 복학 신청 방법",
+            "경기대학교 학적변동 신청 절차",
+        ),
+        ("major_change", "eligibility"): (
+            "경기대학교 전과 지원 자격",
+            "경기대학교 전공변경 신청 조건",
+        ),
+        ("multi_major", "procedure"): (
+            "경기대학교 다전공 복수전공 신청 방법",
+            "경기대학교 부전공 신청 절차",
+        ),
+        ("admission_transfer", "eligibility"): (
+            "경기대학교 편입 지원 자격",
+            "경기대학교 입학 모집요강 전형",
+        ),
+        ("teaching_certification", "period"): (
+            "경기대학교 교직이수 신청 기간",
+            "경기대학교 교원자격 신청 안내",
+        ),
+        ("international_exchange", "period"): (
+            "경기대학교 교환학생 신청 기간",
+            "경기대학교 국제교류 해외파견 모집",
+        ),
+    }
+    generic: dict[str, tuple[str, ...]] = {
+        "document_materials": ("경기대학교 자료실 신청서 양식", "경기대학교 제출서류 서식"),
+        "student_life": ("경기대학교 학생생활 학생증 기숙사 상담",),
+        "career_support": ("경기대학교 취업 진로 현장실습 채용",),
+        "department_notice": ("경기대학교 학과 공지 안내",),
+        "general_notice": ("경기대학교 공지사항 안내",),
+        "faq": ("경기대학교 자주 묻는 질문",),
+    }
+    return templates.get((domain, detail)) or templates.get((domain, "unknown")) or generic.get(domain, ())
+
+
+def _source_scope_query(normalized_text: str, source_scope: str | None) -> str:
+    if source_scope == "department":
+        return f"{normalized_text} 학과 공지"
+    if source_scope == "university":
+        return f"{normalized_text} 경기대학교"
+    return ""
 
 
 def _parse_decision(raw: str) -> ChatDecision | None:
@@ -680,16 +733,26 @@ def _decision_from_payload(
     return ChatDecision(route=route, db_intent=db_intent, reason=reason, query=query)  # type: ignore[arg-type]
 
 
-def _chat_sources_from_results(results: list[SearchResult]) -> list[ChatSource]:
-    return [
-        ChatSource(
-            type="document",
-            title=result.title,
-            source_url=result.source_url,
-            score=result.score,
+def _chat_sources_from_documents(documents) -> list[ChatSource]:
+    sources: list[ChatSource] = []
+    seen: set[tuple[str, str | None]] = set()
+    for document in documents:
+        metadata = document.metadata
+        title = str(metadata.get("title") or "문서")
+        source_url = metadata.get("source_url")
+        key = (title, source_url)
+        if key in seen:
+            continue
+        seen.add(key)
+        sources.append(
+            ChatSource(
+                type="document",
+                title=title,
+                source_url=source_url,
+                score=float(metadata.get("score") or metadata.get("confidence") or 0.0),
+            )
         )
-        for result in results
-    ]
+    return sources
 
 
 def _insufficient_rag_reply(decision: ChatDecision) -> str:
@@ -753,19 +816,3 @@ def _detail_label(detail: str | None) -> str | None:
     if detail is None or detail == "unknown":
         return None
     return labels.get(detail, detail)
-
-
-def _format_rag_context(results: list[SearchResult]) -> str:
-    blocks = []
-    for index, result in enumerate(results, start=1):
-        blocks.append(
-            "\n".join(
-                [
-                    f"[{index}] {result.title}",
-                    f"source_url: {result.source_url}",
-                    f"score: {result.score}",
-                    result.text,
-                ]
-            )
-        )
-    return "\n\n".join(blocks)
