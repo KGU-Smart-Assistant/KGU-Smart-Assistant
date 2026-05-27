@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import inspect
 import json
 import os
 from pathlib import Path
@@ -79,19 +80,37 @@ class HybridSearchRetriever(BaseRetriever):
     top_k: int = 5
     category: str | None = None
     detail: str | None = None
+    rag_domain: str | None = None
+    rag_domains: tuple[str, ...] = ()
+    rag_detail: str | None = None
+    rag_details: tuple[str, ...] = ()
+    rag_confidence: float | None = None
+    source_scope: str | None = None
+    rewritten_queries: tuple[str, ...] = ()
+    low_confidence_threshold: float = DEFAULT_RAG_CONFIDENCE_THRESHOLD
     expand_queries: bool = True
     compress_documents: bool = True
     search_fn: SearchFn = Field(default=search_documents, exclude=True)
 
     def _get_relevant_documents(self, query: str, *, run_manager=None) -> list[Document]:
-        queries = expand_search_queries(query) if self.expand_queries else [query]
+        queries = self._queries_for(query)
         documents_by_chunk: dict[str, Document] = {}
 
         for query_index, expanded_query in enumerate(queries):
-            search_kwargs = {"query": expanded_query, "top_k": self.top_k, "category": self.category}
-            if self.detail is not None:
-                search_kwargs["detail"] = self.detail
-            for result in self.search_fn(**search_kwargs):
+            for result in _call_search_fn(
+                self.search_fn,
+                query=expanded_query,
+                top_k=self.top_k,
+                category=self.category,
+                detail=self.detail,
+                rag_domain=self.rag_domain or self.category,
+                rag_domains=list(self.rag_domains),
+                rag_detail=self.rag_detail or self.detail,
+                rag_details=list(self.rag_details),
+                rag_confidence=self.rag_confidence,
+                source_scope=self.source_scope,
+                low_confidence_threshold=self.low_confidence_threshold,
+            ):
                 document = search_result_to_document(result)
                 _annotate_document_for_query(
                     document=document,
@@ -114,6 +133,17 @@ class HybridSearchRetriever(BaseRetriever):
         if self.compress_documents:
             return compress_documents_for_query(query, documents)
         return documents
+
+    def _queries_for(self, query: str) -> list[str]:
+        queries: list[str] = []
+        for candidate in (query, *self.rewritten_queries):
+            if candidate and candidate not in queries:
+                queries.append(candidate)
+        if self.expand_queries:
+            for candidate in expand_search_queries(query):
+                if candidate not in queries:
+                    queries.append(candidate)
+        return queries or [query]
 
 
 class ChromaVectorStoreRetriever(BaseRetriever):
@@ -142,6 +172,13 @@ def answer_with_langchain_rag(
     top_k: int = 5,
     category: str | None = None,
     detail: str | None = None,
+    rag_domain: str | None = None,
+    rag_domains: list[str] | tuple[str, ...] = (),
+    rag_detail: str | None = None,
+    rag_details: list[str] | tuple[str, ...] = (),
+    rag_confidence: float | None = None,
+    source_scope: str | None = None,
+    rewritten_queries: list[str] | tuple[str, ...] = (),
     search_fn: SearchFn = search_documents,
     answer_fn: AnswerFn = get_gemini_response,
     retriever: BaseRetriever | None = None,
@@ -149,7 +186,20 @@ def answer_with_langchain_rag(
     trace_path: str | None = None,
     confidence_threshold: float = DEFAULT_RAG_CONFIDENCE_THRESHOLD,
 ) -> LangChainRagResult:
-    effective_retriever = retriever or HybridSearchRetriever(top_k=top_k, category=category, detail=detail, search_fn=search_fn)
+    effective_retriever = retriever or HybridSearchRetriever(
+        top_k=top_k,
+        category=category or rag_domain,
+        detail=detail or rag_detail,
+        rag_domain=rag_domain or category,
+        rag_domains=tuple(rag_domains),
+        rag_detail=rag_detail or detail,
+        rag_details=tuple(rag_details),
+        rag_confidence=rag_confidence,
+        source_scope=source_scope,
+        rewritten_queries=tuple(rewritten_queries),
+        low_confidence_threshold=confidence_threshold,
+        search_fn=search_fn,
+    )
     chain = build_rag_chain(retriever=effective_retriever, answer_fn=answer_fn, confidence_threshold=confidence_threshold)
     expanded_queries = expand_search_queries(user_input)
     result = chain.invoke(
@@ -161,8 +211,14 @@ def answer_with_langchain_rag(
                 "trace_id": trace_id,
                 "expanded_queries": expanded_queries,
                 "retriever": effective_retriever.__class__.__name__,
-                "category": category,
-                "detail": detail,
+                "category": category or rag_domain,
+                "detail": detail or rag_detail,
+                "rag_domain": rag_domain or category,
+                "rag_domains": list(rag_domains),
+                "rag_detail": rag_detail or detail,
+                "rag_details": list(rag_details),
+                "rag_confidence": rag_confidence,
+                "source_scope": source_scope,
             },
         },
     )
@@ -238,6 +294,18 @@ def compress_documents_for_query(
         metadata["compressed_length"] = len(compressed_text)
         compressed.append(Document(page_content=compressed_text, metadata=metadata))
     return compressed
+
+
+def _call_search_fn(search_fn: SearchFn, **kwargs) -> list[SearchResult]:
+    try:
+        parameters = inspect.signature(search_fn).parameters
+    except (TypeError, ValueError):
+        return search_fn(**kwargs)
+    if any(parameter.kind == inspect.Parameter.VAR_KEYWORD for parameter in parameters.values()):
+        supported = kwargs
+    else:
+        supported = {key: value for key, value in kwargs.items() if key in parameters}
+    return search_fn(**supported)
 
 
 def search_result_to_document(result: SearchResult) -> Document:

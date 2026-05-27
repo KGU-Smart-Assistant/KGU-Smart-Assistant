@@ -24,7 +24,9 @@ RAG_DOMAIN_LABELS: tuple[str, ...] = (
     "international_exchange",
     "department_notice",
     "general_notice",
+    "faq",
 )
+
 
 
 @dataclass(frozen=True)

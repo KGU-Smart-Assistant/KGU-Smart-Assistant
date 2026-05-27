@@ -1,6 +1,8 @@
 import os
 from types import SimpleNamespace
 
+from app.services.langchain_rag_service import LangChainRagResult, search_result_to_document
+
 import pytest
 
 os.environ.setdefault("GOOGLE_API_KEY", "test-key")
@@ -582,11 +584,18 @@ def test_answer_chat_uses_atomic_queries_for_compound_actions(monkeypatch) -> No
         "search_documents",
         lambda query, top_k: captured.setdefault("rag_query", query) and [search_result],
     )
-    monkeypatch.setattr(
-        chat_orchestrator,
-        "get_gemini_response_with_context",
-        lambda user_input, context: f"rag query: {user_input}",
-    )
+    def fake_langchain_rag(user_input: str, **kwargs):
+        captured["rag_query"] = user_input
+        return LangChainRagResult(
+            reply=f"rag query: {user_input}",
+            documents=[search_result_to_document(search_result)],
+            context=search_result.text,
+            expanded_queries=[user_input],
+            confidence=0.91,
+            low_confidence=False,
+        )
+
+    monkeypatch.setattr(chat_orchestrator, "answer_with_langchain_rag", fake_langchain_rag)
 
     result = chat_orchestrator.answer_chat("weather tomorrow, scholarship deadline", db=None)
 
@@ -659,11 +668,20 @@ def test_answer_chat_uses_rag_results_as_context(monkeypatch) -> None:
         lambda query, top_k, rag_domain, rag_domains, rag_detail, source_scope: [search_result],
     )
 
-    def fake_context_answer(user_input: str, context: str) -> str:
-        captured["context"] = context
-        return "장학 신청 기간은 5월 1일부터 5월 10일까지입니다."
+    def fake_langchain_rag(user_input: str, **kwargs):
+        captured["kwargs"] = kwargs
+        document = search_result_to_document(search_result)
+        captured["context"] = f"{document.metadata['title']}\n{document.page_content}"
+        return LangChainRagResult(
+            reply="장학 신청 기간은 5월 1일부터 5월 10일까지입니다.",
+            documents=[document],
+            context=document.page_content,
+            expanded_queries=[user_input],
+            confidence=0.91,
+            low_confidence=False,
+        )
 
-    monkeypatch.setattr(chat_orchestrator, "get_gemini_response_with_context", fake_context_answer)
+    monkeypatch.setattr(chat_orchestrator, "answer_with_langchain_rag", fake_langchain_rag)
 
     result = chat_orchestrator.answer_chat("장학 신청 기간 알려줘", db=None)
 
@@ -765,11 +783,17 @@ def test_answer_chat_allows_missing_rag_detail_by_default(monkeypatch) -> None:
         lambda _: (SimpleNamespace(domain="scholarship", score=0.92),),
     )
     monkeypatch.setattr(chat_orchestrator, "classify_rag_details_with_klue_bert", lambda _: ())
-    monkeypatch.setattr(chat_orchestrator, "search_documents", lambda query, top_k: [search_result])
     monkeypatch.setattr(
         chat_orchestrator,
-        "get_gemini_response_with_context",
-        lambda user_input, context: "Scholarship answer",
+        "answer_with_langchain_rag",
+        lambda user_input, **kwargs: LangChainRagResult(
+            reply="Scholarship answer",
+            documents=[search_result_to_document(search_result)],
+            context=search_result.text,
+            expanded_queries=[user_input],
+            confidence=0.91,
+            low_confidence=False,
+        ),
     )
 
     result = chat_orchestrator.answer_chat("scholarship information", db=None)
@@ -809,6 +833,53 @@ def test_answer_chat_suggests_details_when_missing_detail_requires_clarification
     assert result.suggested_details[:3] == ("period", "eligibility", "required_documents")
 
 
+def test_answer_chat_keeps_parent_expanded_context_with_grounded_anchor(monkeypatch) -> None:
+    captured = {}
+    anchor = SearchResult(
+        chunk_id="chunk-1",
+        doc_id="doc-1",
+        score=0.91,
+        text="4월 학사일정입니다.",
+        title="2026 학사일정",
+        source_url="https://example.com/calendar",
+        score_breakdown={"low_confidence": 0.0},
+    )
+    parent = SearchResult(
+        chunk_id="chunk-0",
+        doc_id="doc-1",
+        score=0.01,
+        text="3월 학사일정입니다.",
+        title="2026 학사일정",
+        source_url="https://example.com/calendar",
+        score_breakdown={"parent_expanded": 1.0},
+    )
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "search_documents",
+        lambda query, top_k, rag_domain, rag_domains, rag_detail, rag_confidence, source_scope: [anchor, parent],
+    )
+
+    def fake_langchain_rag(user_input: str, **kwargs):
+        documents = [search_result_to_document(anchor), search_result_to_document(parent)]
+        captured["context"] = "\n".join(document.page_content for document in documents)
+        return LangChainRagResult(
+            reply="학사일정 답변",
+            documents=documents,
+            context=captured["context"],
+            expanded_queries=[user_input],
+            confidence=0.91,
+            low_confidence=False,
+        )
+
+    monkeypatch.setattr(chat_orchestrator, "answer_with_langchain_rag", fake_langchain_rag)
+
+    result = chat_orchestrator.answer_chat("장학금 신청 기간 알려줘", db=None)
+
+    assert result.answer_status == "answered"
+    assert "4월 학사일정" in captured["context"]
+    assert "3월 학사일정" in captured["context"]
+
+
 def test_answer_chat_returns_insufficient_when_results_do_not_ground_answer(monkeypatch) -> None:
     search_result = SearchResult(
         chunk_id="chunk-1",
@@ -831,6 +902,29 @@ def test_answer_chat_returns_insufficient_when_results_do_not_ground_answer(monk
     assert result.answer_status == "insufficient"
     assert result.unverified
     assert "근거를 확인할 수 없습니다" in result.reply
+
+
+def test_answer_chat_returns_insufficient_for_low_confidence_search_result(monkeypatch) -> None:
+    search_result = SearchResult(
+        chunk_id="chunk-1",
+        doc_id="doc-1",
+        score=0.30,
+        text="장학금 신청 안내입니다.",
+        title="장학금 신청 안내",
+        source_url="https://example.com/scholarship",
+        score_breakdown={"low_confidence": 1.0, "low_confidence_threshold": 0.35},
+    )
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "search_documents",
+        lambda query, top_k, rag_domain, rag_domains, rag_detail, rag_confidence, source_scope: [search_result],
+    )
+
+    result = chat_orchestrator.answer_chat("장학금 신청 기간 알려줘", db=None)
+
+    assert result.route == "rag"
+    assert result.answer_status == "insufficient"
+    assert result.unverified
 
 
 def test_answer_chat_uses_weather_service(monkeypatch) -> None:

@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from app.services import chat_orchestrator
+from app.services.domain_taxonomy import DOMAINS
 from app.services.rag_domain_classifier import (
     RAG_DOMAIN_LABELS,
     RagDomainPrediction,
@@ -34,6 +35,10 @@ def test_labels_to_multihot_marks_multiple_domains() -> None:
     assert vector[RAG_DOMAIN_LABELS.index("tuition")] == 1.0
     assert vector[RAG_DOMAIN_LABELS.index("scholarship")] == 1.0
     assert sum(vector) == 3.0
+
+
+def test_rag_domain_labels_are_supported_by_search_taxonomy() -> None:
+    assert set(RAG_DOMAIN_LABELS).issubset(DOMAINS)
 
 
 def test_load_examples_reads_expected_domains_from_rag_eval_data() -> None:
@@ -75,7 +80,8 @@ def test_rag_domain_classifier_scores_replace_rule_based_domain_scores(monkeypat
     assert list(decision.rag_domains)[:2] == ["tuition", "scholarship"]
     assert decision.rag_ambiguity == "clear"
     assert decision.rewritten_queries
-    assert "tuition" in decision.rewritten_queries[-1]
+    assert all("tuition" not in query for query in decision.rewritten_queries)
+    assert any("등록금" in query for query in decision.rewritten_queries)
 
 
 def test_rag_domain_is_unknown_without_model_predictions(monkeypatch: pytest.MonkeyPatch) -> None:
