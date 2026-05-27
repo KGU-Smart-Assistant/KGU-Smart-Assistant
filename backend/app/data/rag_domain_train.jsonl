@@ -68,6 +68,26 @@
 {"text": "비교과 활동 내용 알려줘", "route": "rag", "rag_domain": "general_notice", "rag_detail": "summary", "source_scope": "unknown", "expected_domains": ["general_notice"]}
 {"text": "비교과 프로그램 어디서 확인해?", "route": "rag", "rag_domain": "general_notice", "rag_detail": "announcement_lookup", "source_scope": "unknown", "expected_domains": ["general_notice"]}
 {"text": "전과하면 장학금 신청 자격도 바뀌어?", "route": "rag", "rag_domain": "major_change", "rag_detail": "eligibility", "source_scope": "unknown", "expected_domains": ["major_change", "scholarship"]}
+{"text": "국가장학금 신청서류 어디서 확인해?", "route": "rag", "rag_domain": "scholarship", "rag_detail": "required_documents", "source_scope": "unknown", "expected_domains": ["scholarship", "document_materials"]}
+{"text": "국가장학금 제출서류 알려줘", "route": "rag", "rag_domain": "scholarship", "rag_detail": "required_documents", "source_scope": "unknown", "expected_domains": ["scholarship"]}
+{"text": "수강정정은 어떻게 해?", "route": "rag", "rag_domain": "course_registration", "rag_detail": "procedure", "source_scope": "unknown", "expected_domains": ["course_registration"]}
+{"text": "수강정정 방법 알려줘", "route": "rag", "rag_domain": "course_registration", "rag_detail": "procedure", "source_scope": "unknown", "expected_domains": ["course_registration"]}
+{"text": "개강일이 언제야?", "route": "rag", "rag_domain": "academic_calendar", "rag_detail": "period", "source_scope": "unknown", "expected_domains": ["academic_calendar"]}
+{"text": "중간고사 기간 알려줘", "route": "rag", "rag_domain": "academic_calendar", "rag_detail": "period", "source_scope": "unknown", "expected_domains": ["academic_calendar"]}
+{"text": "자퇴 신청할 때 필요한 서류 알려줘", "route": "rag", "rag_domain": "academic_status", "rag_detail": "required_documents", "source_scope": "unknown", "expected_domains": ["academic_status", "document_materials"]}
+{"text": "자퇴 제출서류 알려줘", "route": "rag", "rag_domain": "academic_status", "rag_detail": "required_documents", "source_scope": "unknown", "expected_domains": ["academic_status"]}
+{"text": "졸업요건 알려줘", "route": "rag", "rag_domain": "graduation", "rag_detail": "eligibility", "source_scope": "unknown", "expected_domains": ["graduation"]}
+{"text": "졸업 요건이 뭐야?", "route": "rag", "rag_domain": "graduation", "rag_detail": "eligibility", "source_scope": "unknown", "expected_domains": ["graduation"]}
+{"text": "상담 신청 어디서 해?", "route": "rag", "rag_domain": "student_life", "rag_detail": "procedure", "source_scope": "unknown", "expected_domains": ["student_life"]}
+{"text": "학생상담 신청 방법 알려줘", "route": "rag", "rag_domain": "student_life", "rag_detail": "procedure", "source_scope": "unknown", "expected_domains": ["student_life"]}
+{"text": "첨부파일 요약해줘", "route": "rag", "rag_domain": "document_materials", "rag_detail": "summary", "source_scope": "unknown", "expected_domains": ["document_materials"]}
+{"text": "첨부파일 내용 정리해줘", "route": "rag", "rag_domain": "document_materials", "rag_detail": "summary", "source_scope": "unknown", "expected_domains": ["document_materials"]}
+{"text": "개강일 알려줘", "route": "rag", "rag_domain": "academic_calendar", "rag_detail": "period", "source_scope": "unknown", "expected_domains": ["academic_calendar"]}
+{"text": "이번 학기 개강일 언제야?", "route": "rag", "rag_domain": "academic_calendar", "rag_detail": "period", "source_scope": "unknown", "expected_domains": ["academic_calendar"]}
+{"text": "편입 모집요강 찾아줘", "route": "rag", "rag_domain": "admission_transfer", "rag_detail": "announcement_lookup", "source_scope": "unknown", "expected_domains": ["admission_transfer"]}
+{"text": "편입 모집요강 공지 찾아줘", "route": "rag", "rag_domain": "admission_transfer", "rag_detail": "announcement_lookup", "source_scope": "unknown", "expected_domains": ["admission_transfer"]}
+{"text": "학생상담은 어디서 신청해?", "route": "rag", "rag_domain": "student_life", "rag_detail": "procedure", "source_scope": "unknown", "expected_domains": ["student_life"]}
+{"text": "상담 신청 방법 알려줘", "route": "rag", "rag_domain": "student_life", "rag_detail": "procedure", "source_scope": "unknown", "expected_domains": ["student_life"]}
 {"text": "장학금 신청 기간 알려줘", "route": "rag", "rag_domain": "scholarship", "rag_detail": "period", "source_scope": "unknown", "expected_domains": ["scholarship"]}
 {"text": "장학금 지원 자격 알려줘", "route": "rag", "rag_domain": "scholarship", "rag_detail": "eligibility", "source_scope": "unknown", "expected_domains": ["scholarship"]}
 {"text": "장학금 신청 절차 설명해줘", "route": "rag", "rag_domain": "scholarship", "rag_detail": "procedure", "source_scope": "unknown", "expected_domains": ["scholarship"]}
@@ -81,7 +101,6 @@
 {"text": "국가장학금 신청 기간 알려줘", "route": "rag", "rag_domain": "scholarship", "rag_detail": "period", "source_scope": "unknown", "expected_domains": ["scholarship"]}
 {"text": "국가장학금 지원 자격 알려줘", "route": "rag", "rag_domain": "scholarship", "rag_detail": "eligibility", "source_scope": "unknown", "expected_domains": ["scholarship"]}
 {"text": "국가장학금 신청 절차 설명해줘", "route": "rag", "rag_domain": "scholarship", "rag_detail": "procedure", "source_scope": "unknown", "expected_domains": ["scholarship"]}
-{"text": "국가장학금 제출서류 알려줘", "route": "rag", "rag_domain": "scholarship", "rag_detail": "required_documents", "source_scope": "unknown", "expected_domains": ["scholarship"]}
 {"text": "국가장학금 관련 공지 찾아줘", "route": "rag", "rag_domain": "scholarship", "rag_detail": "announcement_lookup", "source_scope": "unknown", "expected_domains": ["scholarship"]}
 {"text": "교내장학 마감일이 언제야?", "route": "rag", "rag_domain": "scholarship", "rag_detail": "period", "source_scope": "unknown", "expected_domains": ["scholarship"]}
 {"text": "교내장학 신청 조건이 어떻게 돼?", "route": "rag", "rag_domain": "scholarship", "rag_detail": "eligibility", "source_scope": "unknown", "expected_domains": ["scholarship"]}
@@ -156,7 +175,6 @@
 {"text": "자퇴 신청 기간 알려줘", "route": "rag", "rag_domain": "academic_status", "rag_detail": "period", "source_scope": "unknown", "expected_domains": ["academic_status"]}
 {"text": "자퇴 지원 자격 알려줘", "route": "rag", "rag_domain": "academic_status", "rag_detail": "eligibility", "source_scope": "unknown", "expected_domains": ["academic_status"]}
 {"text": "자퇴 신청 절차 설명해줘", "route": "rag", "rag_domain": "academic_status", "rag_detail": "procedure", "source_scope": "unknown", "expected_domains": ["academic_status"]}
-{"text": "자퇴 제출서류 알려줘", "route": "rag", "rag_domain": "academic_status", "rag_detail": "required_documents", "source_scope": "unknown", "expected_domains": ["academic_status"]}
 {"text": "자퇴 관련 공지 찾아줘", "route": "rag", "rag_domain": "academic_status", "rag_detail": "announcement_lookup", "source_scope": "unknown", "expected_domains": ["academic_status"]}
 {"text": "재입학 마감일이 언제야?", "route": "rag", "rag_domain": "academic_status", "rag_detail": "period", "source_scope": "unknown", "expected_domains": ["academic_status"]}
 {"text": "재입학 신청 조건이 어떻게 돼?", "route": "rag", "rag_domain": "academic_status", "rag_detail": "eligibility", "source_scope": "unknown", "expected_domains": ["academic_status"]}
