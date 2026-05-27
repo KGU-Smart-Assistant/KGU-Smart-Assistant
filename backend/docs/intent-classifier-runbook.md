@@ -4,25 +4,29 @@ This backend can route chat requests with a fine-tuned KLUE-BERT classifier befo
 
 ## Decision Shape
 
-The KLUE-BERT classifier is responsible only for the top-level route:
+The KLUE-BERT classifier is responsible for the top-level route and can also
+carry the relational DB subtype when the label includes it:
 
 - `route`: `llm`, `relational_db`, `rag`, `weather`
+- optional `db_intent`: `map`, `phone`, `unknown`
 
-When `route` is `relational_db`, the backend resolves `map` vs `phone` inside
-the relational DB resolver. The classifier should not be responsible for that
-second-stage DB decision.
+When `route` is `relational_db`, the backend uses the classifier-provided
+`db_intent`. This keeps the chat path rule-base-free; uncertain relational DB
+queries should use `relational_db` with `db_intent=unknown` and ask the user to
+clarify rather than guessing map vs phone from keywords.
 
 The model should use these labels:
 
 - `llm`
 - `relational_db`
+- `relational_db:map`
+- `relational_db:phone`
 - `rag`
 - `weather`
 
 For backward compatibility, the backend still accepts legacy labels such as
-`map`, `phone`, and `relational_db:map`, but it normalizes them to
-`route=relational_db` with `db_intent=unknown`. The DB resolver then decides the
-final map/phone intent from the user query.
+`map` and `phone`; it normalizes them to `route=relational_db` with the matching
+`db_intent`.
 
 ## Train Locally
 
@@ -49,12 +53,13 @@ python scripts/train_intent_classifier.py \
 
 The output directory is ignored by Git because model weights are too large for normal repository history.
 
-The current seed builder keeps `db_intent` metadata in the JSONL file for
-planner/resolver evaluation, but KLUE-BERT training collapses all
-`relational_db:*` rows into the single `relational_db` route label.
+The current seed builder keeps `db_intent` metadata in the JSONL file so
+training can preserve `relational_db:map` and `relational_db:phone` labels.
 
 - `rag`: 184
-- `relational_db`: map/phone/unknown DB examples collapsed into one route
+- `relational_db`: unknown DB examples
+- `relational_db:map`: campus location/path examples
+- `relational_db:phone`: campus phone/contact examples
 - `weather`: 100
 - `llm`: 100
 
@@ -75,7 +80,7 @@ Use `--private` only if the team has decided the model should require authentica
 For local use with a locally trained model:
 
 ```env
-INTENT_CLASSIFIER_MODEL_NAME=models/intent-klue-bert
+INTENT_CLASSIFIER_MODEL_NAME=models/intent-klue-bert-v7
 INTENT_CLASSIFIER_CONFIDENCE_THRESHOLD=0.7
 INTENT_CLASSIFIER_DEVICE=-1
 ```
@@ -125,21 +130,34 @@ a six-stage pipeline:
 
 The API response includes `rag_ambiguity` and `rewritten_queries` alongside the
 existing `rag_domain`, `rag_domains`, `rag_detail`, and `rag_confidence` fields.
+When the answer is blocked for clarification, it also includes
+`suggested_domains` and `suggested_details` so the frontend can render guided
+choice buttons instead of treating the response as a generic failure.
 The current domain stage is model-only; the remaining stages are separated so
 they can be replaced by trained models without changing the response contract.
 
 Configure it separately:
 
 ```env
-RAG_DOMAIN_CLASSIFIER_MODEL_NAME=models/rag-domain-klue-bert-v2
+RAG_DOMAIN_CLASSIFIER_MODEL_NAME=models/rag-domain-klue-bert-v3
 RAG_DOMAIN_CLASSIFIER_CONFIDENCE_THRESHOLD=0.5
 RAG_DOMAIN_CLASSIFIER_TOP_K=3
 RAG_DOMAIN_CLASSIFIER_DEVICE=-1
-RAG_DETAIL_CLASSIFIER_MODEL_NAME=models/rag-detail-klue-bert-v5
+RAG_DETAIL_CLASSIFIER_MODEL_NAME=models/rag-detail-klue-bert-v8
 RAG_DETAIL_CLASSIFIER_CONFIDENCE_THRESHOLD=0.45
 RAG_DETAIL_CLASSIFIER_TOP_K=3
 RAG_DETAIL_CLASSIFIER_DEVICE=-1
+RAG_CLARIFY_ON_LOW_CONFIDENCE=true
+RAG_CLARIFY_ON_MULTI_DOMAIN=true
+RAG_CLARIFY_ON_MISSING_DETAIL=false
 ```
+
+`RAG_CLARIFY_ON_LOW_CONFIDENCE` and `RAG_CLARIFY_ON_MULTI_DOMAIN` should stay
+enabled in production. They prevent the bot from searching and generating an
+answer when the model-only RAG intent is uncertain. `missing_detail` is allowed
+by default because many domain-only questions can still be answered from the
+retrieved documents; enable `RAG_CLARIFY_ON_MISSING_DETAIL` only if the frontend
+wants a stricter guided-chat flow.
 
 Train it from the RAG intent evaluation data:
 
@@ -279,3 +297,53 @@ Use the report to tune `INTENT_CLASSIFIER_CONFIDENCE_THRESHOLD`:
 Compound questions such as `중앙도서관 위치랑 전화번호 알려줘` are handled by the
 backend planner before KLUE-BERT. Keep those out of the single-label classifier
 training/evaluation set unless the model architecture is changed to multi-label.
+
+## Add Production Failure Cases
+
+Add real failed questions to `app/data/intent_failure_cases.jsonl`. This is the
+single hand-maintained file for production-like intent errors. Each row should
+include:
+
+- `text`: the exact user question.
+- `expected_route`: `llm`, `relational_db`, `rag`, or `weather`.
+- `expected_db_intent`: `map`, `phone`, or `unknown`.
+- `expected_rag_domain`, `expected_rag_domains`, `expected_rag_detail`, and
+  `expected_ambiguity` for RAG rows.
+- `failure_type`: a short bucket such as `where_rag_not_map`, `multi_domain`,
+  `short_detail`, `procedure`, or `phone_contact`.
+- `memo`: why the case matters.
+
+The training data builders automatically include these rows:
+
+```bash
+python scripts/build_intent_training_seed.py
+python scripts/build_rag_domain_training_data.py
+python scripts/build_rag_detail_training_data.py
+```
+
+Before retraining, inspect the collected production-like cases:
+
+```bash
+python scripts/evaluate_intent_failure_cases.py \
+  --data app/data/intent_failure_cases.jsonl \
+  --pretty \
+  --show-errors
+```
+
+## Run The Production Question Set
+
+Use `app/data/production_question_set.jsonl` as a pre-release smoke test before
+changing model versions or crawler/search behavior. It contains representative
+questions across RAG, relational DB, weather, and general LLM routes, including
+short and ambiguous user phrasing.
+
+```bash
+python scripts/evaluate_intent_failure_cases.py \
+  --data app/data/production_question_set.jsonl \
+  --pretty \
+  --show-errors
+```
+
+Keep this file broad and stable. Add repeatedly failing real user questions to
+`intent_failure_cases.jsonl` first; promote them into `production_question_set.jsonl`
+when they should become part of the release regression suite.

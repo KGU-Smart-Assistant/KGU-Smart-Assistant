@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     rag_detail_classifier_confidence_threshold: float = 0.45
     rag_detail_classifier_top_k: int = 3
     rag_detail_classifier_device: int = -1
+    rag_clarify_on_low_confidence: bool = True
+    rag_clarify_on_multi_domain: bool = True
+    rag_clarify_on_missing_detail: bool = False
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

@@ -16,6 +16,8 @@ DB_INTENTS = {"map", "phone", "unknown"}
 LABELS = [
     "llm",
     "relational_db",
+    "relational_db:map",
+    "relational_db:phone",
     "rag",
     "weather",
 ]
@@ -31,6 +33,8 @@ class IntentExample:
 
     @property
     def label(self) -> str:
+        if self.route == "relational_db" and self.db_intent in {"map", "phone"}:
+            return f"{self.route}:{self.db_intent}"
         return self.route
 
 
