@@ -1,0 +1,148 @@
+{
+  "header": { "title": "KGU Smart Assistant" },
+  "newChat": "新しいチャット",
+  "quickActions": {
+    "academicCalendar": "学年暦",
+    "exchangeStudent": "交換留学生",
+    "tuition": "学費/奨学金"
+  },
+  "chatInput": { "placeholder": "メッセージを入力してください..." },
+  "mockBot": {
+    "initialMessage": "こんにちは！京畿大学チャットボットです。🏫\n水原キャンパス・ソウルキャンパスの学年暦、交換留学（SEP）、学費納入、教室案内などについてご質問ください！\n\n💡 下のボタンを押してすばやく質問することもできます。",
+    "academicCalendar": "2026年度の主な学年暦をご案内します。\n\n[第1学期]\n- 受講登録：2月中旬\n- 開講：3月第1週\n- 中間試験：4月第3週\n- 期末試験：6月第3週\n\n詳細は大学ホームページのお知らせをご参照ください！",
+    "exchangeStudent": "交換留学（SEP）プログラムについてご案内します。国際交流処のホームページで今学期の募集要項と応募資格をご確認いただけます。",
+    "tuition": "学費納入および奨学金に関するご案内です。正規登録期間は2月初旬〜2月下旬で、奨学金の申請は韓国奨学財団および総合情報システムを通じて行われます。",
+    "map": "リクエストされた場所をご案内します。",
+    "phone": "部署の電話番号をご案内します。（代表電話：031-249-9114）",
+    "cafeteria": "本日の感性コア食堂のメニューはトンカツと豚肉の甘辛炒めです。",
+    "fallback": "申し訳ありません。その質問についてはまだ学習中です。別の質問を入力してください！",
+    "thinking": "{{time}}秒間考え中...."
+  },
+  "infoLinks": {
+    "title": "もっと詳しく",
+    "categories": "つの分類",
+    "links": "つのリンク",
+    "learnMore": "について",
+    "moreInfo": "についてご案内します！",
+    "whichInfo": "どの情報をお探しですか？",
+    "curious": "について知りたい"
+  },
+  "kguInfo": {
+    "notice": {
+      "title": "お知らせ",
+      "integrated": "統合お知らせ",
+      "materials": "統合資料室"
+    },
+    "academicCalendar": {
+      "title": "学年暦",
+      "schedule": "学年暦"
+    },
+    "classes": {
+      "title": "授業/履修/成績",
+      "classTime": "講義時間",
+      "registration": "履修登録",
+      "creditTransfer": "単位繰越制",
+      "elearning": "学内eラーニング",
+      "virtualUniv": "学外仮想大学eラーニング",
+      "crossCampus": "キャンパス相互履修",
+      "retake": "単位放棄/再履修",
+      "deptPhone": "学部教務チーム電話番号",
+      "registrationLink": "履修登録リンク",
+      "grades": "成績案内"
+    },
+    "schoolRegister": {
+      "title": "学籍/休復学",
+      "readmission": "再入学",
+      "leaveOfAbsence": "休学",
+      "returnToSchool": "復学",
+      "withdrawal": "自主退学",
+      "doubleMajor": "副専攻",
+      "transfer": "転科(部)",
+      "majorChange": "専攻選択柔軟化",
+      "integrated": "学士・修士連携課程",
+      "majorAssignment": "専攻配定",
+      "warning": "学事警告",
+      "creditRecognition": "編入生単位認定",
+      "summerSession": "季節学期",
+      "degreeDelay": "学士学位取得猶予",
+      "recordCorrection": "学籍簿記載事項訂正"
+    },
+    "graduation": {
+      "title": "卒業",
+      "requirements": "卒業要件",
+      "early": "早期卒業"
+    },
+    "scholarship": {
+      "title": "奨学金/学資金",
+      "intro": "奨学支援チーム紹介",
+      "internal": "学内奨学金",
+      "external": "学外奨学金",
+      "national": "国家奨学金",
+      "loan": "学資金融資",
+      "notice": "奨学支援チームお知らせ",
+      "materials": "奨学支援チーム資料室",
+      "faq": "奨学支援チームFAQ",
+      "website": "奨学支援チームホームページ",
+      "future": "未来ジャブッキ奨学金"
+    },
+    "tuition": {
+      "title": "授業料",
+      "payment": "授業料納付案内",
+      "committee": "授業料審議委員会"
+    },
+    "certificate": {
+      "title": "証明書/書式",
+      "issuance": "証明書発行",
+      "various": "諸証明発行",
+      "forms": "書式資料室"
+    },
+    "career": {
+      "title": "就職/現場実習",
+      "support": "就職支援",
+      "intro": "就職管理支援チーム紹介",
+      "services": "就職支援サービス",
+      "facilities": "オンタクト施設インフラ",
+      "notice": "就職支援お知らせ",
+      "materials": "就職支援資料室",
+      "faq": "就職支援FAQ",
+      "website": "人材開発処ホームページ",
+      "jobCenter": "大学就職プラスセンター業務案内",
+      "jobCenterIntro": "大学就職プラスセンター紹介",
+      "programs": "進路・就職力量強化プログラム",
+      "internshipIntro": "キャリア開発・現場実習センター紹介",
+      "internshipNotice": "キャリア開発・現場実習センターお知らせ",
+      "internshipMaterials": "キャリア開発・現場実習センター資料室",
+      "internshipFaq": "キャリア開発・現場実習センターFAQ",
+      "fieldPractice": "学校現場実習",
+      "system": "産学協力総合情報システム"
+    },
+    "studentLife": {
+      "title": "学生生活",
+      "menu": "食事案内",
+      "phone": "水原キャンパス電話番号",
+      "shuttle": "通学バス",
+      "lms": "LMS",
+      "barun": "BARUNシステム",
+      "kutis": "KUTIS総合情報サービス",
+      "attendance": "電子出席",
+      "heyoung": "ヘイヨン使用案内",
+      "plagiarism": "剽窃検索",
+      "virtualUniv": "仮想大学",
+      "survey": "学習者要求調査",
+      "library": "電子図書館",
+      "cloud": "メール、クラウド",
+      "tuitionPrint": "授業料告知書出力",
+      "news": "京畿大ニュース",
+      "safety": "研究室オンライン安全教育",
+      "whistleblow": "公益申告",
+      "parking": "駐車案内",
+      "wifi": "有無線インターネット",
+      "remoteSupport": "遠隔支援",
+      "dorm": "生活館(ドリームタワー)",
+      "reserve": "職場予備軍連隊",
+      "sw": "ソフトウェア中心事業団",
+      "admission": "入学処"
+    }
+  }
+}
+

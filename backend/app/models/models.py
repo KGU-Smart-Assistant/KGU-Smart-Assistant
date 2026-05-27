@@ -22,6 +22,7 @@ class KguPlace(Base):
 
 class KguContact(Base):
     __tablename__ = "kgu_contacts"
+    __table_args__ = (UniqueConstraint("name", "phone", name="uq_kgu_contacts_name_phone"),)
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -33,7 +34,7 @@ class CrawlerSource(Base):
     __tablename__ = "crawler_sources"
 
     name: Mapped[str] = mapped_column(String(255), primary_key=True)
-    category: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    domain: Mapped[str | None] = mapped_column(String(64), nullable=True)
     department: Mapped[str | None] = mapped_column(String(255), nullable=True)
     seed_urls_json: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="active")
@@ -57,7 +58,7 @@ class CrawlerDocument(Base):
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     source_type: Mapped[str] = mapped_column(String(32), nullable=False)
     doc_type: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
-    category: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    domain: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     department: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     author_department: Mapped[str | None] = mapped_column(String(255), nullable=True)
     published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

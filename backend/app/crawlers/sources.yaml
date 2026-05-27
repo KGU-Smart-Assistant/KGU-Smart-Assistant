@@ -1,10 +1,10 @@
-defaults:
+﻿defaults:
   recent_documents: &recent_documents
     min_published_year: 2018
 
   portal_notice: &portal_notice
     <<: *recent_documents
-    category: notice
+    domain: general_notice
     max_pages: 0
     max_depth: 2
     max_pagination_pages: 200
@@ -28,7 +28,7 @@ defaults:
 
   portal_materials: &portal_materials
     <<: *recent_documents
-    category: materials
+    domain: document_materials
     max_pages: 0
     max_depth: 2
     max_pagination_pages: 200
@@ -56,7 +56,7 @@ defaults:
 
   portal_faq: &portal_faq
     <<: *recent_documents
-    category: faq
+    domain: faq
     max_pages: 0
     max_depth: 2
     max_pagination_pages: 200
@@ -79,7 +79,7 @@ defaults:
 
   portal_schedule: &portal_schedule
     <<: *recent_documents
-    category: academic_schedule
+    domain: academic_calendar
     max_pages: 3
     max_depth: 1
     follow_patterns:
@@ -100,9 +100,10 @@ defaults:
 
   external_notice: &external_notice
     <<: *recent_documents
-    category: notice
+    domain: general_notice
     max_pages: 0
     max_depth: 2
+    skip_images: true
     follow_patterns:
       - "board"
       - "bo_idx=1"
@@ -120,15 +121,47 @@ defaults:
       - "logout"
       - "javascript:"
       - "mailto:"
+      - "upload_hi/book"
+      - ".jpg"
+      - ".jpeg"
+      - ".png"
+      - ".gif"
+      - ".webp"
+      - ".pdf"
+      - ".doc"
+      - ".docx"
+      - ".hwp"
+      - ".hwpx"
+      - ".xls"
+      - ".xlsx"
     collect_seed_pages: false
     embed: true
     embedding_limit: 150
     attachment_embedding_limit: 100
 
+  direct_curriculum_content: &direct_curriculum_content
+    <<: *recent_documents
+    domain: graduation
+    max_pages: 1
+    max_depth: 0
+    skip_images: true
+    collect_seed_pages: true
+    collect_patterns:
+      - "contents.do"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "signup"
+      - "search.do"
+      - "javascript:"
+      - "mailto:"
+    embed: true
+    embedding_limit: 150
+
 sources:
   - name: academic_schedule
     <<: *recent_documents
-    category: academic_schedule
+    domain: academic_calendar
     department: university
     seed_urls:
       - "https://www.kyonggi.ac.kr/www/selectTnSchafsSchdulListUS.do?key=5695"
@@ -143,7 +176,7 @@ sources:
 
   - name: graduation_requirements
     <<: *recent_documents
-    category: graduation
+    domain: graduation
     department: university
     seed_urls:
       - "https://www.kyonggi.ac.kr/www/contents.do?key=8418"
@@ -158,7 +191,7 @@ sources:
 
   - name: university_notices
     <<: *recent_documents
-    category: notice
+    domain: general_notice
     department: university
     seed_urls:
       - "https://www.kyonggi.ac.kr/www/selectBbsNttList.do?key=7520&bbsNo=1073"
@@ -186,7 +219,7 @@ sources:
 
   - name: scholarship_support
     <<: *recent_documents
-    category: support
+    domain: scholarship
     department: scholarship_support
     seed_urls:
       - "https://www.kyonggi.ac.kr/scholarship/index.do"
@@ -216,7 +249,7 @@ sources:
 
   - name: student_life
     <<: *recent_documents
-    category: student_life
+    domain: student_life
     department: university
     seed_urls:
       - "https://www.kyonggi.ac.kr/www/contents.do?key=5754"
@@ -231,7 +264,7 @@ sources:
 
   - name: career_support
     <<: *recent_documents
-    category: career
+    domain: career_support
     department: university
     seed_urls:
       - "https://www.kyonggi.ac.kr/www/contents.do?key=5782"
@@ -244,17 +277,1992 @@ sources:
     embed: true
     embedding_limit: 150
 
+  - name: course_registration_guides
+    <<: *recent_documents
+    domain: course_registration
+    department: academic_affairs
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8431"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8430"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8432"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8433"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8434"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8435"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8436"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8427"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8429"
+    max_pages: 0
+    max_depth: 0
+    include_patterns:
+      - "contents.do"
+    collect_patterns:
+      - "contents.do"
+    embed: true
+    embedding_limit: 150
+
+  - name: academic_records_guides
+    <<: *recent_documents
+    domain: academic_calendar
+    department: academic_affairs
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=7773"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=7775"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=10156"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8426"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5729"
+    max_pages: 0
+    max_depth: 0
+    include_patterns:
+      - "contents.do"
+    collect_patterns:
+      - "contents.do"
+    embed: true
+    embedding_limit: 150
+
+  - name: academic_status_guides
+    <<: *recent_documents
+    domain: academic_calendar
+    department: academic_affairs
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8412"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8413"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8489"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8423"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8706"
+    max_pages: 0
+    max_depth: 0
+    include_patterns:
+      - "contents.do"
+    collect_patterns:
+      - "contents.do"
+    embed: true
+    embedding_limit: 150
+
+  - name: major_change_guides
+    <<: *recent_documents
+    domain: graduation
+    department: academic_affairs
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8414"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8415"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8416"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=7776"
+      - "https://www.kyonggi.ac.kr/CEP/contents.do?key=9913"
+      - "https://www.kyonggi.ac.kr/CEP/contents.do?key=9914"
+      - "https://www.kyonggi.ac.kr/CEP/contents.do?key=9881"
+    max_pages: 0
+    max_depth: 0
+    include_patterns:
+      - "contents.do"
+    collect_patterns:
+      - "contents.do"
+    embed: true
+    embedding_limit: 150
+
+  - name: teaching_certification_guides
+    <<: *recent_documents
+    domain: graduation
+    department: academic_affairs
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8493"
+    max_pages: 0
+    max_depth: 0
+    include_patterns:
+      - "contents.do"
+    collect_patterns:
+      - "contents.do"
+    embed: true
+    embedding_limit: 150
+
+  - name: academic_affairs_notices
+    <<: *recent_documents
+    domain: academic_calendar
+    department: academic_affairs
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/selectBbsNttList.do?bbsNo=1073&dc=11R11&key=5258"
+    max_pages: 0
+    max_depth: 2
+    max_pagination_pages: 200
+    restrict_to_seed_board_queries: true
+    skip_images: true
+    follow_patterns:
+      - "selectbbsnttlist.do"
+      - "selectbbsnttview.do"
+      - ".pdf"
+      - ".docx"
+      - ".hwp"
+      - ".hwpx"
+      - ".zip"
+    collect_patterns:
+      - "selectbbsnttview.do"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "signup"
+      - "search.do"
+      - "javascript:"
+      - "mailto:"
+    collect_seed_pages: false
+    embed: true
+    embedding_limit: 150
+    attachment_embedding_limit: 100
+
+  - name: academic_affairs_materials
+    <<: *recent_documents
+    domain: document_materials
+    department: academic_affairs
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/selectBbsNttList.do?bbsNo=684&dc=11R11&key=5259"
+    max_pages: 0
+    max_depth: 2
+    max_pagination_pages: 200
+    restrict_to_seed_board_queries: true
+    skip_images: true
+    follow_patterns:
+      - "selectbbsnttlist.do"
+      - "selectbbsnttview.do"
+      - ".pdf"
+      - ".docx"
+      - ".hwp"
+      - ".hwpx"
+      - ".zip"
+    collect_patterns:
+      - "selectbbsnttview.do"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "signup"
+      - "search.do"
+      - "javascript:"
+      - "mailto:"
+    collect_seed_pages: false
+    embed: true
+    embedding_limit: 150
+    attachment_embedding_limit: 150
+
+  - name: academic_affairs_faq
+    <<: *recent_documents
+    domain: faq
+    department: academic_affairs
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/selectBbsNttList.do?bbsNo=732&key=5260"
+    max_pages: 0
+    max_depth: 2
+    max_pagination_pages: 200
+    restrict_to_seed_board_queries: true
+    skip_images: true
+    follow_patterns:
+      - "selectbbsnttlist.do"
+      - "selectbbsnttview.do"
+      - "bbsno=732"
+      - "faq"
+    collect_patterns:
+      - "selectbbsnttview.do"
+      - "bbsno=732"
+      - "faq"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "signup"
+      - "search.do"
+      - "javascript:"
+      - "mailto:"
+    collect_seed_pages: true
+    embed: true
+    embedding_limit: 150
+
+  - name: scholarship_guides
+    <<: *recent_documents
+    domain: scholarship
+    department: scholarship_support
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/scholarship/contents.do?key=3066"
+      - "https://www.kyonggi.ac.kr/scholarship/contents.do?key=3067"
+      - "https://www.kyonggi.ac.kr/scholarship/contents.do?key=3068"
+      - "https://www.kyonggi.ac.kr/scholarship/contents.do?key=3069"
+      - "https://www.kyonggi.ac.kr/scholarship/contents.do?key=3071"
+      - "https://www.kyonggi.ac.kr/scholarship/contents.do?key=3072"
+      - "https://www.kyonggi.ac.kr/scholarship/contents.do?key=3073"
+      - "https://www.kyonggi.ac.kr/scholarship/contents.do?key=3074"
+      - "https://www.kyonggi.ac.kr/scholarship/contents.do?key=3075"
+      - "https://www.kyonggi.ac.kr/scholarship/contents.do?key=3076"
+      - "https://www.kyonggi.ac.kr/scholarship/contents.do?key=3084"
+    max_pages: 0
+    max_depth: 0
+    include_patterns:
+      - "contents.do"
+    collect_patterns:
+      - "contents.do"
+    embed: true
+    embedding_limit: 200
+
+  - name: scholarship_notices
+    <<: *recent_documents
+    domain: scholarship
+    department: scholarship_support
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/scholarship/selectBbsNttList.do?bbsNo=1073&key=8862&sf.dc=11D70"
+      - "https://www.kyonggi.ac.kr/scholarship/selectBbsNttList.do?bbsNo=518&key=3078"
+    max_pages: 0
+    max_depth: 2
+    max_pagination_pages: 200
+    restrict_to_seed_board_queries: true
+    skip_images: true
+    follow_patterns:
+      - "selectbbsnttlist.do"
+      - "selectbbsnttview.do"
+      - ".pdf"
+      - ".docx"
+      - ".hwp"
+      - ".hwpx"
+      - ".zip"
+    collect_patterns:
+      - "selectbbsnttview.do"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "signup"
+      - "search.do"
+      - "javascript:"
+      - "mailto:"
+    collect_seed_pages: false
+    embed: true
+    embedding_limit: 300
+    attachment_embedding_limit: 200
+
+  - name: scholarship_materials
+    <<: *recent_documents
+    domain: document_materials
+    department: scholarship_support
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/scholarship/selectBbsNttList.do?bbsNo=684&key=3079&sf.dc=11D70"
+    max_pages: 0
+    max_depth: 2
+    max_pagination_pages: 200
+    restrict_to_seed_board_queries: true
+    skip_images: true
+    follow_patterns:
+      - "selectbbsnttlist.do"
+      - "selectbbsnttview.do"
+      - ".pdf"
+      - ".docx"
+      - ".hwp"
+      - ".hwpx"
+      - ".zip"
+    collect_patterns:
+      - "selectbbsnttview.do"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "signup"
+      - "search.do"
+      - "javascript:"
+      - "mailto:"
+    collect_seed_pages: false
+    embed: true
+    embedding_limit: 150
+    attachment_embedding_limit: 150
+
+  - name: scholarship_faq
+    <<: *recent_documents
+    domain: faq
+    department: scholarship_support
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/scholarship/selectBbsNttList.do?bbsNo=904&key=3081"
+    max_pages: 0
+    max_depth: 2
+    max_pagination_pages: 200
+    restrict_to_seed_board_queries: true
+    skip_images: true
+    follow_patterns:
+      - "selectbbsnttlist.do"
+      - "selectbbsnttview.do"
+      - "bbsno=904"
+      - "faq"
+    collect_patterns:
+      - "selectbbsnttview.do"
+      - "bbsno=904"
+      - "faq"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "signup"
+      - "search.do"
+      - "javascript:"
+      - "mailto:"
+    collect_seed_pages: true
+    embed: true
+    embedding_limit: 150
+
+  - name: student_life_guides
+    <<: *recent_documents
+    domain: student_life
+    department: student_support
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=9346"
+      - "https://www.kyonggi.ac.kr/www/selectTnRstrntMenuListU.do?key=7138&sc1=30"
+      - "https://www.kyonggi.ac.kr/www/selectTnRstrntMenuListU.do?key=8531&sc1=40"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5724"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5725"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=9853"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5755"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5756"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5759"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5760"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5761"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5791"
+    max_pages: 0
+    max_depth: 0
+    include_patterns:
+      - "contents.do"
+      - "selecttnrstrntmenulistu.do"
+    collect_patterns:
+      - "contents.do"
+      - "selecttnrstrntmenulistu.do"
+    embed: true
+    embedding_limit: 200
+
+  - name: student_support_notices
+    <<: *recent_documents
+    domain: student_life
+    department: student_support
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/selectBbsNttList.do?bbsNo=1073&dc=11D10&key=5277"
+      - "https://www.kyonggi.ac.kr/www/selectBbsNttList.do?bbsNo=881&key=5750"
+    max_pages: 0
+    max_depth: 2
+    max_pagination_pages: 200
+    restrict_to_seed_board_queries: true
+    skip_images: true
+    follow_patterns:
+      - "selectbbsnttlist.do"
+      - "selectbbsnttview.do"
+      - ".pdf"
+      - ".docx"
+      - ".hwp"
+      - ".hwpx"
+      - ".zip"
+    collect_patterns:
+      - "selectbbsnttview.do"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "signup"
+      - "search.do"
+      - "javascript:"
+      - "mailto:"
+    collect_seed_pages: false
+    embed: true
+    embedding_limit: 200
+    attachment_embedding_limit: 150
+
+  - name: student_support_materials
+    <<: *recent_documents
+    domain: document_materials
+    department: student_support
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/selectBbsNttList.do?bbsNo=684&dc=11D10&key=5278"
+    max_pages: 0
+    max_depth: 2
+    max_pagination_pages: 200
+    restrict_to_seed_board_queries: true
+    skip_images: true
+    follow_patterns:
+      - "selectbbsnttlist.do"
+      - "selectbbsnttview.do"
+      - ".pdf"
+      - ".docx"
+      - ".hwp"
+      - ".hwpx"
+      - ".zip"
+    collect_patterns:
+      - "selectbbsnttview.do"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "signup"
+      - "search.do"
+      - "javascript:"
+      - "mailto:"
+    collect_seed_pages: false
+    embed: true
+    embedding_limit: 150
+    attachment_embedding_limit: 150
+
+  - name: student_support_faq
+    <<: *recent_documents
+    domain: faq
+    department: student_support
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/selectBbsNttList.do?bbsNo=741&key=5279"
+    max_pages: 0
+    max_depth: 2
+    max_pagination_pages: 200
+    restrict_to_seed_board_queries: true
+    skip_images: true
+    follow_patterns:
+      - "selectbbsnttlist.do"
+      - "selectbbsnttview.do"
+      - "bbsno=741"
+      - "faq"
+    collect_patterns:
+      - "selectbbsnttview.do"
+      - "bbsno=741"
+      - "faq"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "signup"
+      - "search.do"
+      - "javascript:"
+      - "mailto:"
+    collect_seed_pages: true
+    embed: true
+    embedding_limit: 150
+
+  - name: tuition_guides
+    <<: *recent_documents
+    domain: tuition
+    department: finance_accounting
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/jaemu/contents.do?key=3262"
+    max_pages: 1
+    max_depth: 0
+    include_patterns:
+      - "contents.do"
+    collect_patterns:
+      - "contents.do"
+    embed: true
+    embedding_limit: 150
+
+  - name: finance_notices
+    <<: *recent_documents
+    domain: tuition
+    department: finance_accounting
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/selectBbsNttList.do?bbsNo=1073&dc=11J30&key=8004"
+    max_pages: 0
+    max_depth: 2
+    max_pagination_pages: 200
+    restrict_to_seed_board_queries: true
+    skip_images: true
+    follow_patterns:
+      - "selectbbsnttlist.do"
+      - "selectbbsnttview.do"
+      - ".pdf"
+      - ".docx"
+      - ".hwp"
+      - ".hwpx"
+      - ".zip"
+    collect_patterns:
+      - "selectbbsnttview.do"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "signup"
+      - "search.do"
+      - "javascript:"
+      - "mailto:"
+    collect_seed_pages: false
+    embed: true
+    embedding_limit: 150
+    attachment_embedding_limit: 100
+
+  - name: finance_materials
+    <<: *recent_documents
+    domain: document_materials
+    department: finance_accounting
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/selectBbsNttList.do?bbsNo=684&dc=11J30&key=8005"
+    max_pages: 0
+    max_depth: 2
+    max_pagination_pages: 200
+    restrict_to_seed_board_queries: true
+    skip_images: true
+    follow_patterns:
+      - "selectbbsnttlist.do"
+      - "selectbbsnttview.do"
+      - ".pdf"
+      - ".docx"
+      - ".hwp"
+      - ".hwpx"
+      - ".zip"
+    collect_patterns:
+      - "selectbbsnttview.do"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "signup"
+      - "search.do"
+      - "javascript:"
+      - "mailto:"
+    collect_seed_pages: false
+    embed: true
+    embedding_limit: 150
+    attachment_embedding_limit: 150
+
+  - name: finance_faq
+    <<: *recent_documents
+    domain: faq
+    department: finance_accounting
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/selectBbsNttList.do?bbsNo=905&key=8006"
+    max_pages: 0
+    max_depth: 2
+    max_pagination_pages: 200
+    restrict_to_seed_board_queries: true
+    skip_images: true
+    follow_patterns:
+      - "selectbbsnttlist.do"
+      - "selectbbsnttview.do"
+      - "bbsno=905"
+      - "faq"
+    collect_patterns:
+      - "selectbbsnttview.do"
+      - "bbsno=905"
+      - "faq"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "signup"
+      - "search.do"
+      - "javascript:"
+      - "mailto:"
+    collect_seed_pages: true
+    embed: true
+    embedding_limit: 150
+
+  - name: international_exchange_guides
+    <<: *recent_documents
+    domain: student_life
+    department: international_exchange
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5799"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5800"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5801"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5803"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5804"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5805"
+    max_pages: 0
+    max_depth: 0
+    include_patterns:
+      - "contents.do"
+    collect_patterns:
+      - "contents.do"
+    embed: true
+    embedding_limit: 150
+
+  - name: career_portal_pages
+    <<: *recent_documents
+    domain: career_support
+    department: career_development
+    seed_urls:
+      - "https://job.kyonggi.ac.kr/ko/intro/notice"
+      - "https://job.kyonggi.ac.kr/ko/intro/faq"
+      - "https://job.kyonggi.ac.kr/ko/intro/qna"
+      - "https://job.kyonggi.ac.kr/ko/program/index/list"
+      - "https://job.kyonggi.ac.kr/ko/program/program2/suwon"
+      - "https://job.kyonggi.ac.kr/ko/program/program3/suwon"
+      - "https://job.kyonggi.ac.kr/ko/program/mentoring"
+      - "https://job.kyonggi.ac.kr/ko/counsel/index"
+      - "https://job.kyonggi.ac.kr/ko/counsel/offline/person"
+      - "https://job.kyonggi.ac.kr/ko/dataroom/roadmap"
+      - "https://job.kyonggi.ac.kr/ko/recruit/usual"
+      - "https://job.kyonggi.ac.kr/ko/recruit/oversea"
+      - "https://job.kyonggi.ac.kr/ko/recruit/alba"
+    max_pages: 0
+    max_depth: 1
+    skip_images: true
+    include_patterns:
+      - "/ko/intro/"
+      - "/ko/program/"
+      - "/ko/counsel/"
+      - "/ko/dataroom/"
+      - "/ko/recruit/"
+    follow_patterns:
+      - "/ko/intro/"
+      - "/ko/program/"
+      - "/ko/counsel/"
+      - "/ko/dataroom/"
+      - "/ko/recruit/"
+    collect_patterns:
+      - "/ko/intro/"
+      - "/ko/program/"
+      - "/ko/counsel/"
+      - "/ko/dataroom/"
+      - "/ko/recruit/"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "signup"
+      - "javascript:"
+      - "mailto:"
+      - ".pdf"
+      - ".docx"
+      - ".hwp"
+      - ".hwpx"
+      - ".zip"
+      - ".png"
+      - ".jpg"
+      - ".jpeg"
+      - ".gif"
+      - ".webp"
+    collect_seed_pages: true
+    embed: true
+    embedding_limit: 300
+
+  - name: career_internship_portal
+    <<: *recent_documents
+    domain: career_support
+    department: career_development
+    seed_urls:
+      - "https://intern.kyonggi.ac.kr/"
+    max_pages: 20
+    max_depth: 1
+    skip_images: true
+    include_patterns:
+      - "intern.kyonggi.ac.kr"
+      - "notice"
+      - "board"
+      - "program"
+      - "recruit"
+    follow_patterns:
+      - "notice"
+      - "board"
+      - "program"
+      - "recruit"
+    collect_patterns:
+      - "notice"
+      - "board"
+      - "program"
+      - "recruit"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "signup"
+      - "javascript:"
+      - "mailto:"
+      - ".pdf"
+      - ".docx"
+      - ".hwp"
+      - ".hwpx"
+      - ".zip"
+      - ".png"
+      - ".jpg"
+      - ".jpeg"
+      - ".gif"
+      - ".webp"
+    collect_seed_pages: true
+    embed: true
+    embedding_limit: 150
+
+  - name: remote_learning_guides
+    <<: *recent_documents
+    domain: student_life
+    department: remote_learning_support
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=7799"
+    max_pages: 0
+    max_depth: 0
+    include_patterns:
+      - "contents.do"
+    collect_patterns:
+      - "contents.do"
+    embed: true
+    embedding_limit: 100
+
+  - name: counseling_center_guides
+    <<: *recent_documents
+    domain: student_life
+    department: counseling_center
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/kgucounsel/contents.do?key=1410"
+      - "https://www.kyonggi.ac.kr/kgucounsel/contents.do?key=1412"
+      - "https://www.kyonggi.ac.kr/kgucounsel/contents.do?key=1417"
+      - "https://www.kyonggi.ac.kr/kgucounsel/contents.do?key=1419"
+    max_pages: 0
+    max_depth: 0
+    include_patterns:
+      - "contents.do"
+    collect_patterns:
+      - "contents.do"
+    embed: true
+    embedding_limit: 150
+
+  - name: disability_support_guides
+    <<: *recent_documents
+    domain: student_life
+    department: disability_support_center
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5283"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=7825"
+    max_pages: 0
+    max_depth: 0
+    include_patterns:
+      - "contents.do"
+    collect_patterns:
+      - "contents.do"
+    embed: true
+    embedding_limit: 100
+
+  - name: dormitory_guides
+    <<: *recent_documents
+    domain: student_life
+    department: dormitory
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5478"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=7832"
+    max_pages: 0
+    max_depth: 0
+    include_patterns:
+      - "contents.do"
+    collect_patterns:
+      - "contents.do"
+    embed: true
+    embedding_limit: 150
+
+  - name: library_guides
+    <<: *recent_documents
+    domain: student_life
+    department: library
+    seed_urls:
+      - "https://library.kyonggi.ac.kr/faqlib/faq"
+      - "https://library.kyonggi.ac.kr/webcontent/info/29"
+      - "https://library.kyonggi.ac.kr/webcontent/info/32"
+      - "https://library.kyonggi.ac.kr/webcontent/info/187"
+      - "https://library.kyonggi.ac.kr/webcontent/info/247"
+      - "https://library.kyonggi.ac.kr/webcontent/info/248"
+    max_pages: 0
+    max_depth: 0
+    skip_images: true
+    include_patterns:
+      - "library.kyonggi.ac.kr"
+      - "faq"
+      - "webcontent"
+    collect_patterns:
+      - "faq"
+      - "webcontent"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "javascript:"
+      - "mailto:"
+      - ".jpg"
+      - ".jpeg"
+      - ".png"
+      - ".gif"
+      - ".webp"
+    collect_seed_pages: true
+    embed: true
+    embedding_limit: 150
+
+  - name: international_student_support_guides
+    <<: *recent_documents
+    domain: student_life
+    department: international_student_support
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5302"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5708"
+      - "https://www.kyonggi.ac.kr/international_kgu/contents.do?key=7534"
+      - "https://www.kyonggi.ac.kr/international_kgu/contents.do?key=7585"
+      - "https://www.kyonggi.ac.kr/international_kgu/contents.do?key=7605"
+      - "https://www.kyonggi.ac.kr/IOIE/contents.do?key=1489"
+    max_pages: 0
+    max_depth: 0
+    include_patterns:
+      - "contents.do"
+    collect_patterns:
+      - "contents.do"
+    embed: true
+    embedding_limit: 150
+
+  - name: international_student_support_faq
+    <<: *portal_faq
+    min_published_year:
+    domain: faq
+    department: international_student_support
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/international_kgu/selectBbsNttList.do?bbsNo=985&key=7239"
+    restrict_to_seed_board_queries: true
+    follow_patterns:
+      - "bbsno=985"
+      - "selectbbsnttlist.do"
+      - "selectbbsnttview.do"
+      - "faq"
+    collect_patterns:
+      - "bbsno=985"
+      - "selectbbsnttlist.do"
+      - "selectbbsnttview.do"
+      - "faq"
+    collect_seed_pages: true
+
+  - name: international_student_support_materials
+    <<: *portal_materials
+    min_published_year:
+    domain: document_materials
+    department: international_student_support
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/international_kgu/selectBbsNttList.do?bbsNo=684&key=7181"
+    restrict_to_seed_board_queries: true
+
+  - name: reservist_guides
+    <<: *recent_documents
+    domain: student_life
+    department: reservist
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/reservist/contents.do?key=7395"
+    max_pages: 0
+    max_depth: 0
+    skip_images: true
+    include_patterns:
+      - "contents.do"
+    collect_patterns:
+      - "contents.do"
+    embed: true
+    embedding_limit: 100
+
+  - name: human_rights_guides
+    <<: *recent_documents
+    domain: student_life
+    department: human_rights_center
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/HRC/contents.do?key=3099"
+    max_pages: 0
+    max_depth: 0
+    skip_images: true
+    include_patterns:
+      - "contents.do"
+    collect_patterns:
+      - "contents.do"
+    embed: true
+    embedding_limit: 100
+
+  - name: volunteer_guides
+    <<: *recent_documents
+    domain: student_life
+    department: volunteer_center
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/voluntaryCenter/contents.do?key=7811"
+    max_pages: 0
+    max_depth: 0
+    skip_images: true
+    include_patterns:
+      - "contents.do"
+    collect_patterns:
+      - "contents.do"
+    embed: true
+    embedding_limit: 150
+
+  - name: barun_kgu_plus_guides
+    <<: *recent_documents
+    domain: career_support
+    department: education_innovation
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8367"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8359"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8365"
+    max_pages: 0
+    max_depth: 0
+    skip_images: true
+    include_patterns:
+      - "contents.do"
+    collect_patterns:
+      - "contents.do"
+    embed: true
+    embedding_limit: 150
+
+  - name: career_official_guides
+    <<: *recent_documents
+    domain: career_support
+    department: career_development
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5221"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5351"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=7789"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=7793"
+    max_pages: 0
+    max_depth: 0
+    skip_images: true
+    include_patterns:
+      - "contents.do"
+    collect_patterns:
+      - "contents.do"
+    embed: true
+    embedding_limit: 150
+
+  - name: campus_service_hub
+    <<: *recent_documents
+    domain: student_life
+    department: campus_services
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5815"
+    max_pages: 0
+    max_depth: 0
+    skip_images: true
+    include_patterns:
+      - "contents.do"
+    collect_patterns:
+      - "contents.do"
+    embed: true
+    embedding_limit: 150
+
+  - name: it_service_guides
+    <<: *recent_documents
+    domain: student_life
+    department: it_support
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/comcenter/contents.do?key=7830"
+    max_pages: 0
+    max_depth: 0
+    skip_images: true
+    include_patterns:
+      - "contents.do"
+    collect_patterns:
+      - "contents.do"
+    embed: true
+    embedding_limit: 150
+
+  - name: lms_notice_manual_faq
+    <<: *recent_documents
+    domain: student_life
+    department: remote_learning_support
+    seed_urls:
+      - "https://lms.kyonggi.ac.kr/"
+    max_pages: 15
+    max_depth: 1
+    skip_images: true
+    include_patterns:
+      - "lms.kyonggi.ac.kr"
+      - "notice"
+      - "faq"
+      - "manual"
+      - "qna"
+    follow_patterns:
+      - "notice"
+      - "faq"
+      - "manual"
+      - "qna"
+    collect_patterns:
+      - "notice"
+      - "faq"
+      - "manual"
+      - "qna"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "signup"
+      - "javascript:"
+      - "mailto:"
+      - ".png"
+      - ".jpg"
+      - ".jpeg"
+      - ".gif"
+      - ".webp"
+    collect_seed_pages: false
+    embed: true
+    embedding_limit: 150
+
+  - name: contact_directory
+    <<: *recent_documents
+    domain: student_life
+    department: contact_directory
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/searchTnTelnoListU.do?key=8816"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5155"
+      - "https://www.kyonggi.ac.kr/www/selectTnTelnoListU.do?key=5155&sc1=%EC%88%98%EC%9B%90"
+      - "https://www.kyonggi.ac.kr/www/selectTnTelnoListU.do?key=5156&sc1=%EC%84%9C%EC%9A%B8"
+    max_pages: 0
+    max_depth: 0
+    skip_images: true
+    include_patterns:
+      - "searchTnTelnoListU.do"
+      - "selectTnTelnoListU.do"
+      - "contents.do"
+    collect_patterns:
+      - "searchTnTelnoListU.do"
+      - "selectTnTelnoListU.do"
+      - "contents.do"
+    embed: true
+    embedding_limit: 150
+
+  - name: lab_safety_guides
+    <<: *recent_documents
+    domain: student_life
+    department: lab_safety
+    seed_urls:
+      - "https://safety.kyonggi.ac.kr/"
+      - "https://safety.kyonggi.ac.kr/ushm/edu/info.do"
+      - "https://safety.kyonggi.ac.kr/ushm/edu/info2"
+    max_pages: 10
+    max_depth: 1
+    skip_images: true
+    include_patterns:
+      - "safety.kyonggi.ac.kr"
+      - "edu"
+      - "info"
+      - "ushm"
+    follow_patterns:
+      - "edu"
+      - "info"
+      - "ushm"
+    collect_patterns:
+      - "edu"
+      - "info"
+      - "ushm"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "signup"
+      - "javascript:"
+      - "mailto:"
+      - ".png"
+      - ".jpg"
+      - ".jpeg"
+      - ".gif"
+      - ".webp"
+    collect_seed_pages: true
+    embed: true
+    embedding_limit: 150
+
+  - name: admissions_portal
+    <<: *recent_documents
+    domain: general_notice
+    department: admissions
+    seed_urls:
+      - "https://enter.kyonggi.ac.kr/index.do"
+    max_pages: 20
+    max_depth: 1
+    skip_images: true
+    include_patterns:
+      - "enter.kyonggi.ac.kr"
+      - "notice"
+      - "faq"
+      - "guide"
+      - "board"
+      - "bbs"
+    follow_patterns:
+      - "notice"
+      - "faq"
+      - "guide"
+      - "board"
+      - "bbs"
+    collect_patterns:
+      - "notice"
+      - "faq"
+      - "guide"
+      - "board"
+      - "bbs"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "signup"
+      - "javascript:"
+      - "mailto:"
+      - ".png"
+      - ".jpg"
+      - ".jpeg"
+      - ".gif"
+      - ".webp"
+    collect_seed_pages: true
+    embed: true
+    embedding_limit: 150
+
+  - name: graduate_school_guides
+    <<: *recent_documents
+    domain: general_notice
+    department: graduate_school
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/kgraduate/index.do"
+      - "https://www.kyonggi.ac.kr/kgraduate/contents.do?key=135"
+      - "https://www.kyonggi.ac.kr/kgraduate/contents.do?key=136"
+    max_pages: 10
+    max_depth: 1
+    skip_images: true
+    include_patterns:
+      - "kgraduate"
+      - "contents.do"
+      - "selectBbsNtt"
+      - "bbs"
+    follow_patterns:
+      - "kgraduate"
+      - "contents.do"
+      - "selectBbsNtt"
+      - "bbs"
+    collect_patterns:
+      - "contents.do"
+      - "selectBbsNttView"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "signup"
+      - "search.do"
+      - "javascript:"
+      - "mailto:"
+      - ".png"
+      - ".jpg"
+      - ".jpeg"
+      - ".gif"
+      - ".webp"
+    collect_seed_pages: true
+    embed: true
+    embedding_limit: 150
+
+  - name: startup_support
+    <<: *recent_documents
+    domain: career_support
+    department: startup_support
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/startup/contents.do?key=7801"
+    max_pages: 0
+    max_depth: 0
+    skip_images: true
+    include_patterns:
+      - "contents.do"
+    collect_patterns:
+      - "contents.do"
+    embed: true
+    embedding_limit: 150
+
+  - name: university_rules
+    <<: *recent_documents
+    domain: general_notice
+    department: policy
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5117"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5119"
+    max_pages: 0
+    max_depth: 0
+    skip_images: true
+    include_patterns:
+      - "contents.do"
+    collect_patterns:
+      - "contents.do"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "signup"
+      - "javascript:"
+      - "mailto:"
+      - ".png"
+      - ".jpg"
+      - ".jpeg"
+      - ".gif"
+      - ".webp"
+    collect_seed_pages: true
+    embed: true
+    embedding_limit: 150
+
+  - name: scholarship_and_tuition_external
+    <<: *recent_documents
+    domain: scholarship
+    department: scholarship_and_tuition
+    seed_urls:
+      - "https://www.kosaf.go.kr"
+    max_pages: 1
+    max_depth: 0
+    skip_images: true
+    include_patterns:
+      - "kosaf.go.kr"
+    collect_patterns:
+      - "kosaf.go.kr"
+    collect_seed_pages: true
+    embed: true
+    embedding_limit: 100
+
+  - name: dormitory_external_portal
+    <<: *recent_documents
+    domain: student_life
+    department: dormitory
+    seed_urls:
+      - "https://dorm.kyonggi.ac.kr/"
+    max_pages: 30
+    max_depth: 1
+    skip_images: true
+    include_patterns:
+      - "dorm.kyonggi.ac.kr"
+      - "notice"
+      - "board"
+      - "bbs"
+      - "guide"
+    follow_patterns:
+      - "notice"
+      - "board"
+      - "bbs"
+      - "guide"
+    collect_patterns:
+      - "dorm.kyonggi.ac.kr"
+      - "notice"
+      - "board"
+      - "bbs"
+      - "guide"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "javascript:"
+      - "mailto:"
+      - ".png"
+      - ".jpg"
+      - ".jpeg"
+      - ".gif"
+      - ".webp"
+    collect_seed_pages: true
+    embed: true
+    embedding_limit: 150
+
+  - name: library_and_facilities_extra
+    <<: *recent_documents
+    domain: student_life
+    department: library_and_facilities
+    seed_urls:
+      - "https://library.kyonggi.ac.kr"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5751"
+    max_pages: 0
+    max_depth: 0
+    skip_images: true
+    include_patterns:
+      - "library.kyonggi.ac.kr"
+      - "contents.do"
+    collect_patterns:
+      - "library.kyonggi.ac.kr"
+      - "contents.do"
+    collect_seed_pages: true
+    embed: true
+    embedding_limit: 150
+
+  - name: graduation_academic_extra_guides
+    <<: *recent_documents
+    domain: graduation
+    department: academic_affairs
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8419"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8420"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8424"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8417"
+    max_pages: 0
+    max_depth: 0
+    skip_images: true
+    include_patterns:
+      - "contents.do"
+    collect_patterns:
+      - "contents.do"
+    embed: true
+    embedding_limit: 150
+
+  - name: teaching_certification_extra_guides
+    <<: *recent_documents
+    domain: graduation
+    department: academic_affairs
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8490"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8491"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8492"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8494"
+    max_pages: 0
+    max_depth: 0
+    skip_images: true
+    include_patterns:
+      - "contents.do"
+    collect_patterns:
+      - "contents.do"
+    embed: true
+    embedding_limit: 150
+
+  - name: international_student_support_notice_discovery
+    <<: *recent_documents
+    domain: student_life
+    parser_category: notice
+    department: international_student_support
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/international_kgu/index.do"
+    max_pages: 20
+    max_depth: 1
+    max_pagination_pages: 100
+    min_published_year: 2018
+    skip_images: true
+    include_patterns:
+      - "international_kgu"
+      - "selectbbsnttlist.do"
+      - "selectbbsnttview.do"
+      - "contents.do"
+    follow_patterns:
+      - "international_kgu"
+      - "selectbbsnttlist.do"
+      - "selectbbsnttview.do"
+      - ".pdf"
+      - ".docx"
+      - ".hwp"
+      - ".hwpx"
+    collect_patterns:
+      - "selectbbsnttview.do"
+      - "contents.do"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "signup"
+      - "search.do"
+      - "javascript:"
+      - "mailto:"
+    collect_seed_pages: true
+    embed: true
+    embedding_limit: 150
+    attachment_embedding_limit: 100
+
+  - name: research_admin_startup_facility_guides
+    <<: *recent_documents
+    domain: student_life
+    department: university_admin
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=7938"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=7964"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5314"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5326"
+    max_pages: 0
+    max_depth: 0
+    skip_images: true
+    include_patterns:
+      - "contents.do"
+    collect_patterns:
+      - "contents.do"
+    embed: true
+    embedding_limit: 150
+
+  - name: startup_support_extra_guides
+    <<: *recent_documents
+    domain: career_support
+    department: startup_support
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/startup/contents.do?key=1230"
+      - "https://www.kyonggi.ac.kr/startup/contents.do?key=1233"
+    max_pages: 0
+    max_depth: 0
+    skip_images: true
+    include_patterns:
+      - "contents.do"
+    collect_patterns:
+      - "contents.do"
+    embed: true
+    embedding_limit: 150
+
+  - name: kgedu_non_curricular_portal
+    <<: *recent_documents
+    domain: career_support
+    department: non_curricular
+    seed_urls:
+      - "https://kgedu.kyonggi.ac.kr/"
+    max_pages: 20
+    max_depth: 1
+    skip_images: true
+    include_patterns:
+      - "kgedu.kyonggi.ac.kr"
+      - "program"
+      - "notice"
+      - "board"
+    follow_patterns:
+      - "program"
+      - "notice"
+      - "board"
+    collect_patterns:
+      - "program"
+      - "notice"
+      - "board"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "javascript:"
+      - "mailto:"
+      - ".png"
+      - ".jpg"
+      - ".jpeg"
+      - ".gif"
+      - ".webp"
+    collect_seed_pages: true
+    embed: true
+    embedding_limit: 150
+
+  - name: club_union_external
+    <<: *recent_documents
+    domain: student_life
+    department: club_union
+    seed_urls:
+      - "https://kyonggi42cheongyeon.imweb.me/"
+    max_pages: 30
+    max_depth: 1
+    skip_images: true
+    include_patterns:
+      - "kyonggi42cheongyeon.imweb.me"
+    collect_patterns:
+      - "kyonggi42cheongyeon.imweb.me"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "javascript:"
+      - "mailto:"
+      - ".png"
+      - ".jpg"
+      - ".jpeg"
+      - ".gif"
+      - ".webp"
+    collect_seed_pages: true
+    embed: true
+    embedding_limit: 150
+
+  - name: special_center_notice_discovery
+    <<: *recent_documents
+    domain: student_life
+    parser_category: notice
+    department: special_centers
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/reservist/index.do"
+      - "https://www.kyonggi.ac.kr/HRC/index.do"
+      - "https://www.kyonggi.ac.kr/kgucounsel/index.do"
+    max_pages: 30
+    max_depth: 1
+    max_pagination_pages: 100
+    min_published_year: 2018
+    skip_images: true
+    include_patterns:
+      - "reservist"
+      - "hrc"
+      - "kgucounsel"
+      - "selectbbsnttlist.do"
+      - "selectbbsnttview.do"
+      - "contents.do"
+    follow_patterns:
+      - "reservist"
+      - "hrc"
+      - "kgucounsel"
+      - "contents.do"
+      - "selectbbsnttlist.do"
+      - "selectbbsnttview.do"
+      - ".pdf"
+      - ".docx"
+      - ".hwp"
+      - ".hwpx"
+    collect_patterns:
+      - "selectbbsnttview.do"
+      - "contents.do"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "signup"
+      - "search.do"
+      - "javascript:"
+      - "mailto:"
+    collect_seed_pages: true
+    embed: true
+    embedding_limit: 150
+    attachment_embedding_limit: 100
+
+  - name: health_center_guides
+    <<: *recent_documents
+    domain: student_life
+    parser_category: notice
+    department: health_center
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/hsc/index.do"
+      - "https://www.kyonggi.ac.kr/hs/index.do"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=7823"
+    max_pages: 10
+    max_depth: 1
+    max_pagination_pages: 100
+    min_published_year: 2018
+    skip_images: true
+    include_patterns:
+      - "hsc"
+      - "hs"
+      - "contents.do"
+      - "selectbbsntt"
+    follow_patterns:
+      - "contents.do"
+      - "selectbbsnttlist.do"
+      - "selectbbsnttview.do"
+    collect_patterns:
+      - "contents.do"
+      - "selectbbsnttview.do"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "signup"
+      - "search.do"
+      - "javascript:"
+      - "mailto:"
+    collect_seed_pages: true
+    embed: true
+    embedding_limit: 150
+
+  - name: medical_mutual_aid_rules_direct
+    <<: *recent_documents
+    domain: student_life
+    department: health_center
+    seed_urls:
+      - "http://rule.kyonggi.ac.kr/lmxsrv/law/lawDetail.do?PAGE_MODE=&SEQ=171&SEQ_HISTORY=152"
+      - "http://rule.kyonggi.ac.kr/lmxsrv/law/lawDetail.do?PAGE_MODE=&SEQ=172&SEQ_HISTORY=153"
+    max_pages: 2
+    max_depth: 0
+    skip_images: true
+    include_patterns:
+      - "lawdetail.do"
+      - "seq=171"
+      - "seq=172"
+    collect_patterns:
+      - "lawdetail.do"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "javascript:"
+      - "mailto:"
+    collect_seed_pages: true
+    embed: true
+    embedding_limit: 150
+
+  - name: campus_intro_admin_guides
+    <<: *recent_documents
+    domain: student_life
+    department: university
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5146"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5147"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5151"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5157"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=7516"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=7706"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=75"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=8011"
+      - "https://www.kyonggi.ac.kr/www/contents.do?key=5722"
+    max_pages: 0
+    max_depth: 0
+    skip_images: true
+    include_patterns:
+      - "contents.do"
+    collect_patterns:
+      - "contents.do"
+    embed: true
+    embedding_limit: 150
+
+  - name: it_service_extra_guides
+    <<: *recent_documents
+    domain: student_life
+    parser_category: notice
+    department: it_support
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/comcenter/index.do"
+      - "https://www.kyonggi.ac.kr/comcenter/contents.do?key=6884"
+      - "https://www.kyonggi.ac.kr/comcenter/contents.do?key=6891"
+      - "https://www.kyonggi.ac.kr/comcenter/contents.do?key=6887"
+    max_pages: 30
+    max_depth: 1
+    max_pagination_pages: 100
+    min_published_year: 2018
+    skip_images: true
+    include_patterns:
+      - "comcenter"
+      - "contents.do"
+      - "selectbbsntt"
+    follow_patterns:
+      - "contents.do"
+      - "selectbbsnttlist.do"
+      - "selectbbsnttview.do"
+    collect_patterns:
+      - "contents.do"
+      - "selectbbsnttview.do"
+    exclude_patterns:
+      - "login"
+      - "logout"
+      - "signup"
+      - "search.do"
+      - "javascript:"
+      - "mailto:"
+    collect_seed_pages: true
+    embed: true
+    embedding_limit: 150
+
+  - name: external_official_certificate_and_lab_safety
+    <<: *recent_documents
+    domain: student_life
+    department: external_official
+    seed_urls:
+      - "https://www.gov.kr"
+      - "https://edu.labs.go.kr/"
+    max_pages: 2
+    max_depth: 0
+    skip_images: true
+    include_patterns:
+      - "gov.kr"
+      - "edu.labs.go.kr"
+    collect_patterns:
+      - "gov.kr"
+      - "edu.labs.go.kr"
+    collect_seed_pages: true
+    embed: true
+    embedding_limit: 100
+
   - name: electrical_engineering_shared_notice
     department: electrical_engineering_shared
+    domain: department_notice
     seed_urls:
       - "https://ee.kgu.ac.kr/"
     <<: *external_notice
 
   - name: materials_science_engineering_notice
     department: materials_science_engineering
+    domain: department_notice
     seed_urls:
       - "http://mse.kgu.ac.kr/"
     <<: *external_notice
+
+  - name: english_curriculum_guide
+    department: english
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_english/contents.do?key=6662"
+    <<: *direct_curriculum_content
+
+  - name: law_department_curriculum_guide
+    department: law_department
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/dol/contents.do?key=6914"
+    <<: *direct_curriculum_content
+
+  - name: applied_statistics_curriculum_guide
+    department: applied_statistics
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_tattistics/contents.do?key=2061"
+    <<: *direct_curriculum_content
+
+  - name: computer_engineering_curriculum_guide
+    department: computer_engineering
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_computer/contents.do?key=9121"
+    <<: *direct_curriculum_content
+
+  - name: artificial_intelligence_curriculum_guide
+    department: artificial_intelligence
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_ai/contents.do?key=9122"
+    <<: *direct_curriculum_content
+
+  - name: mathematics_curriculum_guide
+    department: mathematics
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_math/contents.do?key=3343"
+    <<: *direct_curriculum_content
+
+  - name: life_science_curriculum_guide
+    department: life_science
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_life/contents.do?key=2297"
+    <<: *direct_curriculum_content
+
+  - name: physical_education_curriculum_guide
+    department: physical_education_department
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/pe/contents.do?key=2327"
+    <<: *direct_curriculum_content
+
+  - name: security_management_curriculum_guide
+    department: security_management
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/SM/contents.do?key=2355"
+    <<: *direct_curriculum_content
+
+  - name: acting_curriculum_guide
+    department: acting
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_acting/contents.do?key=2747"
+    <<: *direct_curriculum_content
+
+  - name: practical_music_curriculum_guide
+    department: practical_music
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_music/contents.do?key=2792"
+    <<: *direct_curriculum_content
+
+  - name: animation_curriculum_guide
+    department: animation
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_animation/contents.do?key=2762"
+    <<: *direct_curriculum_content
+
+  - name: mechanical_systems_curriculum_guide
+    department: mechanical_systems
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_mechanical/contents.do?key=2715"
+    <<: *direct_curriculum_content
+
+  - name: criminal_correction_psychology_curriculum_guide
+    department: criminal_correction_psychology
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/miccp/contents.do?key=6929"
+    <<: *direct_curriculum_content
+
+  - name: living_jewelry_design_curriculum_guide
+    department: living_jewelry_design
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/JMD/contents.do?key=2406"
+    <<: *direct_curriculum_content
+
+  - name: food_bioengineering_curriculum_guide
+    department: food_bioengineering
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_foodbio/contents.do?key=3363"
+    <<: *direct_curriculum_content
+
+  - name: tourism_development_management_curriculum_guide
+    department: tourism_development_management
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_tourrm/contents.do?key=2836"
+    <<: *direct_curriculum_content
+
+  - name: tourism_culture_contents_curriculum_guide
+    department: tourism_culture_contents
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_tourcc/contents.do?key=2851"
+    <<: *direct_curriculum_content
+
+  - name: library_curriculum_guide
+    department: library
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_library/contents.do?key=6693"
+    <<: *direct_curriculum_content
+
+  - name: media_video_curriculum_guide
+    department: media_video
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_media/contents.do?key=2777"
+    <<: *direct_curriculum_content
+
+  - name: urban_transportation_engineering_curriculum_guide
+    department: urban_transportation_engineering
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_urban/contents.do?key=2697"
+    <<: *direct_curriculum_content
+
+  - name: industrial_management_engineering_curriculum_guide
+    department: industrial_management_engineering
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u-industrial/contents.do?key=2196"
+    <<: *direct_curriculum_content
+
+  - name: intellectual_property_curriculum_guide
+    department: intellectual_property
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_property/contents.do?key=2076"
+    <<: *direct_curriculum_content
+
+  - name: business_curriculum_guide
+    department: business
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_business/contents.do?key=3300"
+    <<: *direct_curriculum_content
+
+  - name: trade_curriculum_guide
+    department: trade
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_trade/contents.do?key=2046"
+    <<: *direct_curriculum_content
+
+  - name: police_administration_curriculum_guide
+    department: police_administration
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/moci/contents.do?key=6944"
+    <<: *direct_curriculum_content
+
+  - name: child_education_curriculum_guide
+    department: child_education
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_child/contents.do?key=6709"
+    <<: *direct_curriculum_content
+
+  - name: architectural_engineering_curriculum_guide
+    department: architectural_engineering
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_archieng/contents.do?key=2673"
+    <<: *direct_curriculum_content
+
+  - name: japanese_french_curriculum_guide
+    department: japanese
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/JPLM/contents.do?key=3130"
+    <<: *direct_curriculum_content
+
+  - name: history_curriculum_guide
+    department: history
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_history/contents.do?key=9489"
+    <<: *direct_curriculum_content
+
+  - name: social_energy_systems_engineering_curriculum_guide
+    department: social_energy_systems_engineering
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/cee/contents.do?key=9852"
+    <<: *direct_curriculum_content
+
+  - name: western_painting_curriculum_guide
+    department: western_painting
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_western/contents.do?key=6755"
+    <<: *direct_curriculum_content
+
+  - name: calligraphy_curriculum_guide
+    department: calligraphy
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/calligraphy/contents.do?key=2452"
+    <<: *direct_curriculum_content
+
+  - name: chemical_engineering_course_curriculum_guide
+    department: chemical_engineering
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_chemeng/contents.do?key=2624"
+    <<: *direct_curriculum_content
+
+  - name: chinese_curriculum_guide
+    department: chinese
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_chinese/contents.do?key=9470"
+    <<: *direct_curriculum_content
+
+  - name: german_curriculum_guide
+    department: german
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_german/contents.do?key=6724"
+    <<: *direct_curriculum_content
+
+  - name: french_curriculum_guide
+    department: french
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_french/contents.do?key=9456"
+    <<: *direct_curriculum_content
+
+  - name: creative_writing_curriculum_guide
+    department: creative_writing
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/mc/contents.do?key=9493"
+    <<: *direct_curriculum_content
+
+  - name: social_welfare_curriculum_guide
+    department: social_welfare
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/misw/contents.do?key=6959"
+    <<: *direct_curriculum_content
+
+  - name: public_administration_curriculum_guide
+    department: public_administration
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_admin/contents.do?key=2016"
+    <<: *direct_curriculum_content
+
+  - name: youth_studies_curriculum_guide
+    department: youth_studies
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/miys/contents.do?key=6974"
+    <<: *direct_curriculum_content
+
+  - name: political_science_diplomacy_curriculum_guide
+    department: political_science_diplomacy
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/psd/contents.do?key=7308"
+    <<: *direct_curriculum_content
+
+  - name: economics_curriculum_guide
+    department: economics
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_economics/contents.do?key=2031"
+    <<: *direct_curriculum_content
+
+  - name: accounting_tax_curriculum_guide
+    department: accounting_tax
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_accounting/contents.do?key=2249"
+    <<: *direct_curriculum_content
+
+  - name: dimensional_art_curriculum_guide
+    department: dimensional_art
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/3Dimensional_Art/contents.do?key=2340"
+    <<: *direct_curriculum_content
+
+  - name: visual_communication_design_curriculum_guide
+    department: visual_communication_design
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/VCD/contents.do?key=7248"
+    <<: *direct_curriculum_content
+
+  - name: industrial_design_curriculum_guide
+    department: industrial_design
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/ID/contents.do?key=7264"
+    <<: *direct_curriculum_content
+
+  - name: korean_painting_curriculum_guide
+    department: korean_painting
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/KoreanPainting/contents.do?key=2419"
+    <<: *direct_curriculum_content
+
+  - name: art_management_curriculum_guide
+    department: art_management
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/am/contents.do?key=6765"
+    <<: *direct_curriculum_content
+
+  - name: sports_science_curriculum_guide
+    department: sports_science
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/sports_science/contents.do?key=2467"
+    <<: *direct_curriculum_content
+
+  - name: sports_leisure_industry_curriculum_guide
+    department: sports_leisure_industry
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/SLI/contents.do?key=2482"
+    <<: *direct_curriculum_content
+
+  - name: software_security_curriculum_guide
+    department: software_security
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_security/contents.do?key=9306"
+    <<: *direct_curriculum_content
+
+  - name: mobility_software_curriculum_guide
+    department: mobility_software
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_mobility/contents.do?key=9940"
+    <<: *direct_curriculum_content
+
+  - name: chemistry_curriculum_guide
+    department: chemistry
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_chemistry/contents.do?key=2312"
+    <<: *direct_curriculum_content
+
+  - name: architecture_curriculum_guide
+    department: architecture
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_architecture/contents.do?key=2558"
+    <<: *direct_curriculum_content
+
+  - name: construction_safety_engineering_curriculum_guide
+    department: construction_safety_engineering
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_consafty/contents.do?key=7415"
+    <<: *direct_curriculum_content
+
+  - name: hotel_management_curriculum_guide
+    department: hotel_management
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_hotel/contents.do?key=2866"
+    <<: *direct_curriculum_content
+
+  - name: food_service_curriculum_guide
+    department: food_service
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_foodservice/contents.do?key=2881"
+    <<: *direct_curriculum_content
+
+  - name: food_culinary_tourism_service_curriculum_guide
+    department: food_culinary_tourism_service
+    seed_urls:
+      - "https://www.kyonggi.ac.kr/u_foodculi/contents.do?key=2823"
+    <<: *direct_curriculum_content
 
 department_sites:
   - slug: open_major_suwon

@@ -5,7 +5,7 @@ from pathlib import Path
 import sys
 from datetime import datetime
 from typing import Any, Dict, List
-from urllib.parse import urlparse
+from urllib.parse import parse_qsl, urlparse
 
 import yaml
 
@@ -22,6 +22,8 @@ from app.crawlers import (
     collect_documents_with_crawl4ai,
     select_latest_documents,
 )
+from app.crawlers.document_quality import filter_quality_documents
+from app.services.domain_taxonomy import classify_domain, normalize_domain
 
 DEFAULT_INCLUDE_PATTERNS = (
     "notice",
@@ -121,6 +123,8 @@ def _expand_generated_sources(
             }
             source["name"] = f"{slug}_{blueprint['name_suffix']}"
             source["department"] = site.get("department", slug)
+            if blueprint.get("name_suffix") == "notice" and source.get("domain") == "general_notice":
+                source["domain"] = "department_notice"
             seed_url_template = blueprint.get("seed_url_template")
             if seed_url_template:
                 source["seed_urls"] = [seed_url_template.format(base_url=base_url.rstrip("/"))]
@@ -141,6 +145,7 @@ def build_crawler_config(source: Dict[str, Any]) -> Crawl4AICollectorConfig:
     if allowed_path_prefixes is None:
         allowed_path_prefixes = _derive_allowed_path_prefixes(seed_urls)
 
+    parser_category = source.get("parser_category") or _parser_category(source_domain(source))
     return Crawl4AICollectorConfig(
         seed_urls=seed_urls,
         max_pages=source.get("max_pages", 20),
@@ -151,7 +156,7 @@ def build_crawler_config(source: Dict[str, Any]) -> Crawl4AICollectorConfig:
             if source.get("min_published_year") is not None
             else None
         ),
-        category=source.get("category"),
+        category=parser_category,
         department=source.get("department"),
         include_patterns=tuple(source.get("include_patterns", DEFAULT_INCLUDE_PATTERNS)),
         follow_patterns=(
@@ -164,7 +169,13 @@ def build_crawler_config(source: Dict[str, Any]) -> Crawl4AICollectorConfig:
         allowed_path_prefixes=(
             tuple(allowed_path_prefixes) if allowed_path_prefixes is not None else None
         ),
+        allowed_query_param_filters=(
+            tuple(_derive_seed_board_query_filters(seed_urls))
+            if source.get("restrict_to_seed_board_queries", False)
+            else None
+        ),
         collect_seed_pages=source.get("collect_seed_pages", True),
+        collect_attachment_documents=source.get("collect_attachment_documents", False),
         allowed_keyword_filters=(
             tuple(source["allowed_keyword_filters"])
             if "allowed_keyword_filters" in source
@@ -186,12 +197,34 @@ def build_crawler_config(source: Dict[str, Any]) -> Crawl4AICollectorConfig:
             else None
         ),
         docling_config=DoclingCollectorConfig(
-            category=source.get("category"),
+            category=parser_category,
             department=source.get("department"),
             skip_unsupported=source.get("skip_unsupported", False),
             skip_images=source.get("skip_images", False),
         ),
     )
+
+
+def _derive_seed_board_query_filters(seed_urls: List[str]) -> List[Dict[str, str]]:
+    filters: List[Dict[str, str]] = []
+    for seed_url in seed_urls:
+        parsed = urlparse(seed_url)
+        if "selectbbsnttlist.do" not in parsed.path.casefold():
+            continue
+        query = {
+            key.casefold(): value
+            for key, value in parse_qsl(parsed.query, keep_blank_values=True)
+        }
+        allowed_filter = {
+            key: query[key]
+            for key in ("bbsno", "key")
+            if query.get(key)
+        }
+        if len(allowed_filter) < 2:
+            continue
+        if allowed_filter not in filters:
+            filters.append(allowed_filter)
+    return filters
 
 
 def collect_source_documents(
@@ -261,6 +294,10 @@ def classify_source_report(
     documents: int,
     exact_duplicates_removed: int,
     version_duplicates_removed: int,
+    quality_removed_short: int = 0,
+    quality_removed_low_information: int = 0,
+    quality_removed_navigation_noise: int = 0,
+    attachment_link_fallbacks: int = 0,
 ) -> Dict[str, str]:
     if raw_documents == 0:
         return {
@@ -273,6 +310,16 @@ def classify_source_report(
             return {
                 "status": "fully_deduplicated",
                 "reason": "Documents were discovered but removed as duplicates or older versions.",
+            }
+        if (
+            quality_removed_short
+            or quality_removed_low_information
+            or quality_removed_navigation_noise
+            or attachment_link_fallbacks
+        ):
+            return {
+                "status": "filtered_by_quality",
+                "reason": "Documents were discovered but removed by content quality filters.",
             }
         if category == "faq":
             return {
@@ -448,6 +495,37 @@ def _is_attachment_chunk(chunk: Any) -> bool:
     return "downloadbbsfile.do" in getattr(chunk, "source_url", "").lower()
 
 
+def source_domain(source: Dict[str, Any]) -> str | None:
+    return normalize_domain(source.get("domain")) or normalize_domain(source.get("category"))
+
+
+def _parser_category(domain: str | None) -> str | None:
+    return {
+        "academic_calendar": "academic_schedule",
+        "course_registration": "academic_schedule",
+        "document_materials": "materials",
+        "career_support": "notice",
+        "department_notice": "notice",
+        "general_notice": "notice",
+        "scholarship": "support",
+    }.get(domain or "", domain)
+
+
+def apply_document_domains(documents: List[Any], source: Dict[str, Any]) -> List[Any]:
+    base_domain = source_domain(source)
+    for document in documents:
+        classified = classify_domain(
+            title=getattr(document, "title", ""),
+            content=getattr(document, "content", ""),
+            source_url=getattr(document, "source_url", ""),
+            source_name=source.get("name", ""),
+            source_domain=getattr(document, "domain", None) or base_domain,
+            legacy_category=getattr(document, "category", None),
+        )
+        document.domain = classified.domain
+    return documents
+
+
 def main(argv: List[str] | None = None) -> None:
     args = parse_args([] if argv is None else argv)
     if args.skip_embed and args.store_vectors:
@@ -496,7 +574,8 @@ def main(argv: List[str] | None = None) -> None:
                 timeout_seconds=args.source_timeout_seconds,
             )
             dedup_result = select_latest_documents(raw_documents)
-            documents = dedup_result.documents
+            quality_result = filter_quality_documents(dedup_result.documents)
+            documents = apply_document_domains(quality_result.documents, source)
             chunks = chunk_documents(documents, chunk_size=1000, chunk_overlap=200)
             embedded_count = 0
             stored_count = 0
@@ -516,7 +595,7 @@ def main(argv: List[str] | None = None) -> None:
                     delete_embedded_chunks_for_documents(documents)
                     stored_count = upsert_embedded_chunks(
                         embedded_chunks,
-                        category=source.get("category"),
+                        domain=source_domain(source),
                         department=source.get("department"),
                     )
                     total_stored_chunks += stored_count
@@ -525,24 +604,32 @@ def main(argv: List[str] | None = None) -> None:
             total_chunks += len(chunks)
 
             source_summary = classify_source_report(
-                category=source.get("category"),
+                category=source_domain(source),
                 raw_documents=dedup_result.total_input,
                 documents=len(documents),
                 exact_duplicates_removed=dedup_result.exact_duplicates_removed,
                 version_duplicates_removed=dedup_result.version_duplicates_removed,
+                quality_removed_short=quality_result.removed_short,
+                quality_removed_low_information=quality_result.removed_low_information,
+                quality_removed_navigation_noise=quality_result.removed_navigation_noise,
+                attachment_link_fallbacks=quality_result.attachment_link_fallbacks,
             )
             source_status_counts[source_summary["status"]] = (
                 source_status_counts.get(source_summary["status"], 0) + 1
             )
             source_report = {
                 "name": source["name"],
-                "category": source.get("category"),
+                "domain": source_domain(source),
                 "department": source.get("department"),
                 "seed_urls": source["seed_urls"],
                 "raw_documents": dedup_result.total_input,
                 "documents": len(documents),
                 "exact_duplicates_removed": dedup_result.exact_duplicates_removed,
                 "version_duplicates_removed": dedup_result.version_duplicates_removed,
+                "quality_removed_short": quality_result.removed_short,
+                "quality_removed_low_information": quality_result.removed_low_information,
+                "quality_removed_navigation_noise": quality_result.removed_navigation_noise,
+                "attachment_link_fallbacks": quality_result.attachment_link_fallbacks,
                 "chunks": len(chunks),
                 "embedded_chunks": embedded_count,
                 "stored_chunks": stored_count,
@@ -573,6 +660,10 @@ def main(argv: List[str] | None = None) -> None:
                 f"documents={len(documents)} "
                 f"exact_duplicates_removed={dedup_result.exact_duplicates_removed} "
                 f"version_duplicates_removed={dedup_result.version_duplicates_removed} "
+                f"quality_removed_short={quality_result.removed_short} "
+                f"quality_removed_low_information={quality_result.removed_low_information} "
+                f"quality_removed_navigation_noise={quality_result.removed_navigation_noise} "
+                f"attachment_link_fallbacks={quality_result.attachment_link_fallbacks} "
                 f"chunks={len(chunks)} embedded_chunks={embedded_count} stored_chunks={stored_count} "
                 f"db_documents={source_report['db_documents']} db_chunks={source_report['db_chunks']} "
                 f"status={source_summary['status']}",
@@ -582,13 +673,17 @@ def main(argv: List[str] | None = None) -> None:
             source_status_counts["error"] = source_status_counts.get("error", 0) + 1
             source_report = {
                 "name": source["name"],
-                "category": source.get("category"),
+                "domain": source_domain(source),
                 "department": source.get("department"),
                 "seed_urls": source["seed_urls"],
                 "raw_documents": 0,
                 "documents": 0,
                 "exact_duplicates_removed": 0,
                 "version_duplicates_removed": 0,
+                "quality_removed_short": 0,
+                "quality_removed_low_information": 0,
+                "quality_removed_navigation_noise": 0,
+                "attachment_link_fallbacks": 0,
                 "chunks": 0,
                 "embedded_chunks": 0,
                 "stored_chunks": 0,
@@ -601,6 +696,9 @@ def main(argv: List[str] | None = None) -> None:
             print(
                 f"[{source['name']}] raw_documents=0 documents=0 "
                 "exact_duplicates_removed=0 version_duplicates_removed=0 "
+                "quality_removed_short=0 quality_removed_low_information=0 "
+                "quality_removed_navigation_noise=0 "
+                "attachment_link_fallbacks=0 "
                 "chunks=0 embedded_chunks=0 stored_chunks=0 db_documents=0 db_chunks=0 "
                 f"status=error error={exc.__class__.__name__}: {exc}",
                 flush=True,

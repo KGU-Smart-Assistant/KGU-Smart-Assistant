@@ -1,0 +1,148 @@
+{
+  "header": { "title": "KGU Smart Assistant" },
+  "newChat": "새채팅",
+  "quickActions": {
+    "academicCalendar": "학사일정",
+    "exchangeStudent": "교환학생",
+    "tuition": "등록금/장학"
+  },
+  "chatInput": { "placeholder": "메시지를 입력하세요..." },
+  "mockBot": {
+    "initialMessage": "안녕하세요! 경기대학교 챗봇입니다. 🏫\n수원캠퍼스·서울캠퍼스의 학사일정, 교환학생(SEP), 등록금 납부, 강의실 안내 등 궁금한 점을 물어보세요!\n\n💡 아래 버튼을 눌러 빠르게 질문할 수도 있어요.",
+    "academicCalendar": "2026학년도 주요 학사일정을 안내해 드리겠습니다.\n\n[1학기]\n- 수강신청: 2월 중순\n- 개강: 3월 첫째 주\n- 중간고사: 4월 셋째 주\n- 기말고사: 6월 셋째 주\n\n자세한 사항은 학교 홈페이지 공지사항을 참고해주세요!",
+    "exchangeStudent": "교환학생(SEP) 프로그램에 대해 안내해 드립니다. 국제교류처 홈페이지에서 이번 학기 모집 공고 및 지원 자격을 확인하실 수 있습니다.",
+    "tuition": "등록금 납부 및 장학금 관련 안내입니다. 정규 등록 기간은 2월 초 ~ 2월 말이며, 장학금 신청은 한국장학재단 및 종합정보시스템을 통해 진행됩니다.",
+    "map": "요청하신 장소의 위치를 안내해 드릴게요.",
+    "phone": "부서 전화번호를 안내해 드립니다. (대표전화: 031-249-9114)",
+    "cafeteria": "오늘의 감성코어 학식 메뉴는 돈까스와 제육덮밥입니다.",
+    "fallback": "죄송합니다. 아직 해당 질문에 대해서는 학습 중입니다. 다른 질문을 입력해 주세요!",
+    "thinking": "{{time}}초 동안 생각하는중...."
+  },
+  "infoLinks": {
+    "title": "더 많은 정보 알아보기",
+    "categories": "개 분류",
+    "links": "개 바로가기",
+    "learnMore": "에 대해 알아보기",
+    "moreInfo": "에 대한 정보를 안내해드릴게요!",
+    "whichInfo": "다음 중 어떤 정보가 궁금하신가요?",
+    "curious": " 정보가 궁금해요"
+  },
+  "kguInfo": {
+    "notice": {
+      "title": "공지사항",
+      "integrated": "통합공지사항",
+      "materials": "통합자료실"
+    },
+    "academicCalendar": {
+      "title": "학사일정",
+      "schedule": "학사일정"
+    },
+    "classes": {
+      "title": "수업/수강/성적",
+      "classTime": "강의시간",
+      "registration": "수강신청",
+      "creditTransfer": "학점이월제",
+      "elearning": "교내 이러닝수업",
+      "virtualUniv": "교외 가상대학 이러닝수업",
+      "crossCampus": "캠퍼스 교차수강",
+      "retake": "학점포기/재수강",
+      "deptPhone": "단과대학 교학팀 전화번호",
+      "registrationLink": "수강신청 바로가기",
+      "grades": "성적안내"
+    },
+    "schoolRegister": {
+      "title": "학적/휴복학",
+      "readmission": "재입학",
+      "leaveOfAbsence": "휴학",
+      "returnToSchool": "복학",
+      "withdrawal": "자원퇴학",
+      "doubleMajor": "복수전공",
+      "transfer": "전과(부)",
+      "majorChange": "전공선택유연화",
+      "integrated": "학.석사 연계과정",
+      "majorAssignment": "전공배정",
+      "warning": "학사경고",
+      "creditRecognition": "편입생 학점인정",
+      "summerSession": "계절학기",
+      "degreeDelay": "학사학위 취득유예",
+      "recordCorrection": "학적부기재사항정정"
+    },
+    "graduation": {
+      "title": "졸업",
+      "requirements": "졸업요건",
+      "early": "조기졸업"
+    },
+    "scholarship": {
+      "title": "장학/학자금",
+      "intro": "장학지원팀 소개",
+      "internal": "교내장학금",
+      "external": "교외장학금",
+      "national": "국가장학금",
+      "loan": "학자금융자",
+      "notice": "장학지원팀 공지사항",
+      "materials": "장학지원팀 자료실",
+      "faq": "장학지원팀 FAQ",
+      "website": "장학지원팀 홈페이지",
+      "future": "미래잡끼 장학금"
+    },
+    "tuition": {
+      "title": "등록금",
+      "payment": "등록금 납부 안내",
+      "committee": "등록금 심의 위원회"
+    },
+    "certificate": {
+      "title": "증명서/서식",
+      "issuance": "증명서 발급",
+      "various": "제증명 발급",
+      "forms": "서식 자료실"
+    },
+    "career": {
+      "title": "취업/현장실습",
+      "support": "취업지원",
+      "intro": "취업관리지원팀소개",
+      "services": "취업지원 서비스",
+      "facilities": "온택트 시설 인프라",
+      "notice": "취업지원 공지사항",
+      "materials": "취업지원 자료실",
+      "faq": "취업지원 FAQ",
+      "website": "인재개발처 홈페이지",
+      "jobCenter": "대학일자리플러스센터 업무안내",
+      "jobCenterIntro": "대학일자리플러스센터 소개",
+      "programs": "진로, 취업역량 강화 프로그램",
+      "internshipIntro": "커리어개발, 현장실습센터 소개",
+      "internshipNotice": "커리어개발, 현장실습센터 공지사항",
+      "internshipMaterials": "커리어개발, 현장실습센터 자료실",
+      "internshipFaq": "커리어개발, 현장실습센터 FAQ",
+      "fieldPractice": "학교현장실습",
+      "system": "산학협력종합정보시스템"
+    },
+    "studentLife": {
+      "title": "학생생활",
+      "menu": "식단안내",
+      "phone": "수원캠퍼스 전화번호",
+      "shuttle": "통학버스",
+      "lms": "LMS",
+      "barun": "BARUN시스템",
+      "kutis": "KUTIS종합정보서비스",
+      "attendance": "전자출결",
+      "heyoung": "헤이영 사용 안내",
+      "plagiarism": "표절검색",
+      "virtualUniv": "가상대학",
+      "survey": "학습자요구조사",
+      "library": "전자도서관",
+      "cloud": "메일, 클라우드",
+      "tuitionPrint": "등록금고지서출력",
+      "news": "경기대 뉴스",
+      "safety": "연구실 온라인 안전교육",
+      "whistleblow": "공익신고",
+      "parking": "주차안내",
+      "wifi": "유,무선 인터넷",
+      "remoteSupport": "원격지원",
+      "dorm": "생활관(드림타워)",
+      "reserve": "직장예비군연대",
+      "sw": "소프트웨어중심사업단",
+      "admission": "입학처"
+    }
+  }
+}
+

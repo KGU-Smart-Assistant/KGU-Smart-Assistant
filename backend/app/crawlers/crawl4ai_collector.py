@@ -75,6 +75,7 @@ class Crawl4AICollectorConfig:
     exclude_patterns: Tuple[str, ...] = DEFAULT_EXCLUDE_PATTERNS
     allowed_domains: Optional[Set[str]] = None
     allowed_path_prefixes: Optional[Tuple[str, ...]] = None
+    allowed_query_param_filters: Optional[Tuple[Dict[str, str], ...]] = None
     headless: bool = True
     word_count_threshold: int = 1
     page_timeout_ms: int = 30000
@@ -84,6 +85,7 @@ class Crawl4AICollectorConfig:
     allowed_author_department_filters: Optional[Tuple[str, ...]] = None
     blocked_author_department_filters: Optional[Tuple[str, ...]] = None
     min_published_at: Optional[datetime] = None
+    collect_attachment_documents: bool = False
     docling_config: DoclingCollectorConfig = field(default_factory=DoclingCollectorConfig)
 
 
@@ -212,7 +214,7 @@ async def _collect_documents_with_crawl4ai(
                 if next_url not in visited_html_urls:
                     queue.append((next_url, depth + 1))
 
-    if collected_doc_urls:
+    if collected_doc_urls and config.collect_attachment_documents:
         docling_config = config.docling_config
         docling_config.category = config.category or docling_config.category
         docling_config.department = config.department or docling_config.department
@@ -516,6 +518,9 @@ def _is_allowed_url(
     if _looks_like_document_url(url):
         return True
 
+    if not _matches_allowed_query_param_filters(url, config.allowed_query_param_filters):
+        return False
+
     if config.allowed_path_prefixes:
         normalized_path = parsed.path if parsed.path.endswith("/") else f"{parsed.path}/"
         if not any(normalized_path.startswith(prefix) for prefix in config.allowed_path_prefixes):
@@ -526,6 +531,27 @@ def _is_allowed_url(
         return True
 
     return any(pattern in lowered for pattern in patterns)
+
+
+def _matches_allowed_query_param_filters(
+    url: str,
+    filters: Optional[Tuple[Dict[str, str], ...]],
+) -> bool:
+    if not filters or not (_is_board_list_url(url) or _is_board_detail_url(url)):
+        return True
+
+    parsed = urlparse(url)
+    query = {
+        key.casefold(): value.casefold()
+        for key, value in parse_qsl(parsed.query, keep_blank_values=True)
+    }
+    for allowed_filter in filters:
+        if all(
+            query.get(key.casefold()) == value.casefold()
+            for key, value in allowed_filter.items()
+        ):
+            return True
+    return False
 
 
 def _normalize_domain(domain: str) -> str:
@@ -584,6 +610,7 @@ def _canonical_board_detail_query(query_items: List[Tuple[str, str]]) -> str:
 def _canonical_board_list_query(query_items: List[Tuple[str, str]]) -> str:
     allowed_keys = {
         "bbsno",
+        "dc",
         "key",
         "pageindex",
         "selfat",

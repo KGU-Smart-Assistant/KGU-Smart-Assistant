@@ -1,0 +1,30 @@
+{"text":"성적 장학금을 받을 수 있는 조건이 궁금해","expected_domains":["scholarship"],"rag_detail":"eligibility"}
+{"text":"등록금 납부 고지서는 어디서 확인하나요","expected_domains":["tuition"],"rag_detail":"announcement_lookup"}
+{"text":"수강정정은 언제부터 할 수 있어?","expected_domains":["course_registration"],"rag_detail":"period"}
+{"text":"다음 학기 학사 일정 전체를 보고 싶어","expected_domains":["academic_calendar"],"rag_detail":"announcement_lookup"}
+{"text":"군휴학 신청하려면 어떤 절차가 필요해?","expected_domains":["academic_status"],"rag_detail":"procedure"}
+{"text":"전공을 다른 학과로 바꾸는 조건 알려줘","expected_domains":["major_change"],"rag_detail":"eligibility"}
+{"text":"부전공 포기 신청은 어떻게 해?","expected_domains":["multi_major"],"rag_detail":"procedure"}
+{"text":"편입 모집 일정이 언제인지 알려줘","expected_domains":["admission_transfer"],"rag_detail":"period"}
+{"text":"교원자격증 신청에 필요한 서류 알려줘","expected_domains":["teaching_certification","document_materials"],"rag_detail":"required_documents"}
+{"text":"졸업 인증 기준을 확인하고 싶어","expected_domains":["graduation"],"rag_detail":"eligibility"}
+{"text":"자료실에서 휴학 신청서 양식 찾아줘","expected_domains":["document_materials","academic_status"],"rag_detail":"required_documents"}
+{"text":"학생증을 잃어버렸을 때 재발급 방법 알려줘","expected_domains":["student_life"],"rag_detail":"procedure"}
+{"text":"현장실습 지원 자격이 어떻게 돼?","expected_domains":["career_support"],"rag_detail":"eligibility"}
+{"text":"해외파견 프로그램 모집 공지 찾아줘","expected_domains":["international_exchange"],"rag_detail":"announcement_lookup"}
+{"text":"소프트웨어학과 공지에서 졸업 관련 글 찾아줘","expected_domains":["department_notice","graduation"],"rag_detail":"announcement_lookup"}
+{"text":"학교 전체 공지사항에서 채용 안내를 보고 싶어","expected_domains":["general_notice","career_support"],"rag_detail":"announcement_lookup"}
+{"text":"휴학 중 장학금 유지 여부랑 등록금 환불 기준 알려줘","expected_domains":["academic_status","scholarship","tuition"],"rag_detail":"unknown"}
+{"text":"복수전공을 하면 졸업학점이 달라지는지 궁금해","expected_domains":["multi_major","graduation"],"rag_detail":"unknown"}
+{"text":"교환학생 신청할 때 제출해야 하는 서류가 뭐야?","expected_domains":["international_exchange","document_materials"],"rag_detail":"required_documents"}
+{"text":"기숙사 신청 기간과 신청서 위치 알려줘","expected_domains":["student_life","document_materials"],"rag_detail":"period"}
+{"text":"전과 신청 공지가 학과 게시판에 올라왔는지 확인해줘","expected_domains":["major_change","department_notice"],"rag_detail":"announcement_lookup"}
+{"text":"재입학하면 등록금은 다시 내야 해?","expected_domains":["academic_status","tuition"],"rag_detail":"unknown"}
+{"text":"편입생도 교내장학금을 신청할 수 있어?","expected_domains":["admission_transfer","scholarship"],"rag_detail":"eligibility"}
+{"text":"수강취소 신청 양식은 어디서 받아?","expected_domains":["course_registration","document_materials"],"rag_detail":"required_documents"}
+{"text":"전공 공지에 올라온 인턴 모집 확인해줘","expected_domains":["department_notice","career_support"],"rag_detail":"announcement_lookup"}
+{"text":"학기말 시험 기간이 학사일정에 나와 있어?","expected_domains":["academic_calendar"],"rag_detail":"period"}
+{"text":"등록금 분납 신청 방법과 기간 알려줘","expected_domains":["tuition"],"rag_detail":"procedure"}
+{"text":"졸업요건 관련 제출서류가 있는지 알려줘","expected_domains":["graduation","document_materials"],"rag_detail":"required_documents"}
+{"text":"교직과정 이수 조건과 졸업학점 관계 알려줘","expected_domains":["teaching_certification","graduation"],"rag_detail":"eligibility"}
+{"text":"국제교류 프로그램 결과 발표 공지 찾아줘","expected_domains":["international_exchange","general_notice"],"rag_detail":"announcement_lookup"}

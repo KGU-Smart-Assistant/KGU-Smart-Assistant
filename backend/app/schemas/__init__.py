@@ -1,6 +1,6 @@
 from app.schemas.embedding import EmbeddedChunk
 from app.schemas.health import HealthCheckResponse
-from app.schemas.chat import ChatRequest, ChatResponse, ChatSource
+from app.schemas.chat import ChatRequest, ChatResponse, ChatSource, RagIntentScore
 from app.schemas.chunk import DocumentChunk
 from app.schemas.contact import DepartmentContact, DepartmentContactListResponse
 from app.schemas.document import Document, DocumentBase
@@ -11,6 +11,7 @@ __all__ = [
     "ChatRequest",
     "ChatResponse",
     "ChatSource",
+    "RagIntentScore",
     "Document",
     "DocumentBase",
     "DocumentChunk",

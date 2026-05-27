@@ -9,6 +9,10 @@ REQUIRED_KEYS = ("name", "parser")
 
 def load_registry(templates_dir: Path | None = None) -> List[Dict[str, Any]]:
     resolved_dir = templates_dir or TEMPLATES_DIR
+    if templates_dir is not None and not resolved_dir.exists() and not resolved_dir.is_absolute():
+        backend_relative_dir = Path(__file__).resolve().parents[3] / resolved_dir
+        if backend_relative_dir.exists():
+            resolved_dir = backend_relative_dir
     registry: List[Dict[str, Any]] = []
 
     if not resolved_dir.exists():

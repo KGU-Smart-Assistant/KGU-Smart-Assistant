@@ -10,7 +10,7 @@ from app.schemas import Document, EmbeddedChunk
 def upsert_embedded_chunks(
     chunks: List[EmbeddedChunk],
     *,
-    category: str | None = None,
+    domain: str | None = None,
     department: str | None = None,
     collection_name: str | None = None,
 ) -> int:
@@ -26,7 +26,7 @@ def upsert_embedded_chunks(
         metadatas=[
             _build_chunk_metadata(
                 chunk=chunk,
-                category=category,
+                domain=domain,
                 department=department,
             )
             for chunk in chunks
@@ -56,7 +56,7 @@ def query_embedded_chunks(
     query_embedding: List[float],
     *,
     top_k: int = 5,
-    category: str | None = None,
+    domain: str | None = None,
     collection_name: str | None = None,
 ) -> List[Dict[str, Any]]:
     if not query_embedding or top_k <= 0:
@@ -67,8 +67,8 @@ def query_embedded_chunks(
         "query_embeddings": [query_embedding],
         "n_results": top_k,
     }
-    if category:
-        query_kwargs["where"] = {"category": category}
+    if domain:
+        query_kwargs["where"] = {"domain": domain}
 
     result = collection.query(**query_kwargs)
     ids = (result.get("ids") or [[]])[0]
@@ -89,7 +89,7 @@ def query_embedded_chunks(
                 "source_url": metadata.get("source_url", ""),
                 "source_type": metadata.get("source_type"),
                 "distance": distances[index] if index < len(distances) else None,
-                "category": metadata.get("category"),
+                "domain": metadata.get("domain"),
                 "department": metadata.get("department"),
                 "published_at": metadata.get("published_at"),
             }
@@ -136,7 +136,7 @@ def _create_client():
 def _build_chunk_metadata(
     *,
     chunk: EmbeddedChunk,
-    category: str | None,
+    domain: str | None,
     department: str | None,
 ) -> Dict[str, Any]:
     metadata: Dict[str, Any] = {
@@ -150,8 +150,8 @@ def _build_chunk_metadata(
     }
     if chunk.published_at:
         metadata["published_at"] = chunk.published_at.isoformat()
-    if category:
-        metadata["category"] = category
+    if domain:
+        metadata["domain"] = domain
     if department:
         metadata["department"] = department
     return metadata

@@ -145,6 +145,7 @@ celerybeat.pid
 .envrc
 .venv
 kGU-chatbot/
+KGU chatbot/
 env/
 venv/
 ENV/
@@ -154,6 +155,7 @@ venv.bak/
 .tmp/
 .pytest_tmp/
 servers/
+models/
 
 # Spyder project settings
 .spyderproject

@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     cors_allowed_origins: list[str] = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
     ]
     google_api_key: str
     gemini_model: str = "gemini-3-flash-preview"
@@ -23,6 +25,20 @@ class Settings(BaseSettings):
     translation_provider: str = "google"
     google_translation_api_url: str = "https://translation.googleapis.com/language/translate/v2"
     database_url: str = "postgresql+psycopg2://postgres:postgres@localhost:5432/kgusmart"
+    intent_classifier_model_name: str | None = None
+    intent_classifier_confidence_threshold: float = 0.7
+    intent_classifier_device: int = -1
+    rag_domain_classifier_model_name: str | None = None
+    rag_domain_classifier_confidence_threshold: float = 0.5
+    rag_domain_classifier_top_k: int = 3
+    rag_domain_classifier_device: int = -1
+    rag_detail_classifier_model_name: str | None = None
+    rag_detail_classifier_confidence_threshold: float = 0.45
+    rag_detail_classifier_top_k: int = 3
+    rag_detail_classifier_device: int = -1
+    rag_clarify_on_low_confidence: bool = True
+    rag_clarify_on_multi_domain: bool = True
+    rag_clarify_on_missing_detail: bool = False
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

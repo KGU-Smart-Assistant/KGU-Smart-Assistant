@@ -78,6 +78,14 @@ def _pick_best_contact(
     user_input: str,
     rows: list[tuple[str, str, str | None]],
 ) -> tuple[str, str] | None:
+    ranked = _rank_contacts(user_input, rows)
+    return (ranked[0][1], ranked[0][2]) if ranked else None
+
+
+def _rank_contacts(
+    user_input: str,
+    rows: list[tuple[str, str, str | None]],
+) -> list[tuple[int, str, str]]:
     user_norm = _normalize_text(user_input)
     user_after_stop = _strip_stopwords(user_norm)
 
@@ -85,8 +93,7 @@ def _pick_best_contact(
     if len(user_after_stop) >= 2:
         user_keywords.append(user_after_stop)
 
-    best: tuple[str, str] | None = None
-    best_score = -1
+    ranked: list[tuple[int, str, str]] = []
 
     for name, phone, description in rows:
         name_norm = _normalize_text(name)
@@ -103,11 +110,32 @@ def _pick_best_contact(
                 if kw in t or t in kw:
                     score = max(score, 80 + min(len(kw), len(t)))
 
-        if score > best_score:
-            best_score = score
-            best = (name, phone)
+        if score > 0:
+            ranked.append((score, name, phone))
 
-    return best if best_score > 0 else None
+    return sorted(
+        ranked,
+        key=lambda item: (-item[0], -_contact_priority(item[1], user_norm), item[1]),
+    )
+
+
+def _contact_priority(name: str, user_norm: str) -> int:
+    name_norm = _normalize_text(name)
+    priority = 0
+
+    if "팀장" in name_norm:
+        priority += 30
+    if "행정실" in name_norm:
+        priority += 20
+    if any(keyword in name_norm for keyword in ("수업", "성적", "졸업", "학적", "증명", "교육과정", "교직")):
+        priority += 10
+
+    if "강사실" in name_norm and "강사실" not in user_norm:
+        priority -= 30
+    if "fax" in name_norm and "fax" not in user_norm and "팩스" not in user_norm:
+        priority -= 30
+
+    return priority
 
 
 def get_phone(user_input: str, db: Session) -> str:
@@ -118,7 +146,8 @@ def get_phone(user_input: str, db: Session) -> str:
         select(KguContact.name, KguContact.phone, KguContact.description)
     ).all()
     candidates = [(r[0], str(r[1]).strip(), r[2]) for r in rows]
-    best = _pick_best_contact(user_input, candidates)
+    ranked = _rank_contacts(user_input, candidates)
+    best = (ranked[0][1], ranked[0][2]) if ranked else None
 
     if best is None:
         un = _normalize_text(user_input)
@@ -138,6 +167,14 @@ def get_phone(user_input: str, db: Session) -> str:
 
     if best is None:
         return "📞 요청하신 부서의 전화번호를 찾지 못했습니다. 정확한 부서·시설 이름을 입력해주세요."
+
+    if ranked:
+        top_score = ranked[0][0]
+        top_matches = [(name, phone) for score, name, phone in ranked if score == top_score][:5]
+        if len(top_matches) > 1:
+            lines = ["📞 요청하신 부서와 관련된 전화번호입니다."]
+            lines.extend(f"- {name}: {phone}" for name, phone in top_matches)
+            return "\n".join(lines)
 
     name, phone = best
     return f"📞 {name} 전화번호는 {phone} 입니다."

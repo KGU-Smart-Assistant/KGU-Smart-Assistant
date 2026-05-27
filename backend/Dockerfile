@@ -1,16 +1,18 @@
 FROM python:3.13-slim
 
 WORKDIR /app
+ARG INSTALL_CRAWLER_DEPS=false
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONIOENCODING=utf-8
 ENV CRAWL4_AI_BASE_DIRECTORY=/app/.crawl4ai-data
 
-COPY requirements.txt .
+COPY requirements.txt requirements-crawlers.txt ./
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
     ca-certificates \
+    && if [ "$INSTALL_CRAWLER_DEPS" = "true" ]; then apt-get install -y --no-install-recommends \
+    curl \
     libnss3 \
     libatk-bridge2.0-0 \
     libdrm2 \
@@ -35,11 +37,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libdbus-1-3 \
     tesseract-ocr \
     tesseract-ocr-kor \
-    tesseract-ocr-eng \
+    tesseract-ocr-eng; \
+    fi \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir -r requirements.txt
-RUN python -m playwright install chromium
+RUN if [ "$INSTALL_CRAWLER_DEPS" = "true" ]; then \
+    pip install --no-cache-dir -r requirements-crawlers.txt && \
+    python -m playwright install chromium; \
+    fi
 
 COPY . .
 

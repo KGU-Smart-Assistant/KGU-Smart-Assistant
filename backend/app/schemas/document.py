@@ -23,6 +23,7 @@ class DocumentBase(BaseModel):
     source_url: str
     title: str = Field(min_length=1, max_length=300)
     content: str = Field(min_length=1)
+    domain: Optional[str] = None
     category: Optional[str] = None
     department: Optional[str] = None
     author_department: Optional[str] = None

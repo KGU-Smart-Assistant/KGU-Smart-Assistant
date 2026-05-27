@@ -1,37 +1,23 @@
-# FastAPI 서버
+# FastAPI server
 fastapi
 uvicorn[standard]
-# 환경 변수 관리
 python-dotenv
-
-# 데이터 처리
 pydantic
+pydantic-settings
 
-# HTTP 요청
+# HTTP clients
 requests
 httpx
 
-# 크롤링
-beautifulsoup4
-
-# AI / RAG
+# AI / RAG runtime
 chromadb
-docling
-crawl4ai
-
-# 테스트
-pydantic-settings
-
-
-#genai SDK
+langchain-core
 google-genai
 
-# DB ORM
+# DB ORM / migrations
 SQLAlchemy
 Alembic
 psycopg2-binary
-# SQLite/SQLAlchemy helpers (optional but common)
-# aiosqlite
+
+# Shared utilities
 PyYAML
-olefile
-ftfy

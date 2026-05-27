@@ -5,7 +5,6 @@ import tempfile
 import zipfile
 from dataclasses import dataclass, field
 from datetime import datetime
-from functools import lru_cache
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 from urllib.parse import unquote, urlparse
@@ -42,9 +41,6 @@ class DoclingCollectorConfig:
     skip_failed_conversions: bool = True
     prefer_pdf_text_extraction: bool = True
     pdf_text_max_pages: int = 30
-    enable_pdf_page_ocr: bool = True
-    pdf_ocr_max_pages: int = 30
-    pdf_ocr_scale: float = 1.0
     timeout_seconds: int = 10
     conversion_timeout_seconds: int = 45
     max_zip_member_bytes: int = 25 * 1024 * 1024
@@ -56,7 +52,7 @@ def collect_documents_with_docling(
 ) -> List[Document]:
     """Convert file paths or URLs into normalized documents using Docling."""
     config = config or DoclingCollectorConfig()
-    converter = _create_converter()
+    converter = None
     collected_at = datetime.now()
     documents: List[Document] = []
 
@@ -93,15 +89,8 @@ def collect_documents_with_docling(
                     timeout_seconds=config.conversion_timeout_seconds,
                     max_pages=config.pdf_text_max_pages,
                 )
-                if not content and config.enable_pdf_page_ocr:
-                    content = _run_with_timeout(
-                        _extract_pdf_ocr_text,
-                        Path(local_source),
-                        timeout_seconds=config.conversion_timeout_seconds,
-                        max_pages=config.pdf_ocr_max_pages,
-                        scale=config.pdf_ocr_scale,
-                    )
                 if not content:
+                    converter = converter or _create_converter()
                     result = _run_with_timeout(
                         converter.convert,
                         local_source,
@@ -110,6 +99,7 @@ def collect_documents_with_docling(
                     )
                     content = result.document.export_to_markdown().strip()
             else:
+                converter = converter or _create_converter()
                 result = _run_with_timeout(
                     converter.convert,
                     local_source,
@@ -162,14 +152,15 @@ def collect_documents_with_docling(
 def _create_converter():
     try:
         from docling.document_converter import DocumentConverter, InputFormat, PdfFormatOption
-        from docling.datamodel.pipeline_options import PdfPipelineOptions, RapidOcrOptions
+        from docling.datamodel.pipeline_options import PdfPipelineOptions
     except ImportError as exc:
         raise RuntimeError(
             "Docling is not installed. Add 'docling' to dependencies and install it first."
         ) from exc
 
     pdf_options = PdfPipelineOptions()
-    pdf_options.ocr_options = RapidOcrOptions()
+    if hasattr(pdf_options, "do_ocr"):
+        pdf_options.do_ocr = False
     return DocumentConverter(
         format_options={
             InputFormat.PDF: PdfFormatOption(pipeline_options=pdf_options),
@@ -600,67 +591,6 @@ def _extract_pdf_text(path: Path, max_pages: int) -> str:
             pass
 
     return "\n\n".join(lines)
-
-
-def _extract_pdf_ocr_text(path: Path, max_pages: int, scale: float) -> str:
-    try:
-        import pypdfium2 as pdfium
-    except ImportError:
-        return ""
-
-    lines: List[str] = []
-    try:
-        pdf = pdfium.PdfDocument(str(path))
-    except Exception:
-        return ""
-
-    try:
-        ocr = _get_rapidocr()
-        page_count = min(len(pdf), max_pages)
-        for page_index in range(page_count):
-            try:
-                page = pdf[page_index]
-                bitmap = page.render(scale=scale)
-                image = bitmap.to_numpy()
-                result = ocr(image)
-                page_text = _rapidocr_result_to_text(result)
-                if page_text:
-                    lines.append(page_text)
-            except Exception:
-                continue
-            finally:
-                for resource_name in ("bitmap", "page"):
-                    resource = locals().get(resource_name)
-                    try:
-                        resource.close()
-                    except Exception:
-                        pass
-    finally:
-        try:
-            pdf.close()
-        except Exception:
-            pass
-
-    return "\n\n".join(lines)
-
-
-@lru_cache(maxsize=1)
-def _get_rapidocr():
-    from rapidocr import RapidOCR
-
-    return RapidOCR()
-
-
-def _rapidocr_result_to_text(result) -> str:
-    markdown = getattr(result, "to_markdown", None)
-    if callable(markdown):
-        text = markdown()
-        if text:
-            return text.strip()
-    texts = getattr(result, "txts", None)
-    if texts:
-        return "\n".join(text for text in texts if str(text).strip())
-    return ""
 
 
 def _extract_title(
