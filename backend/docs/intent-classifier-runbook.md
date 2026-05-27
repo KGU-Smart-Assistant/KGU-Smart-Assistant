@@ -329,3 +329,21 @@ python scripts/evaluate_intent_failure_cases.py \
   --pretty \
   --show-errors
 ```
+
+## Run The Production Question Set
+
+Use `app/data/production_question_set.jsonl` as a pre-release smoke test before
+changing model versions or crawler/search behavior. It contains representative
+questions across RAG, relational DB, weather, and general LLM routes, including
+short and ambiguous user phrasing.
+
+```bash
+python scripts/evaluate_intent_failure_cases.py \
+  --data app/data/production_question_set.jsonl \
+  --pretty \
+  --show-errors
+```
+
+Keep this file broad and stable. Add repeatedly failing real user questions to
+`intent_failure_cases.jsonl` first; promote them into `production_question_set.jsonl`
+when they should become part of the release regression suite.
