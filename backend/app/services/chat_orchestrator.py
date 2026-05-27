@@ -15,7 +15,7 @@ from app.services.map_service import get_map_response
 from app.services.rag_detail_classifier import classify_rag_details_with_klue_bert
 from app.services.rag_domain_classifier import classify_rag_domains_with_klue_bert
 from app.services.langchain_rag_service import answer_with_langchain_rag
-from app.services.search_service import LOW_CONFIDENCE_THRESHOLD, search_documents
+from app.services.search_service import LOW_CONFIDENCE_THRESHOLD, RetrievalPolicy, search_documents
 from app.services.weather_service import get_weather_response
 
 ChatRoute = Literal["llm", "relational_db", "rag", "weather"]
@@ -54,6 +54,7 @@ class ChatSource:
     title: str
     source_url: str | None = None
     score: float | None = None
+    source_number: int | None = None
 
 
 @dataclass(frozen=True)
@@ -219,6 +220,35 @@ def _answer_from_relational_db(
 
 
 def _answer_from_rag(user_input: str, decision: ChatDecision) -> ChatResult:
+    blocked_reply = _blocked_rag_reply(decision)
+    if blocked_reply is not None:
+        return ChatResult(
+            reply=blocked_reply,
+            intent="RAG",
+            route="rag",
+            rag_domain=decision.rag_domain,
+            rag_domains=decision.rag_domains,
+            rag_detail=decision.rag_detail,
+            rag_details=decision.rag_details,
+            source_scope=decision.source_scope,
+            rag_confidence=decision.rag_confidence,
+            rag_ambiguity=decision.rag_ambiguity,
+            rewritten_queries=decision.rewritten_queries,
+            matched_keywords=decision.matched_keywords,
+            intent_scores=decision.intent_scores,
+            answer_status="insufficient",
+            unverified=(_unverified_reason(decision),),
+        )
+
+    retrieval_policy = RetrievalPolicy.from_inputs(
+        rag_domain=decision.rag_domain,
+        rag_domains=decision.rag_domains,
+        rag_detail=decision.rag_detail,
+        rag_details=decision.rag_details,
+        rag_confidence=decision.rag_confidence,
+        source_scope=decision.source_scope,
+        rewritten_queries=decision.rewritten_queries,
+    )
     if _should_request_rag_clarification(decision):
         return _rag_clarification_result(decision)
 
@@ -235,6 +265,7 @@ def _answer_from_rag(user_input: str, decision: ChatDecision) -> ChatResult:
             rag_confidence=decision.rag_confidence,
             source_scope=decision.source_scope,
             rewritten_queries=decision.rewritten_queries,
+            retrieval_policy=retrieval_policy,
             search_fn=search_documents,
             answer_fn=get_gemini_response,
             confidence_threshold=LOW_CONFIDENCE_THRESHOLD,
@@ -284,6 +315,10 @@ def _answer_from_rag(user_input: str, decision: ChatDecision) -> ChatResult:
     answer_status: Literal["answered", "partial", "insufficient"] = "answered"
     unverified: tuple[str, ...] = ()
     reply = rag_result.reply
+    if _is_partial_rag_decision(decision):
+        answer_status = "partial"
+        unverified = (_unverified_reason(decision),)
+        reply = _partial_rag_reply(decision, rag_result.reply)
     if rag_result.low_confidence:
         answer_status = "insufficient"
         unverified = (_unverified_reason(decision),)
@@ -819,9 +854,47 @@ def _chat_sources_from_documents(documents) -> list[ChatSource]:
                 title=title,
                 source_url=source_url,
                 score=float(metadata.get("score") or metadata.get("confidence") or 0.0),
+                source_number=int(metadata.get("source_number") or len(sources) + 1),
             )
         )
     return sources
+
+
+def _blocked_rag_reply(decision: ChatDecision) -> str | None:
+    if decision.rag_ambiguity in {"needs_clarification", "low_confidence"}:
+        return _clarification_rag_reply(decision)
+    if decision.rag_ambiguity == "multi_domain" and decision.rag_detail in {None, "unknown"}:
+        return _clarification_rag_reply(decision)
+    return None
+
+
+def _is_partial_rag_decision(decision: ChatDecision) -> bool:
+    return decision.rag_ambiguity in {"multi_domain", "missing_detail"}
+
+
+def _clarification_rag_reply(decision: ChatDecision) -> str:
+    domain_texts = [_domain_label(domain) or domain for domain in decision.rag_domains if domain != "unknown"]
+    if decision.rag_ambiguity == "multi_domain" and domain_texts:
+        domain_list = ", ".join(dict.fromkeys(domain_texts))
+        return (
+            f"질문이 여러 주제({domain_list})에 걸쳐 있어 바로 확정 답변하지 않겠습니다. "
+            "원하는 주제나 확인하려는 항목을 하나로 좁혀 다시 질문해 주세요."
+        )
+    return (
+        "질문 의도나 검색 범위를 충분히 확정하지 못해 바로 답변하지 않겠습니다. "
+        "확인하려는 주제, 기간, 대상, 서류 등 핵심 조건을 조금 더 구체적으로 적어 주세요."
+    )
+
+
+def _partial_rag_reply(decision: ChatDecision, reply: str) -> str:
+    note = ""
+    if decision.rag_ambiguity == "multi_domain":
+        note = "여러 주제가 함께 감지되어 검색된 근거 범위 안에서만 답변합니다."
+    elif decision.rag_ambiguity == "missing_detail":
+        note = "질문의 세부 항목을 확정하지 못해 검색된 근거 범위 안에서만 답변합니다."
+    if not note:
+        return reply
+    return f"{note}\n\n{reply.strip()}"
 
 
 def _insufficient_rag_reply(decision: ChatDecision) -> str:

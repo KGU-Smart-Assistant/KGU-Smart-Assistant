@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 import json
 import logging
@@ -28,6 +29,70 @@ PRIMARY_DETAIL_BOOST = 0.08
 SECONDARY_DETAIL_BOOST = 0.04
 HARD_FILTER_CONFIDENCE_THRESHOLD = 0.75
 PARENT_EXPANSION_WINDOW = 1
+MAX_PARENT_EXPANDED_CHUNKS = 20
+
+
+
+@dataclass(frozen=True)
+class RetrievalPolicy:
+    """Normalized retrieval controls shared by chat, LangChain, and search trace."""
+
+    domain: str = "unknown"
+    domains: tuple[str, ...] = ()
+    detail: str = "unknown"
+    details: tuple[str, ...] = ()
+    confidence: float | None = None
+    source_scope: str = "unknown"
+    rewritten_queries: tuple[str, ...] = ()
+    trace_id: str | None = None
+    trace_path: str | None = None
+
+    @classmethod
+    def from_inputs(
+        cls,
+        *,
+        category: str | None = None,
+        detail: str | None = None,
+        rag_domain: str | None = None,
+        rag_domains: list[str] | tuple[str, ...] | None = None,
+        rag_detail: str | None = None,
+        rag_details: list[str] | tuple[str, ...] | None = None,
+        rag_confidence: float | None = None,
+        source_scope: str | None = None,
+        rewritten_queries: list[str] | tuple[str, ...] | None = None,
+        trace_id: str | None = None,
+        trace_path: str | None = None,
+    ) -> "RetrievalPolicy":
+        primary_domain = normalize_domain(category) or normalize_domain(rag_domain) or "unknown"
+        normalized_domains = _normalize_policy_domains((primary_domain, *(rag_domains or ())))
+        normalized_details = tuple(_normalize_details([detail, rag_detail, *(rag_details or ())]))
+        primary_detail = normalized_details[0] if normalized_details else "unknown"
+        normalized_scope = source_scope if source_scope in {"department", "university"} else "unknown"
+        return cls(
+            domain=primary_domain,
+            domains=normalized_domains,
+            detail=primary_detail,
+            details=normalized_details,
+            confidence=rag_confidence,
+            source_scope=normalized_scope,
+            rewritten_queries=tuple(dict.fromkeys(query for query in (rewritten_queries or ()) if query)),
+            trace_id=trace_id,
+            trace_path=trace_path,
+        )
+
+    def to_trace_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+def _normalize_policy_domains(domains: tuple[str | None, ...]) -> tuple[str, ...]:
+    normalized_domains: list[str] = []
+    for domain in domains:
+        normalized = normalize_domain(domain)
+        if not normalized or normalized in normalized_domains:
+            continue
+        normalized_domains.append(normalized)
+    return tuple(normalized_domains)
+
 
 DOMAIN_WEIGHTS: dict[str, dict[str, float]] = {
     "scholarship": {"semantic": 0.35, "lexical": 0.25, "freshness": 0.25, "title": 0.10, "domain": 0.05},
@@ -63,31 +128,48 @@ def search_documents(
     enable_parent_expansion: bool = True,
     trace_id: str | None = None,
     trace_path: str | None = None,
+    retrieval_policy: RetrievalPolicy | None = None,
 ) -> List[SearchResult]:
     """Search crawled chunks with domain filtering, detail boosting, and broad fallback."""
-    effective_domain = _normalize_domain(category) or _normalize_domain(rag_domain) or "default"
-    effective_details = _effective_details(query=query, detail=detail, rag_detail=rag_detail, rag_details=rag_details)
+    policy = retrieval_policy or RetrievalPolicy.from_inputs(
+        category=category,
+        detail=detail,
+        rag_domain=rag_domain,
+        rag_domains=rag_domains,
+        rag_detail=rag_detail,
+        rag_details=rag_details,
+        rag_confidence=rag_confidence,
+        source_scope=source_scope,
+        rewritten_queries=rewritten_queries,
+        trace_id=trace_id,
+        trace_path=trace_path,
+    )
+    effective_domain = "default" if policy.domain == "unknown" else policy.domain
+    effective_details = list(policy.details)
     effective_detail = effective_details[0] if effective_details else None
-    hard_filter = _should_hard_filter(effective_domain, rag_confidence)
-    filter_categories = _filter_categories_for_domains(effective_domain, rag_domains) if hard_filter else None
+    hard_filter = _should_hard_filter(policy.domain, policy.confidence)
+    filter_categories = _filter_categories_for_domains(policy.domain, list(policy.domains)) if hard_filter else None
     trace: dict[str, Any] = {
         "query": query,
+        "retrieval_policy": policy.to_trace_dict(),
         "effective_domain": effective_domain,
-        "rag_confidence": rag_confidence,
+        "rag_confidence": policy.confidence,
         "hard_filter": hard_filter,
         "filter_categories": filter_categories,
-        "rewritten_queries": list(rewritten_queries or []),
+        "rewritten_queries": list(policy.rewritten_queries),
         "low_confidence_threshold": low_confidence_threshold,
     }
+    trace_id = trace_id or policy.trace_id
+    trace_path = trace_path or policy.trace_path
     primary_rows = _run_search_attempts(
-        queries=_search_queries(query, rewritten_queries),
+        queries=_search_queries(query, list(policy.rewritten_queries)),
         ranking_query=query,
         top_k=top_k,
         domain=effective_domain,
         detail=effective_detail,
         details=effective_details,
         categories=filter_categories,
-        source_scope=source_scope,
+        source_scope=policy.source_scope,
         attempt="primary",
     )
     trace["primary_rows"] = _trace_rows(primary_rows)
@@ -102,6 +184,7 @@ def search_documents(
             enable_parent_expansion=enable_parent_expansion,
         )
         trace["final_rows"] = _trace_rows(final_rows)
+        trace["parent_expanded"] = _trace_parent_expansion(final_rows, enabled=enable_parent_expansion)
         _write_search_trace(trace, trace_id=trace_id, trace_path=trace_path)
         return [_row_to_search_result(row) for row in final_rows]
 
@@ -115,18 +198,19 @@ def search_documents(
             enable_parent_expansion=enable_parent_expansion,
         )
         trace["final_rows"] = _trace_rows(final_rows)
+        trace["parent_expanded"] = _trace_parent_expansion(final_rows, enabled=enable_parent_expansion)
         _write_search_trace(trace, trace_id=trace_id, trace_path=trace_path)
         return [_row_to_search_result(row) for row in final_rows]
 
     fallback_rows = _run_search_attempts(
-        queries=_search_queries(query, rewritten_queries),
+        queries=_search_queries(query, list(policy.rewritten_queries)),
         ranking_query=query,
         top_k=top_k,
         domain="default",
         detail=effective_detail,
         details=effective_details,
         categories=None,
-        source_scope=source_scope,
+        source_scope=policy.source_scope,
         attempt="fallback_broad",
     )
     trace["fallback_rows"] = _trace_rows(fallback_rows)
@@ -136,7 +220,7 @@ def search_documents(
         category=effective_domain,
         detail=effective_detail,
         details=effective_details,
-        source_scope=source_scope,
+        source_scope=policy.source_scope,
     )
     trace["deduped_rows"] = _trace_rows(_dedupe_canonical_rows(merged_rows, effective_domain))
     final_rows = _finalize_rows(
@@ -211,7 +295,6 @@ def rerank_candidate_rows(
 ) -> List[Dict[str, Any]]:
     effective_domain = _normalize_domain(category) or "default"
     effective_details = _normalize_details([detail, *(details or [])])
-    effective_detail = effective_details[0] if effective_details else None
     weights = DOMAIN_WEIGHTS.get(effective_domain, DOMAIN_WEIGHTS["default"])
     tokens = _tokenize(query)
     ranked_rows: List[Dict[str, Any]] = []
@@ -372,7 +455,7 @@ def _mark_low_confidence(row: dict[str, Any], threshold: float) -> dict[str, Any
 
 
 def _should_hard_filter(domain: str | None, rag_confidence: float | None) -> bool:
-    if not domain or domain == "default":
+    if not domain or domain in {"default", "unknown"}:
         return False
     if rag_confidence is None:
         return True
@@ -390,6 +473,7 @@ def _expand_parent_chunks(rows: list[dict[str, Any]], *, top_k: int, enabled: bo
     if not anchors:
         return rows
     expanded = _query_adjacent_chunk_rows(anchors, window=PARENT_EXPANSION_WINDOW)
+    expanded = _bounded_parent_rows(rows=rows, expanded=expanded, window=PARENT_EXPANSION_WINDOW)
     if not expanded:
         return rows
     merged = _merge_rows(rows, expanded)
@@ -401,6 +485,7 @@ def _expand_parent_chunks(rows: list[dict[str, Any]], *, top_k: int, enabled: bo
             breakdown = dict(row.get("score_breakdown") or {})
             breakdown["parent_expanded"] = 1.0
             row["score_breakdown"] = breakdown
+    bounded_count = min(len(rows) + len(expanded), MAX_PARENT_EXPANDED_CHUNKS)
     return sorted(
         merged,
         key=lambda row: (
@@ -409,7 +494,48 @@ def _expand_parent_chunks(rows: list[dict[str, Any]], *, top_k: int, enabled: bo
             _distance_to_score(row.get("distance")),
         ),
         reverse=True,
-    )[: max(top_k, len(rows) + len(expanded))]
+    )[:bounded_count]
+
+
+def _bounded_parent_rows(
+    *,
+    rows: list[dict[str, Any]],
+    expanded: list[dict[str, Any]],
+    window: int,
+) -> list[dict[str, Any]]:
+    if not expanded:
+        return []
+    anchor_positions: dict[str, set[int]] = {}
+    for row in rows:
+        doc_id = str(row.get("doc_id") or "")
+        if not doc_id:
+            continue
+        try:
+            chunk_index = int(row.get("chunk_index"))
+        except (TypeError, ValueError):
+            continue
+        anchor_positions.setdefault(doc_id, set()).add(chunk_index)
+
+    anchor_chunk_ids = {str(row.get("chunk_id")) for row in rows if row.get("chunk_id")}
+    bounded: list[dict[str, Any]] = []
+    seen_chunk_ids: set[str] = set()
+    max_expanded = max(0, min(len(rows) * window * 2, MAX_PARENT_EXPANDED_CHUNKS - len(rows)))
+    for row in expanded:
+        chunk_id = str(row.get("chunk_id") or "")
+        if not chunk_id or chunk_id in anchor_chunk_ids or chunk_id in seen_chunk_ids:
+            continue
+        doc_id = str(row.get("doc_id") or "")
+        try:
+            chunk_index = int(row.get("chunk_index"))
+        except (TypeError, ValueError):
+            continue
+        if not any(abs(chunk_index - anchor_index) <= window for anchor_index in anchor_positions.get(doc_id, set())):
+            continue
+        bounded.append(row)
+        seen_chunk_ids.add(chunk_id)
+        if len(bounded) >= max_expanded:
+            break
+    return bounded
 
 
 def _query_adjacent_chunk_rows(anchors: list[dict[str, Any]], *, window: int) -> list[dict[str, Any]]:
@@ -475,6 +601,17 @@ def _query_adjacent_chunk_rows(anchors: list[dict[str, Any]], *, window: int) ->
     return rows
 
 
+def _trace_parent_expansion(rows: list[dict[str, Any]], *, enabled: bool) -> dict[str, Any]:
+    expanded_rows = [row for row in rows if row.get("parent_expanded")]
+    return {
+        "enabled": enabled,
+        "window": PARENT_EXPANSION_WINDOW,
+        "max_context_count": MAX_PARENT_EXPANDED_CHUNKS,
+        "expanded_count": len(expanded_rows),
+        "chunk_ids": [row.get("chunk_id") for row in expanded_rows],
+    }
+
+
 def _write_search_trace(trace: dict[str, Any], *, trace_id: str | None, trace_path: str | None) -> None:
     path = trace_path or os.getenv("RAG_SEARCH_TRACE_PATH")
     if not path:
@@ -502,6 +639,7 @@ def _trace_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             "source_url": row.get("source_url"),
             "domain": row.get("domain") or row.get("category"),
             "score": row.get("score"),
+            "score_breakdown": row.get("score_breakdown", {}),
             "low_confidence": row.get("low_confidence", False),
             "parent_expanded": row.get("parent_expanded", False),
             "retrieval_sources": sorted(row.get("retrieval_sources", set())),
@@ -704,7 +842,7 @@ def _dedupe_rows_by_chunk_id(rows: list[dict[str, Any]]) -> list[dict[str, Any]]
 
 
 def _filter_categories(domain: str | None) -> list[str] | None:
-    if not domain or domain == "default":
+    if not domain or domain in {"default", "unknown"}:
         return None
     return DOMAIN_FILTERS.get(domain, [domain])
 
@@ -816,7 +954,7 @@ def _title_match_score(*, tokens: list[str], title: str) -> float:
 
 
 def _domain_match_score(expected_domain: str | None, row_domain: object) -> float:
-    if not expected_domain or expected_domain == "default" or not row_domain:
+    if not expected_domain or expected_domain in {"default", "unknown"} or not row_domain:
         return 0.0
     row = _normalize_domain(str(row_domain))
     if row == expected_domain:

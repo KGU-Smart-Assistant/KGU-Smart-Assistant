@@ -19,7 +19,7 @@ from app.crawlers.embedding_pipeline import embed_text
 from app.db.vector_store import query_embedded_chunks
 from app.schemas.search import SearchResult
 from app.services.gemini_service import get_gemini_response
-from app.services.search_service import LOW_CONFIDENCE_THRESHOLD, rerank_candidate_rows, search_documents
+from app.services.search_service import LOW_CONFIDENCE_THRESHOLD, RetrievalPolicy, rerank_candidate_rows, search_documents
 
 SearchFn = Callable[..., List[SearchResult]]
 AnswerFn = Callable[[str], str]
@@ -36,7 +36,10 @@ RAG_PROMPT = PromptTemplate.from_template(
 아래 검색 근거에 포함된 내용만 사용해서 한국어로 답변해라.
 근거가 부족하면 확정적으로 말하지 말고, 확인 가능한 출처 URL을 안내해라.
 날짜, 자격, 금액, 부서명, URL은 근거에 없으면 만들지 마라.
-답변 끝에는 반드시 "출처:" 섹션을 포함하고 사용한 URL을 적어라.
+영어 답변을 쓰지 말고, URL·고유명사·공식 명칭을 제외한 모든 설명은 자연스러운 한국어로 작성해라.
+근거에 없는 항목은 "검색된 자료에서는 확인할 수 없습니다"라고 말해라.
+답변 본문에서 근거를 사용할 때는 해당 검색 근거 번호를 [1]처럼 표시해라.
+답변 끝에는 반드시 "출처:" 섹션을 포함하고 "[1] 제목: URL" 형식으로 사용한 URL을 적어라.
 
 검색 근거:
 {context}
@@ -87,6 +90,9 @@ class HybridSearchRetriever(BaseRetriever):
     rag_confidence: float | None = None
     source_scope: str | None = None
     rewritten_queries: tuple[str, ...] = ()
+    retrieval_policy: RetrievalPolicy | None = None
+    trace_id: str | None = None
+    trace_path: str | None = None
     low_confidence_threshold: float = DEFAULT_RAG_CONFIDENCE_THRESHOLD
     expand_queries: bool = True
     compress_documents: bool = True
@@ -110,6 +116,9 @@ class HybridSearchRetriever(BaseRetriever):
                 rag_confidence=self.rag_confidence,
                 source_scope=self.source_scope,
                 low_confidence_threshold=self.low_confidence_threshold,
+                retrieval_policy=self.retrieval_policy,
+                trace_id=self.trace_id,
+                trace_path=self.trace_path,
             ):
                 document = search_result_to_document(result)
                 _annotate_document_for_query(
@@ -179,6 +188,7 @@ def answer_with_langchain_rag(
     rag_confidence: float | None = None,
     source_scope: str | None = None,
     rewritten_queries: list[str] | tuple[str, ...] = (),
+    retrieval_policy: RetrievalPolicy | None = None,
     search_fn: SearchFn = search_documents,
     answer_fn: AnswerFn = get_gemini_response,
     retriever: BaseRetriever | None = None,
@@ -186,6 +196,19 @@ def answer_with_langchain_rag(
     trace_path: str | None = None,
     confidence_threshold: float = DEFAULT_RAG_CONFIDENCE_THRESHOLD,
 ) -> LangChainRagResult:
+    policy = retrieval_policy or RetrievalPolicy.from_inputs(
+        category=category,
+        detail=detail,
+        rag_domain=rag_domain,
+        rag_domains=tuple(rag_domains),
+        rag_detail=rag_detail,
+        rag_details=tuple(rag_details),
+        rag_confidence=rag_confidence,
+        source_scope=source_scope,
+        rewritten_queries=tuple(rewritten_queries),
+        trace_id=trace_id,
+        trace_path=trace_path,
+    )
     effective_retriever = retriever or HybridSearchRetriever(
         top_k=top_k,
         category=category or rag_domain,
@@ -197,6 +220,9 @@ def answer_with_langchain_rag(
         rag_confidence=rag_confidence,
         source_scope=source_scope,
         rewritten_queries=tuple(rewritten_queries),
+        retrieval_policy=policy,
+        trace_id=trace_id,
+        trace_path=trace_path,
         low_confidence_threshold=confidence_threshold,
         search_fn=search_fn,
     )
@@ -219,6 +245,7 @@ def answer_with_langchain_rag(
                 "rag_details": list(rag_details),
                 "rag_confidence": rag_confidence,
                 "source_scope": source_scope,
+                "retrieval_policy": policy.to_trace_dict(),
             },
         },
     )
@@ -227,7 +254,7 @@ def answer_with_langchain_rag(
         documents=result.documents,
         context=result.context,
         expanded_queries=expanded_queries,
-        trace_id=trace_id,
+        trace_id=trace_id or policy.trace_id,
         confidence=result.confidence,
         low_confidence=result.low_confidence,
     )
@@ -328,6 +355,7 @@ def search_result_to_document(result: SearchResult) -> Document:
         metadata["score_breakdown"] = result.score_breakdown
         metadata["confidence"] = result.score_breakdown.get("confidence", result.score)
         metadata["fallback_used"] = bool(result.score_breakdown.get("fallback_used"))
+        metadata["parent_expanded"] = bool(result.score_breakdown.get("parent_expanded"))
     else:
         metadata["confidence"] = result.score
     return Document(page_content=result.text, metadata=metadata)
@@ -343,7 +371,7 @@ def row_to_document(row: dict) -> Document:
         "retrieval_score": row.get("score", 0.0),
         "confidence": row.get("score_breakdown", {}).get("confidence", row.get("score", 0.0)),
     }
-    for key in ("domain", "category", "department", "published_at", "score_breakdown"):
+    for key in ("domain", "category", "department", "published_at", "score_breakdown", "parent_expanded"):
         if row.get(key):
             metadata[key] = row[key]
     return Document(page_content=row.get("text", ""), metadata=metadata)
@@ -353,8 +381,9 @@ def format_documents(documents: list[Document]) -> str:
     blocks = []
     for index, document in enumerate(documents, start=1):
         metadata = document.metadata
+        source_number = int(metadata.get("source_number") or index)
         lines = [
-            f"[{index}] {metadata.get('title', 'Untitled')}",
+            f"[{source_number}] {metadata.get('title', 'Untitled')}",
             f"source_url: {metadata.get('source_url')}",
             f"score: {metadata.get('score')}",
             f"rerank_score: {metadata.get('rerank_score', metadata.get('score'))}",
@@ -368,6 +397,8 @@ def format_documents(documents: list[Document]) -> str:
             lines.append(f"published_at: {metadata['published_at']}")
         if metadata.get("matched_queries"):
             lines.append(f"matched_queries: {', '.join(metadata['matched_queries'])}")
+        if metadata.get("parent_expanded"):
+            lines.append("parent_expanded: true")
         lines.append(document.page_content)
         blocks.append("\n".join(lines))
     return "\n\n".join(blocks)
@@ -387,15 +418,25 @@ def trace_rag_result(query: str, result: LangChainRagResult, *, trace_path: str 
         "low_confidence": result.low_confidence,
         "documents": [
             {
+                "source_number": document.metadata.get("source_number"),
                 "chunk_id": document.metadata.get("chunk_id"),
+                "doc_id": document.metadata.get("doc_id"),
                 "title": document.metadata.get("title"),
                 "source_url": document.metadata.get("source_url"),
+                "domain": document.metadata.get("domain"),
+                "department": document.metadata.get("department"),
+                "published_at": document.metadata.get("published_at"),
                 "score": document.metadata.get("score"),
+                "retrieval_score": document.metadata.get("retrieval_score"),
                 "rerank_score": document.metadata.get("rerank_score"),
                 "confidence": document.metadata.get("confidence"),
+                "query_relevance": document.metadata.get("query_relevance"),
+                "best_query_index": document.metadata.get("best_query_index"),
                 "matched_queries": document.metadata.get("matched_queries", []),
+                "score_breakdown": document.metadata.get("score_breakdown", {}),
                 "compressed": document.metadata.get("compressed", False),
                 "fallback_used": document.metadata.get("fallback_used", False),
+                "parent_expanded": document.metadata.get("parent_expanded", False),
             }
             for document in result.documents
         ],
@@ -408,7 +449,7 @@ def trace_rag_result(query: str, result: LangChainRagResult, *, trace_path: str 
 
 
 def _prepare_prompt_payload(payload: dict) -> dict:
-    documents = payload["documents"]
+    documents = _with_source_numbers(payload["documents"])
     question = payload["question"]
     context = format_documents(documents)
     prompt = RAG_PROMPT.format(context=context, question=question)
@@ -439,6 +480,7 @@ def _generate_answer(payload: dict, *, answer_fn: AnswerFn, confidence_threshold
         )
 
     reply = answer_fn(payload["prompt"])
+    reply = _control_answer_language(payload, reply, answer_fn=answer_fn)
     reply = ensure_source_urls(reply, documents)
     return LangChainRagResult(
         reply=reply,
@@ -451,18 +493,81 @@ def _generate_answer(payload: dict, *, answer_fn: AnswerFn, confidence_threshold
 
 
 def ensure_source_urls(reply: str, documents: list[Document]) -> str:
-    urls = []
-    for document in documents:
-        url = str(document.metadata.get("source_url") or "").strip()
-        if url and url not in urls:
-            urls.append(url)
+    source_lines = _numbered_source_lines(documents)
+    urls = [url for _number, _title, url in source_lines]
     if not urls:
         return reply
     missing_urls = [url for url in urls if url not in reply]
     if not missing_urls and "출처" in reply:
         return reply
-    source_lines = ["", "", "출처:"] + [f"- {url}" for url in urls]
-    return reply.rstrip() + "\n".join(source_lines)
+    formatted_sources = ["", "", "출처:"] + [
+        f"- [{number}] {title}: {url}" for number, title, url in source_lines
+    ]
+    return reply.rstrip() + "\n".join(formatted_sources)
+
+
+def _control_answer_language(payload: dict, reply: str, *, answer_fn: AnswerFn) -> str:
+    """Keep RAG answers in Korean even when the model drifts into English."""
+
+    normalized_reply = reply.strip()
+    if not normalized_reply:
+        return _source_only_reply(payload["documents"])
+    if not _needs_korean_rewrite(normalized_reply):
+        return normalized_reply
+
+    rewrite_prompt = _korean_rewrite_prompt(
+        answer=normalized_reply,
+        question=str(payload["question"]),
+        context=str(payload["context"]),
+    )
+    rewritten = answer_fn(rewrite_prompt).strip()
+    if rewritten and not _needs_korean_rewrite(rewritten):
+        return rewritten
+    return _source_only_reply(payload["documents"])
+
+
+def _needs_korean_rewrite(reply: str) -> bool:
+    text_without_urls = re.sub(r"https?://\S+", "", reply)
+    hangul_count = len(re.findall(r"[가-힣]", text_without_urls))
+    latin_count = len(re.findall(r"[A-Za-z]", text_without_urls))
+    if hangul_count == 0:
+        return True
+    return latin_count > hangul_count * 2
+
+
+def _korean_rewrite_prompt(*, answer: str, question: str, context: str) -> str:
+    return f"""
+다음 답변을 경기대학교 스마트 어시스턴트의 최종 답변으로 다시 작성하세요.
+
+규칙:
+- 한국어로만 작성하세요. URL, 고유명사, 공식 영문 명칭은 유지할 수 있습니다.
+- 아래 검색 근거에 없는 날짜, 자격, 금액, 부서명, URL은 추가하지 마세요.
+- 근거에 없는 항목은 "검색된 자료에서는 확인할 수 없습니다"라고 쓰세요.
+- 답변 끝에는 "출처:" 섹션과 검색 근거의 URL만 포함하세요.
+
+사용자 질문:
+{question}
+
+검색 근거:
+{context}
+
+다시 작성할 답변:
+{answer}
+
+한국어 최종 답변:
+""".strip()
+
+
+def _source_only_reply(documents: list[Document]) -> str:
+    lines = [
+        "검색된 자료를 바탕으로 한국어 답변을 생성하지 못했습니다.",
+        "아래 출처에서 직접 확인해 주세요.",
+        "",
+        "출처:",
+    ]
+    for number, title, url in _numbered_source_lines(documents):
+        lines.append(f"- [{number}] {title}: {url}")
+    return "\n".join(lines)
 
 
 def _low_confidence_reply(documents: list[Document]) -> str:
@@ -472,15 +577,32 @@ def _low_confidence_reply(documents: list[Document]) -> str:
         "",
         "출처:",
     ]
-    seen = set()
-    for document in documents:
-        title = str(document.metadata.get("title") or "문서")
-        url = str(document.metadata.get("source_url") or "").strip()
-        if not url or url in seen:
-            continue
-        seen.add(url)
-        lines.append(f"- {title}: {url}")
+    for number, title, url in _numbered_source_lines(documents):
+        lines.append(f"- [{number}] {title}: {url}")
     return "\n".join(lines)
+
+
+def _with_source_numbers(documents: list[Document]) -> list[Document]:
+    numbered: list[Document] = []
+    for index, document in enumerate(documents, start=1):
+        metadata = dict(document.metadata)
+        metadata["source_number"] = int(metadata.get("source_number") or index)
+        numbered.append(Document(page_content=document.page_content, metadata=metadata))
+    return numbered
+
+
+def _numbered_source_lines(documents: list[Document]) -> list[tuple[int, str, str]]:
+    source_lines: list[tuple[int, str, str]] = []
+    seen_urls: set[str] = set()
+    for index, document in enumerate(documents, start=1):
+        url = str(document.metadata.get("source_url") or "").strip()
+        if not url or url in seen_urls:
+            continue
+        seen_urls.add(url)
+        number = int(document.metadata.get("source_number") or index)
+        title = str(document.metadata.get("title") or "문서")
+        source_lines.append((number, title, url))
+    return source_lines
 
 
 def _annotate_document_for_query(*, document: Document, original_query: str, matched_query: str, query_index: int) -> None:

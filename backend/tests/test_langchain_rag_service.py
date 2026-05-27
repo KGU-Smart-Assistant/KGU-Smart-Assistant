@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from langchain_core.documents import Document
@@ -108,7 +109,50 @@ def test_langchain_chain_formats_context_and_calls_answer_fn() -> None:
     assert "https://example.com/scholarship" in result.reply
     assert result.documents[0].metadata["source_url"] == "https://example.com/scholarship"
     assert "검색 근거:" in captured["prompt"]
-    assert "장학금 신청 안내" in captured["prompt"]
+    assert "영어 답변을 쓰지 말고" in captured["prompt"]
+    assert "근거 번호를 [1]처럼" in captured["prompt"]
+    assert "[1] 장학금 신청 안내" in captured["prompt"]
+    assert "- [1] 장학금 신청 안내: https://example.com/scholarship" in result.reply
+    assert result.documents[0].metadata["source_number"] == 1
+
+
+def test_langchain_chain_rewrites_english_answers_to_korean() -> None:
+    calls = []
+
+    class StaticRetriever(BaseRetriever):
+        def _get_relevant_documents(self, query: str, *, run_manager=None):
+            return [search_result_to_document(_search_result())]
+
+    def fake_answer(prompt: str) -> str:
+        calls.append(prompt)
+        if len(calls) == 1:
+            return "The scholarship application period is May 1 to May 10."
+        assert "다음 답변을" in prompt
+        return "장학금 신청 기간은 5월 1일부터 5월 10일까지입니다."
+
+    chain = build_rag_chain(retriever=StaticRetriever(), answer_fn=fake_answer)
+    result = chain.invoke("장학금 신청 기간 알려줘")
+
+    assert len(calls) == 2
+    assert "장학금 신청 기간은 5월 1일부터 5월 10일까지입니다." in result.reply
+    assert "The scholarship" not in result.reply
+    assert "https://example.com/scholarship" in result.reply
+
+
+def test_langchain_chain_uses_source_only_reply_when_korean_rewrite_fails() -> None:
+    class StaticRetriever(BaseRetriever):
+        def _get_relevant_documents(self, query: str, *, run_manager=None):
+            return [search_result_to_document(_search_result())]
+
+    chain = build_rag_chain(
+        retriever=StaticRetriever(),
+        answer_fn=lambda prompt: "The answer is unavailable.",
+    )
+    result = chain.invoke("장학금 신청 기간 알려줘")
+
+    assert "한국어 답변을 생성하지 못했습니다" in result.reply
+    assert "출처:" in result.reply
+    assert "https://example.com/scholarship" in result.reply
 
 
 def test_answer_with_langchain_rag_returns_documents_context_and_trace() -> None:
@@ -189,6 +233,38 @@ def test_format_documents_includes_source_score_and_matched_queries() -> None:
     assert "score: 0.91" in context
     assert "confidence: 0.91" in context
     assert "matched_queries: 장학금 신청 기간" in context
+
+
+
+
+def test_parent_expanded_metadata_flows_to_context_and_trace() -> None:
+    document = search_result_to_document(
+        _search_result(
+            chunk_id="parent-chunk",
+            text="인접한 4월 학사일정입니다.",
+            score=0.01,
+            confidence=0.91,
+        ).model_copy(update={"score_breakdown": {"parent_expanded": 1.0, "confidence": 0.91}})
+    )
+    trace_path = Path(".tmp/test_parent_metadata_trace.jsonl")
+    trace_path.unlink(missing_ok=True)
+    result = langchain_rag_service.LangChainRagResult(
+        reply="학사일정 답변",
+        documents=[document],
+        context=format_documents([document]),
+        expanded_queries=["학사일정"],
+        trace_id="parent-meta",
+        confidence=0.91,
+    )
+
+    assert document.metadata["parent_expanded"] is True
+    assert "parent_expanded: true" in result.context
+
+    langchain_rag_service.trace_rag_result("학사일정", result, trace_path=str(trace_path))
+
+    payload = json.loads(trace_path.read_text(encoding="utf-8").strip())
+    assert payload["documents"][0]["parent_expanded"] is True
+    trace_path.unlink(missing_ok=True)
 
 
 def test_ensure_source_urls_appends_missing_urls() -> None:

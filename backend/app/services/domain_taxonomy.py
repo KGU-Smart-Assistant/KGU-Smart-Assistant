@@ -2,9 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-DOMAINS = {
+CANONICAL_DOMAIN_LABELS: tuple[str, ...] = (
     "scholarship",
-    "tuition",
     "course_registration",
     "academic_calendar",
     "academic_status",
@@ -13,6 +12,7 @@ DOMAINS = {
     "admission_transfer",
     "teaching_certification",
     "graduation",
+    "tuition",
     "document_materials",
     "student_life",
     "career_support",
@@ -21,9 +21,11 @@ DOMAINS = {
     "general_notice",
     "faq",
     "unknown",
-}
+)
 
-DETAILS = {
+DOMAINS = set(CANONICAL_DOMAIN_LABELS)
+
+CANONICAL_DETAIL_LABELS: tuple[str, ...] = (
     "period",
     "eligibility",
     "procedure",
@@ -32,7 +34,9 @@ DETAILS = {
     "announcement_lookup",
     "summary",
     "unknown",
-}
+)
+
+DETAILS = set(CANONICAL_DETAIL_LABELS)
 
 LEGACY_DOMAIN_ALIASES = {
     "academic": "academic_calendar",

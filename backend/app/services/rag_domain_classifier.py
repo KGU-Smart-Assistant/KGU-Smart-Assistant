@@ -5,28 +5,12 @@ from functools import lru_cache
 from typing import Sequence
 
 from app.core.config import settings
+from app.services.domain_taxonomy import CANONICAL_DOMAIN_LABELS, normalize_domain
 
 
-RAG_DOMAIN_LABELS: tuple[str, ...] = (
-    "scholarship",
-    "course_registration",
-    "academic_calendar",
-    "academic_status",
-    "major_change",
-    "multi_major",
-    "admission_transfer",
-    "teaching_certification",
-    "graduation",
-    "tuition",
-    "document_materials",
-    "student_life",
-    "career_support",
-    "international_exchange",
-    "department_notice",
-    "general_notice",
-    "faq",
+RAG_DOMAIN_LABELS: tuple[str, ...] = tuple(
+    domain for domain in CANONICAL_DOMAIN_LABELS if domain != "unknown"
 )
-
 
 
 @dataclass(frozen=True)
@@ -72,7 +56,7 @@ def _predictions_from_output(output: object) -> list[RagDomainPrediction]:
     for row in rows:
         if not isinstance(row, dict):
             continue
-        label = _normalize_label(str(row.get("label", "")))
+        label = normalize_domain(_normalize_label(str(row.get("label", ""))))
         if label not in RAG_DOMAIN_LABELS:
             continue
         predictions.append(

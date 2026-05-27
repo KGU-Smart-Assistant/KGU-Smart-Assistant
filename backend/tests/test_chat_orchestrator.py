@@ -700,6 +700,7 @@ def test_answer_chat_uses_rag_results_as_context(monkeypatch) -> None:
     assert "장학 신청 안내" in captured["context"]
     assert "5월 1일부터 5월 10일" in captured["context"]
     assert result.sources[0].source_url == "https://example.com/scholarship"
+    assert result.sources[0].source_number == 1
 
 
 def test_answer_chat_requests_clarification_when_rag_domain_is_unknown(monkeypatch) -> None:
@@ -722,7 +723,7 @@ def test_answer_chat_requests_clarification_when_rag_domain_is_unknown(monkeypat
     assert result.rag_ambiguity == "needs_clarification"
     assert result.sources == []
     assert result.suggested_domains == ()
-    assert result.suggested_details == ("period",)
+    assert result.suggested_details == ()
     assert result.unverified
 
 
@@ -799,10 +800,11 @@ def test_answer_chat_allows_missing_rag_detail_by_default(monkeypatch) -> None:
     result = chat_orchestrator.answer_chat("scholarship information", db=None)
 
     assert result.route == "rag"
-    assert result.answer_status == "answered"
+    assert result.answer_status == "partial"
     assert result.rag_ambiguity == "missing_detail"
     assert result.rag_detail == "unknown"
-    assert result.reply == "Scholarship answer"
+    assert "세부 항목을 확정하지 못해" in result.reply
+    assert "Scholarship answer" in result.reply
 
 
 def test_answer_chat_suggests_details_when_missing_detail_requires_clarification(monkeypatch) -> None:
@@ -925,6 +927,134 @@ def test_answer_chat_returns_insufficient_for_low_confidence_search_result(monke
     assert result.route == "rag"
     assert result.answer_status == "insufficient"
     assert result.unverified
+
+
+
+def test_answer_chat_blocks_needs_clarification_before_retrieval(monkeypatch) -> None:
+    monkeypatch.setattr(chat_orchestrator.settings, "intent_classifier_model_name", "test-model")
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_with_klue_bert",
+        lambda _: SimpleNamespace(route="rag", db_intent="unknown", confidence=0.99, label="rag"),
+    )
+    monkeypatch.setattr(chat_orchestrator, "classify_rag_domains_with_klue_bert", lambda _: ())
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "answer_with_langchain_rag",
+        lambda *args, **kwargs: pytest.fail("needs_clarification questions must not generate RAG answers"),
+    )
+
+    result = chat_orchestrator.answer_chat("이거 어떻게 해?", db=None)
+
+    assert result.route == "rag"
+    assert result.rag_ambiguity == "needs_clarification"
+    assert result.answer_status == "insufficient"
+    assert result.unverified
+    assert "구체적으로" in result.reply
+
+
+def test_answer_chat_blocks_low_confidence_rag_intent_before_retrieval(monkeypatch) -> None:
+    monkeypatch.setattr(chat_orchestrator.settings, "intent_classifier_model_name", "test-model")
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_with_klue_bert",
+        lambda _: SimpleNamespace(route="rag", db_intent="unknown", confidence=0.99, label="rag"),
+    )
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_rag_domains_with_klue_bert",
+        lambda _: (SimpleNamespace(domain="scholarship", score=0.1),),
+    )
+    monkeypatch.setattr(chat_orchestrator, "classify_rag_details_with_klue_bert", lambda _: ())
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "answer_with_langchain_rag",
+        lambda *args, **kwargs: pytest.fail("low-confidence RAG intent must ask for clarification first"),
+    )
+
+    result = chat_orchestrator.answer_chat("장학 관련해서 그거 알려줘", db=None)
+
+    assert result.route == "rag"
+    assert result.rag_ambiguity == "low_confidence"
+    assert result.answer_status == "insufficient"
+    assert "바로 답변하지 않겠습니다" in result.reply
+
+
+def test_answer_chat_blocks_multi_domain_without_detail_before_retrieval(monkeypatch) -> None:
+    monkeypatch.setattr(chat_orchestrator.settings, "intent_classifier_model_name", "test-model")
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_with_klue_bert",
+        lambda _: SimpleNamespace(route="rag", db_intent="unknown", confidence=0.99, label="rag"),
+    )
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_rag_domains_with_klue_bert",
+        lambda _: (
+            SimpleNamespace(domain="scholarship", score=0.74),
+            SimpleNamespace(domain="academic_status", score=0.69),
+        ),
+    )
+    monkeypatch.setattr(chat_orchestrator, "classify_rag_details_with_klue_bert", lambda _: ())
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "answer_with_langchain_rag",
+        lambda *args, **kwargs: pytest.fail("ambiguous multi-domain questions without detail must not generate answers"),
+    )
+
+    result = chat_orchestrator.answer_chat("장학금이랑 휴학 둘 다 궁금해", db=None)
+
+    assert result.route == "rag"
+    assert result.rag_ambiguity == "multi_domain"
+    assert result.answer_status == "insufficient"
+    assert "여러 주제" in result.reply
+    assert "장학" in result.reply
+    assert "학적" in result.reply
+
+
+def test_answer_chat_marks_missing_detail_answer_as_partial(monkeypatch) -> None:
+    search_result = SearchResult(
+        chunk_id="chunk-1",
+        doc_id="doc-1",
+        score=0.91,
+        text="장학금 신청 안내입니다.",
+        title="장학금 신청 안내",
+        source_url="https://example.com/scholarship",
+        score_breakdown={"confidence": 0.91},
+    )
+    monkeypatch.setattr(chat_orchestrator.settings, "intent_classifier_model_name", "test-model")
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_with_klue_bert",
+        lambda _: SimpleNamespace(route="rag", db_intent="unknown", confidence=0.99, label="rag"),
+    )
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_rag_domains_with_klue_bert",
+        lambda _: (SimpleNamespace(domain="scholarship", score=0.9),),
+    )
+    monkeypatch.setattr(chat_orchestrator, "classify_rag_details_with_klue_bert", lambda _: ())
+
+    def fake_langchain_rag(user_input: str, **kwargs):
+        return LangChainRagResult(
+            reply="장학금 관련 공지는 학생지원처 안내를 확인하세요.",
+            documents=[search_result_to_document(search_result)],
+            context=search_result.text,
+            expanded_queries=[user_input],
+            confidence=0.91,
+            low_confidence=False,
+        )
+
+    monkeypatch.setattr(chat_orchestrator, "answer_with_langchain_rag", fake_langchain_rag)
+
+    result = chat_orchestrator.answer_chat("장학금 알려줘", db=None)
+
+    assert result.route == "rag"
+    assert result.rag_ambiguity == "missing_detail"
+    assert result.answer_status == "partial"
+    assert result.unverified
+    assert "세부 항목을 확정하지 못해" in result.reply
+    assert "학생지원처 안내" in result.reply
 
 
 def test_answer_chat_uses_weather_service(monkeypatch) -> None:

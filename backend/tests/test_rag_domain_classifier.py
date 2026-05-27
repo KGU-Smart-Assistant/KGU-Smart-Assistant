@@ -1,15 +1,25 @@
 from pathlib import Path
+from typing import get_args
 
 import pytest
 
+from app.schemas.search import SearchRequest
 from app.services import chat_orchestrator
-from app.services.domain_taxonomy import DOMAINS
+from app.services.domain_taxonomy import (
+    CANONICAL_DETAIL_LABELS,
+    CANONICAL_DOMAIN_LABELS,
+    DETAILS,
+    DOMAIN_FILTERS,
+    DOMAINS,
+    normalize_domain,
+)
 from app.services.rag_domain_classifier import (
     RAG_DOMAIN_LABELS,
     RagDomainPrediction,
     _predictions_from_output,
     labels_to_multihot,
 )
+from app.services.rag_detail_classifier import RAG_DETAIL_LABELS
 from scripts.train_rag_domain_classifier import load_examples
 
 
@@ -38,7 +48,52 @@ def test_labels_to_multihot_marks_multiple_domains() -> None:
 
 
 def test_rag_domain_labels_are_supported_by_search_taxonomy() -> None:
-    assert set(RAG_DOMAIN_LABELS).issubset(DOMAINS)
+    assert RAG_DOMAIN_LABELS == tuple(domain for domain in CANONICAL_DOMAIN_LABELS if domain != "unknown")
+    assert set(CANONICAL_DOMAIN_LABELS) == DOMAINS
+
+
+def test_search_request_domain_literal_matches_canonical_taxonomy() -> None:
+    fields = SearchRequest.model_fields if hasattr(SearchRequest, "model_fields") else SearchRequest.__fields__
+    optional_type = fields["domain"].annotation
+    literal_type = next(arg for arg in get_args(optional_type) if arg is not type(None))
+
+    assert get_args(literal_type) == CANONICAL_DOMAIN_LABELS
+
+
+def test_detail_labels_match_canonical_taxonomy_and_search_schema() -> None:
+    fields = SearchRequest.model_fields if hasattr(SearchRequest, "model_fields") else SearchRequest.__fields__
+    optional_type = fields["detail"].annotation
+    literal_type = next(arg for arg in get_args(optional_type) if arg is not type(None))
+
+    assert RAG_DETAIL_LABELS == CANONICAL_DETAIL_LABELS
+    assert get_args(literal_type) == CANONICAL_DETAIL_LABELS
+    assert set(CANONICAL_DETAIL_LABELS) == DETAILS
+
+
+@pytest.mark.parametrize("domain", RAG_DOMAIN_LABELS)
+def test_domain_filters_cover_each_rag_domain(domain: str) -> None:
+    assert DOMAIN_FILTERS[domain]
+    assert all(normalize_domain(item) in DOMAINS for item in DOMAIN_FILTERS[domain])
+
+
+@pytest.mark.parametrize(
+    ("classifier_label", "canonical"),
+    [
+        ("academic", "academic_calendar"),
+        ("leave_of_absence", "academic_status"),
+        ("double_major", "multi_major"),
+        ("transfer", "admission_transfer"),
+        ("teaching", "teaching_certification"),
+        ("exchange", "international_exchange"),
+    ],
+)
+def test_predictions_from_output_normalizes_legacy_classifier_labels(
+    classifier_label: str,
+    canonical: str,
+) -> None:
+    assert _predictions_from_output([{"label": classifier_label, "score": 0.8}]) == [
+        RagDomainPrediction(domain=canonical, score=0.8)
+    ]
 
 
 def test_load_examples_reads_expected_domains_from_rag_eval_data() -> None:

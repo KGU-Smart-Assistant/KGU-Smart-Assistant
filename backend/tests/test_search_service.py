@@ -1,4 +1,4 @@
-﻿import json
+import json
 from pathlib import Path
 
 from app.services import search_service
@@ -482,6 +482,102 @@ def test_search_documents_expands_adjacent_parent_chunks(monkeypatch) -> None:
     assert all(result.score_breakdown["parent_expanded"] == 1.0 for result in expanded)
 
 
+
+
+def test_search_documents_bounds_parent_expansion_to_adjacent_selected_context(monkeypatch) -> None:
+    trace_path = Path(".tmp/test-parent-expansion-trace.jsonl")
+    trace_path.unlink(missing_ok=True)
+    monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])
+    monkeypatch.setattr(
+        search_service,
+        "query_embedded_chunks",
+        lambda **kwargs: [
+            {
+                "chunk_id": "doc-1-chunk-5",
+                "doc_id": "doc-1",
+                "chunk_index": 5,
+                "distance": 0.1,
+                "text": "5월 학사일정",
+                "title": "2026 학사일정",
+                "source_url": "https://example.com/calendar",
+                "domain": "academic_calendar",
+                "department": "university",
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        search_service,
+        "_query_adjacent_chunk_rows",
+        lambda anchors, window: [
+            {
+                "chunk_id": "doc-1-chunk-4",
+                "doc_id": "doc-1",
+                "chunk_index": 4,
+                "text": "4월 학사일정",
+                "title": "2026 학사일정",
+                "source_url": "https://example.com/calendar",
+                "domain": "academic_calendar",
+                "retrieval_sources": {"parent"},
+            },
+            {
+                "chunk_id": "doc-1-chunk-6",
+                "doc_id": "doc-1",
+                "chunk_index": 6,
+                "text": "6월 학사일정",
+                "title": "2026 학사일정",
+                "source_url": "https://example.com/calendar",
+                "domain": "academic_calendar",
+                "retrieval_sources": {"parent"},
+            },
+            {
+                "chunk_id": "doc-1-chunk-8",
+                "doc_id": "doc-1",
+                "chunk_index": 8,
+                "text": "8월 학사일정",
+                "title": "2026 학사일정",
+                "source_url": "https://example.com/calendar",
+                "domain": "academic_calendar",
+                "retrieval_sources": {"parent"},
+            },
+            {
+                "chunk_id": "doc-2-chunk-4",
+                "doc_id": "doc-2",
+                "chunk_index": 4,
+                "text": "다른 문서 학사일정",
+                "title": "2026 학사일정",
+                "source_url": "https://example.com/other-calendar",
+                "domain": "academic_calendar",
+                "retrieval_sources": {"parent"},
+            },
+        ],
+    )
+
+    results = search_service.search_documents(
+        query="2026 학사일정",
+        top_k=1,
+        rag_domain="academic_calendar",
+        trace_path=str(trace_path),
+    )
+
+    assert {result.chunk_id for result in results} == {"doc-1-chunk-5", "doc-1-chunk-4", "doc-1-chunk-6"}
+    expanded = [result for result in results if result.chunk_id != "doc-1-chunk-5"]
+    assert all(result.score_breakdown["parent_expanded"] == 1.0 for result in expanded)
+    payload = json.loads(trace_path.read_text(encoding="utf-8").strip())
+    assert payload["parent_expanded"] == {
+        "enabled": True,
+        "window": 1,
+        "max_context_count": 20,
+        "expanded_count": 2,
+        "chunk_ids": ["doc-1-chunk-4", "doc-1-chunk-6"],
+    }
+    assert [row["chunk_id"] for row in payload["final_rows"] if row["parent_expanded"]] == [
+        "doc-1-chunk-4",
+        "doc-1-chunk-6",
+    ]
+    trace_path.unlink(missing_ok=True)
+
+
 def test_search_documents_filters_confident_rows_before_low_confidence_rows(monkeypatch) -> None:
     monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
     monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])
@@ -624,3 +720,89 @@ def test_merge_preserves_vector_and_keyword_signals() -> None:
 
 def test_tokenize_keeps_korean_words() -> None:
     assert search_service._tokenize("졸업요건과 전공 학점") == ["졸업요건과", "전공", "학점"]
+
+
+def test_retrieval_policy_normalizes_unknown_without_hard_filter(monkeypatch) -> None:
+    captured = []
+    trace_path = Path(".tmp/test-unknown-policy-trace.jsonl")
+    trace_path.unlink(missing_ok=True)
+
+    monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])
+
+    def _query_embedded_chunks(*, query_embedding, top_k, domain):
+        captured.append(domain)
+        return [
+            {
+                "chunk_id": "unknown-policy-hit",
+                "doc_id": "doc-1",
+                "distance": 0.2,
+                "text": "일반 안내",
+                "title": "일반 안내",
+                "source_url": "https://example.com/general",
+                "domain": "general_notice",
+            }
+        ]
+
+    monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
+
+    policy = search_service.RetrievalPolicy.from_inputs(
+        rag_domain="not-a-domain",
+        rag_detail="not-a-detail",
+        trace_id="unknown-policy",
+        trace_path=str(trace_path),
+    )
+    results = search_service.search_documents(
+        query="무엇을 확인할 수 있어?",
+        top_k=1,
+        retrieval_policy=policy,
+    )
+
+    assert policy.domain == "unknown"
+    assert policy.detail == "unknown"
+    assert captured == [None]
+    assert results[0].chunk_id == "unknown-policy-hit"
+    payload = json.loads(trace_path.read_text(encoding="utf-8").strip())
+    assert payload["retrieval_policy"]["domain"] == "unknown"
+    assert payload["hard_filter"] is False
+    assert payload["filter_categories"] is None
+    trace_path.unlink(missing_ok=True)
+
+
+def test_retrieval_policy_trace_records_nonzero_detail_scoring(monkeypatch) -> None:
+    trace_path = Path(".tmp/test-detail-policy-trace.jsonl")
+    trace_path.unlink(missing_ok=True)
+    monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])
+    monkeypatch.setattr(
+        search_service,
+        "query_embedded_chunks",
+        lambda **kwargs: [
+            {
+                "chunk_id": "period-hit",
+                "doc_id": "doc-1",
+                "distance": 0.2,
+                "text": "장학금 신청기간과 마감 안내",
+                "title": "장학금 신청 기간",
+                "source_url": "https://example.com/period",
+                "domain": "scholarship",
+            }
+        ],
+    )
+
+    results = search_service.search_documents(
+        query="장학금 신청 알려줘",
+        top_k=1,
+        retrieval_policy=search_service.RetrievalPolicy.from_inputs(
+            rag_domain="scholarship",
+            rag_detail="period",
+            rag_confidence=0.9,
+            trace_path=str(trace_path),
+        ),
+    )
+
+    assert results[0].score_breakdown["detail"] > 0.0
+    payload = json.loads(trace_path.read_text(encoding="utf-8").strip())
+    assert payload["retrieval_policy"]["detail"] == "period"
+    assert payload["final_rows"][0]["score_breakdown"]["detail"] > 0.0
+    trace_path.unlink(missing_ok=True)

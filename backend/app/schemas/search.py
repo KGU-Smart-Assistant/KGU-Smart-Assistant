@@ -9,7 +9,6 @@ class SearchRequest(BaseModel):
     domain: Optional[
         Literal[
             "scholarship",
-            "tuition",
             "course_registration",
             "academic_calendar",
             "academic_status",
@@ -17,15 +16,16 @@ class SearchRequest(BaseModel):
             "multi_major",
             "admission_transfer",
             "teaching_certification",
+            "graduation",
+            "tuition",
             "document_materials",
+            "student_life",
             "career_support",
             "international_exchange",
             "department_notice",
             "general_notice",
-            "unknown",
             "faq",
-            "graduation",
-            "student_life",
+            "unknown",
         ]
     ] = None
     category: Optional[str] = Field(default=None, description="Deprecated. Use domain.")

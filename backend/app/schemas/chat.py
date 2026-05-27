@@ -13,6 +13,7 @@ class ChatSource(BaseModel):
     title: str
     source_url: str | None = None
     score: float | None = None
+    source_number: int | None = None
 
 
 class RagIntentScore(BaseModel):

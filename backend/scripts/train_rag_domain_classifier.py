@@ -7,9 +7,16 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-import torch
-from torch.utils.data import DataLoader, Dataset
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+try:
+    import torch
+    from torch.utils.data import DataLoader, Dataset
+    from transformers import AutoModelForSequenceClassification, AutoTokenizer
+except ImportError:
+    torch = None
+    DataLoader = object
+    Dataset = object
+    AutoModelForSequenceClassification = None
+    AutoTokenizer = None
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -46,6 +53,9 @@ class RagDomainDataset(Dataset):
 
 
 def main() -> None:
+    if torch is None or AutoModelForSequenceClassification is None or AutoTokenizer is None:
+        raise RuntimeError("Training requires torch and transformers to be installed.")
+
     parser = argparse.ArgumentParser(description="Fine-tune KLUE-BERT for multi-label RAG domain classification.")
     parser.add_argument("--data", default="app/data/rag_intent_eval.jsonl")
     parser.add_argument("--output-dir", default="models/rag-domain-klue-bert")

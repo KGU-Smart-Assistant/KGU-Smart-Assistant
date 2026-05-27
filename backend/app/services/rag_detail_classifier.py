@@ -6,18 +6,10 @@ from functools import lru_cache
 from typing import Sequence
 
 from app.core.config import settings
+from app.services.domain_taxonomy import CANONICAL_DETAIL_LABELS
 
 
-RAG_DETAIL_LABELS: tuple[str, ...] = (
-    "period",
-    "eligibility",
-    "procedure",
-    "required_documents",
-    "benefit",
-    "announcement_lookup",
-    "summary",
-    "unknown",
-)
+RAG_DETAIL_LABELS: tuple[str, ...] = CANONICAL_DETAIL_LABELS
 
 
 @dataclass(frozen=True)

@@ -5,13 +5,39 @@ import csv
 from dataclasses import dataclass
 import json
 from pathlib import Path
-from typing import Callable, Iterable, Sequence
+from typing import Any, Callable, Iterable, Mapping, Sequence
 
 from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
 
-from app.services.langchain_rag_service import HybridSearchRetriever, answer_with_langchain_rag
-from app.services.search_service import search_documents
+
+
+@dataclass(frozen=True)
+class RagEvalQuestion:
+    id: str
+    question: str
+    expected_route: str
+    expected_domains: tuple[str, ...]
+    expected_detail: str | None
+    gold_source_url: str | None
+    should_answer: bool
+    ambiguity: str | None = None
+    expected_source_number: int | None = None
+    required_trace_fields: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class RagEvalSmokeResult:
+    id: str
+    question: str
+    route_hit: bool
+    domain_top1_hit: bool
+    domain_top3_hit: bool
+    detail_hit: bool
+    retrieval_rank: int | None
+    should_answer_hit: bool
+    source_number_hit: bool = True
+    trace_fields_hit: bool = True
 
 
 @dataclass(frozen=True)
@@ -48,6 +74,90 @@ class AnswerEvalResult:
     reply_preview: str
 
 
+def load_rag_eval_questions(path: str | Path) -> list[RagEvalQuestion]:
+    source = Path(path)
+    if not source.exists() and not source.is_absolute():
+        backend_relative_source = Path(__file__).resolve().parents[2] / source
+        if backend_relative_source.exists():
+            source = backend_relative_source
+
+    questions: list[RagEvalQuestion] = []
+    with source.open("r", encoding="utf-8-sig") as file:
+        for line_number, line in enumerate(file, start=1):
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            questions.append(_rag_question_from_mapping(row, line_number=line_number))
+    return questions
+
+
+def evaluate_rag_eval_smoke(
+    questions: Sequence[RagEvalQuestion],
+    *,
+    route_fn: Callable[[str], Mapping[str, Any]],
+    retrieve_fn: Callable[[RagEvalQuestion], Sequence[Any]],
+) -> list[RagEvalSmokeResult]:
+    """Evaluate RAG routing/retrieval smoke cases with fully injected offline functions."""
+    results: list[RagEvalSmokeResult] = []
+    for question in questions:
+        route = route_fn(question.question)
+        predicted_route = str(route.get("route") or route.get("expected_route") or "").strip()
+        predicted_domains = _normalise_prediction_list(route.get("domains") or route.get("domain") or route.get("rag_domains"))
+        predicted_detail = str(route.get("detail") or route.get("rag_detail") or "").strip() or None
+        should_answer = bool(route.get("should_answer", True))
+        retrieved = list(retrieve_fn(question))
+        retrieval_rank = _source_rank(retrieved, question.gold_source_url)
+        source_number_hit = _source_number_hit(
+            retrieved,
+            gold_source_url=question.gold_source_url,
+            expected_source_number=question.expected_source_number,
+        )
+        trace_fields_hit = _trace_fields_hit(
+            retrieved,
+            gold_source_url=question.gold_source_url,
+            required_fields=question.required_trace_fields,
+        )
+        results.append(
+            RagEvalSmokeResult(
+                id=question.id,
+                question=question.question,
+                route_hit=predicted_route == question.expected_route,
+                domain_top1_hit=bool(question.expected_domains) and predicted_domains[:1] == list(question.expected_domains[:1]),
+                domain_top3_hit=any(domain in predicted_domains[:3] for domain in question.expected_domains),
+                detail_hit=(predicted_detail or "unknown") == (question.expected_detail or "unknown"),
+                retrieval_rank=retrieval_rank,
+                should_answer_hit=should_answer is question.should_answer,
+                source_number_hit=source_number_hit,
+                trace_fields_hit=trace_fields_hit,
+            )
+        )
+    return results
+
+
+def summarize_rag_eval_smoke(results: Sequence[RagEvalSmokeResult]) -> dict[str, float | int]:
+    total = len(results)
+    answerable = [result for result in results if result.retrieval_rank is not None]
+    return {
+        "total": total,
+        "route_accuracy": _rate(result.route_hit for result in results),
+        "domain_top1_accuracy": _rate(result.domain_top1_hit for result in results),
+        "domain_top3_accuracy": _rate(result.domain_top3_hit for result in results),
+        "detail_accuracy": _rate(result.detail_hit for result in results),
+        "should_answer_accuracy": _rate(result.should_answer_hit for result in results),
+        "source_number_accuracy": _rate(result.source_number_hit for result in results),
+        "trace_fields_accuracy": _rate(result.trace_fields_hit for result in results),
+        "retrieval_hit_at_1": _rate(result.retrieval_rank == 1 for result in answerable),
+        "retrieval_hit_at_3": _rate(result.retrieval_rank is not None and result.retrieval_rank <= 3 for result in answerable),
+        "retrieval_hit_at_5": _rate(result.retrieval_rank is not None and result.retrieval_rank <= 5 for result in answerable),
+        "retrieval_mrr": sum(1 / result.retrieval_rank for result in answerable if result.retrieval_rank) / len(answerable) if answerable else 0.0,
+    }
+
+def search_documents(*args, **kwargs):
+    from app.services.search_service import search_documents as real_search_documents
+
+    return real_search_documents(*args, **kwargs)
+
+
 def evaluate_search_retrievers(
     cases: Sequence[SearchEvalCase],
     *,
@@ -61,7 +171,12 @@ def evaluate_search_retrievers(
         if case.detail is not None:
             baseline_kwargs["detail"] = case.detail
         baseline_results = baseline_search(**baseline_kwargs)
-        effective_retriever = retriever or HybridSearchRetriever(top_k=top_k, category=case.category, detail=case.detail)
+        if retriever is None:
+            from app.services.langchain_rag_service import HybridSearchRetriever
+
+            effective_retriever = HybridSearchRetriever(top_k=top_k, category=case.category, detail=case.detail)
+        else:
+            effective_retriever = retriever
         langchain_documents = effective_retriever.invoke(case.query)
         baseline_titles = [getattr(result, "title", "") for result in baseline_results]
         langchain_titles = [str(document.metadata.get("title", "")) for document in langchain_documents]
@@ -93,6 +208,12 @@ def summarize_eval_results(results: Sequence[SearchEvalResult]) -> dict[str, flo
         "baseline_recall_at_k": baseline_hits / total if total else 0.0,
         "langchain_recall_at_k": langchain_hits / total if total else 0.0,
     }
+
+
+def answer_with_langchain_rag(*args, **kwargs):
+    from app.services.langchain_rag_service import answer_with_langchain_rag as real_answer_with_langchain_rag
+
+    return real_answer_with_langchain_rag(*args, **kwargs)
 
 
 def evaluate_answer_quality(
@@ -235,9 +356,14 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Evaluate KGU search and RAG answer quality.")
     parser.add_argument("--cases", default="evaluation/search_eval_cases.json", help="JSON or CSV evaluation cases.")
     parser.add_argument("--top-k", type=int, default=5)
-    parser.add_argument("--mode", choices=("search", "answer", "all"), default="search")
+    parser.add_argument("--mode", choices=("search", "answer", "rag-smoke", "all"), default="search")
     parser.add_argument("--output", default=".tmp/retriever_eval_results.csv")
     parser.add_argument("--answer-output", default=".tmp/answer_eval_results.csv")
+    parser.add_argument(
+        "--rag-smoke-questions",
+        default="tests/fixtures/rag_eval_questions.jsonl",
+        help="Offline RAG smoke JSONL fixture used by --mode rag-smoke.",
+    )
     args = parser.parse_args(argv)
 
     cases = load_eval_cases(args.cases)
@@ -252,9 +378,136 @@ def main(argv: list[str] | None = None) -> int:
         answer_summary = summarize_answer_eval_results(answer_results)
         write_answer_eval_results_csv(answer_results, args.answer_output)
         payload["answer"] = {"summary": answer_summary, "output": args.answer_output}
+    if args.mode == "rag-smoke":
+        smoke_questions = load_rag_eval_questions(args.rag_smoke_questions)
+        smoke_results = evaluate_rag_eval_smoke(
+            smoke_questions,
+            route_fn=lambda question: _fixture_route_prediction(question, smoke_questions),
+            retrieve_fn=_fixture_retrieval_rows,
+        )
+        payload["rag_smoke"] = {"summary": summarize_rag_eval_smoke(smoke_results)}
     print(json.dumps(payload, ensure_ascii=False, indent=2))
     return 0
 
+
+def _rag_question_from_mapping(row: Mapping[str, Any], *, line_number: int) -> RagEvalQuestion:
+    expected_domains = tuple(str(domain).strip() for domain in row.get("expected_domains", []) if str(domain).strip())
+    if not expected_domains:
+        raise ValueError(f"RAG eval question line {line_number} must include expected_domains.")
+    return RagEvalQuestion(
+        id=str(row.get("id") or f"line-{line_number}").strip(),
+        question=str(row["question"]).strip(),
+        expected_route=str(row["expected_route"]).strip(),
+        expected_domains=expected_domains,
+        expected_detail=str(row.get("expected_detail") or "unknown").strip() or None,
+        gold_source_url=str(row.get("gold_source_url") or "").strip() or None,
+        should_answer=bool(row.get("should_answer", True)),
+        ambiguity=str(row.get("ambiguity") or "none").strip() or None,
+        expected_source_number=_optional_int(row.get("expected_source_number")),
+        required_trace_fields=tuple(
+            str(field).strip() for field in row.get("required_trace_fields", []) if str(field).strip()
+        ),
+    )
+
+
+def _fixture_route_prediction(question: str, questions: Sequence[RagEvalQuestion]) -> dict[str, Any]:
+    match = next(item for item in questions if item.question == question)
+    return {
+        "route": match.expected_route,
+        "domains": match.expected_domains,
+        "detail": match.expected_detail,
+        "should_answer": match.should_answer,
+    }
+
+
+def _fixture_retrieval_rows(question: RagEvalQuestion) -> list[dict[str, Any]]:
+    if not question.gold_source_url:
+        return []
+    return [
+        {
+            "source_url": question.gold_source_url,
+            "title": question.id,
+            "source_number": question.expected_source_number or 1,
+            "retrieval_sources": ["fixture"],
+        }
+    ]
+
+
+def _normalise_prediction_list(value: Any) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value.strip()] if value.strip() else []
+    return [str(item).strip() for item in value if str(item).strip()]
+
+
+def _source_rank(rows: Sequence[Any], gold_source_url: str | None) -> int | None:
+    if not gold_source_url:
+        return None
+    for index, row in enumerate(rows, start=1):
+        source_url = _row_source_url(row)
+        if source_url == gold_source_url:
+            return index
+    return None
+
+
+def _row_source_url(row: Any) -> str:
+    if isinstance(row, Document):
+        return str(row.metadata.get("source_url") or "")
+    if isinstance(row, Mapping):
+        return str(row.get("source_url") or row.get("gold_source_url") or "")
+    return str(getattr(row, "source_url", "") or "")
+
+
+def _source_number_hit(rows: Sequence[Any], *, gold_source_url: str | None, expected_source_number: int | None) -> bool:
+    if expected_source_number is None:
+        return True
+    row = _matching_source_row(rows, gold_source_url)
+    return _row_value(row, "source_number") == expected_source_number if row is not None else False
+
+
+def _trace_fields_hit(rows: Sequence[Any], *, gold_source_url: str | None, required_fields: Sequence[str]) -> bool:
+    if not required_fields:
+        return True
+    row = _matching_source_row(rows, gold_source_url)
+    if row is None:
+        return False
+    return all(_row_value(row, field) not in (None, "", []) for field in required_fields)
+
+
+def _matching_source_row(rows: Sequence[Any], gold_source_url: str | None) -> Any | None:
+    if not rows:
+        return None
+    if not gold_source_url:
+        return rows[0]
+    for row in rows:
+        if _row_source_url(row) == gold_source_url:
+            return row
+    return None
+
+
+def _row_value(row: Any, field: str) -> Any:
+    if isinstance(row, Document):
+        return row.metadata.get(field)
+    if isinstance(row, Mapping):
+        if field in row:
+            return row[field]
+        metadata = row.get("metadata")
+        if isinstance(metadata, Mapping):
+            return metadata.get(field)
+        return None
+    return getattr(row, field, None)
+
+
+def _optional_int(value: Any) -> int | None:
+    if value in (None, ""):
+        return None
+    return int(value)
+
+
+def _rate(values: Iterable[bool]) -> float:
+    items = list(values)
+    return sum(1 for value in items if value) / len(items) if items else 0.0
 
 def _load_json_cases(path: Path) -> list[SearchEvalCase]:
     payload = json.loads(path.read_text(encoding="utf-8-sig"))
