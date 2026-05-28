@@ -426,6 +426,57 @@ def test_search_documents_dedupes_academic_calendar_and_prefers_university_sourc
     assert [result.chunk_id for result in results] == ["university-canonical"]
 
 
+def test_search_documents_prefers_university_graduation_guide_for_broad_question(monkeypatch) -> None:
+    monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])
+
+    def _query_embedded_chunks(*, query_embedding, top_k, domain):
+        return [
+            {
+                "chunk_id": "department-graduation",
+                "doc_id": "doc-dept",
+                "distance": 0.1,
+                "text": "Graduation requirements for one department.",
+                "title": "History graduation requirements notice",
+                "source_url": "https://www.kyonggi.ac.kr/u_history/selectBbsNttView.do?bbsNo=1073",
+                "domain": "graduation",
+                "department": "history",
+            },
+            {
+                "chunk_id": "university-graduation",
+                "doc_id": "doc-university",
+                "distance": 0.5,
+                "text": "공통 졸업요건과 졸업이수학점 안내입니다.",
+                "title": "1. 졸업안내",
+                "source_url": "https://www.kyonggi.ac.kr/www/contents.do?key=8418",
+                "domain": "graduation",
+                "department": "university",
+            },
+            {
+                "chunk_id": "teaching-certification",
+                "doc_id": "doc-teaching",
+                "distance": 0.2,
+                "text": "교직과정 이수 기준과 전공 이수 안내입니다.",
+                "title": "교직 및 전공 이수",
+                "source_url": "https://www.kyonggi.ac.kr/www/contents.do?key=8492",
+                "domain": "graduation",
+                "department": "university",
+            },
+        ]
+
+    monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
+
+    results = search_service.search_documents(
+        query="졸업요건 알려줘",
+        top_k=2,
+        rag_domain="graduation",
+    )
+
+    assert results[0].chunk_id == "university-graduation"
+    assert results[0].score_breakdown["source_scope_adjustment"] > 0.0
+    assert [result.chunk_id for result in results] == ["university-graduation"]
+
+
 def test_search_documents_expands_adjacent_parent_chunks(monkeypatch) -> None:
     monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
     monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])

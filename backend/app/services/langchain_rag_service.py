@@ -134,10 +134,16 @@ class HybridSearchRetriever(BaseRetriever):
                     continue
                 _merge_document_metadata(existing, document)
 
-        documents = sorted(
+        ranked_documents = sorted(
             documents_by_chunk.values(),
             key=lambda document: float(document.metadata.get("rerank_score") or 0.0),
             reverse=True,
+        )
+        documents = _filter_documents_for_broad_topic(
+            query=query,
+            documents=ranked_documents,
+            domain=self.rag_domain or self.category,
+            source_scope=self.source_scope,
         )[: self.top_k]
         if self.compress_documents:
             return compress_documents_for_query(query, documents)
@@ -287,6 +293,105 @@ def expand_search_queries(query: str, *, max_queries: int = DEFAULT_EXPANDED_QUE
             if len(expanded) >= max_queries:
                 return expanded
     return expanded
+
+
+def _filter_documents_for_broad_topic(
+    *,
+    query: str,
+    documents: list[Document],
+    domain: str | None,
+    source_scope: str | None,
+) -> list[Document]:
+    if domain != "graduation" or source_scope == "department":
+        return _dedupe_documents_by_source_url(documents)
+
+    university_documents = [
+        document for document in documents if _is_university_wide_document(document)
+    ]
+    if not university_documents:
+        return _dedupe_documents_by_source_url(documents)
+
+    title_documents = [
+        document
+        for document in university_documents
+        if _document_title_matches_topic(query=query, document=document)
+    ]
+    if title_documents:
+        return _dedupe_documents_by_source_url(title_documents)
+
+    topic_documents = [
+        document
+        for document in university_documents
+        if _document_matches_topic(query=query, document=document)
+    ]
+    return _dedupe_documents_by_source_url(topic_documents or university_documents)
+
+
+def _is_university_wide_document(document: Document) -> bool:
+    metadata = document.metadata
+    department = str(metadata.get("department") or "").strip().casefold()
+    source_url = str(metadata.get("source_url") or "").casefold()
+    return department == "university" or "/www/contents.do" in source_url
+
+
+def _document_matches_topic(*, query: str, document: Document) -> bool:
+    terms = _query_topic_terms(query)
+    if not terms:
+        return True
+    metadata = document.metadata
+    title = _normalize_text(str(metadata.get("title") or ""))
+    text = _normalize_text(document.page_content)
+    haystack = f"{title} {text[:1200]}"
+    return any(term in haystack for term in terms)
+
+
+def _document_title_matches_topic(*, query: str, document: Document) -> bool:
+    terms = _query_topic_terms(query)
+    if not terms:
+        return False
+    title = _normalize_text(str(document.metadata.get("title") or ""))
+    return any(term in title for term in terms)
+
+
+def _query_topic_terms(query: str) -> list[str]:
+    normalized = _normalize_text(query)
+    stopwords = {
+        "알려줘",
+        "알려주세요",
+        "궁금해",
+        "뭐야",
+        "어떻게",
+        "어디서",
+        "확인",
+        "보고",
+        "싶어",
+    }
+    terms = [token for token in _tokenize(normalized) if token not in stopwords]
+    compounds: list[str] = []
+    if "졸업" in normalized and "요건" in normalized:
+        compounds.extend(["졸업요건", "졸업 요건", "졸업안내"])
+    if "신청" in normalized and "기간" in normalized:
+        compounds.extend(["신청기간", "신청 기간"])
+    if "제출" in normalized and "서류" in normalized:
+        compounds.extend(["제출서류", "제출 서류"])
+    return list(dict.fromkeys([*compounds, *terms]))
+
+
+def _normalize_text(text: str) -> str:
+    return re.sub(r"\s+", " ", text.strip().casefold())
+
+
+def _dedupe_documents_by_source_url(documents: list[Document]) -> list[Document]:
+    selected: list[Document] = []
+    seen_urls: set[str] = set()
+    for document in documents:
+        source_url = str(document.metadata.get("source_url") or "").strip()
+        key = source_url or str(document.metadata.get("chunk_id") or document.page_content)
+        if key in seen_urls:
+            continue
+        seen_urls.add(key)
+        selected.append(document)
+    return selected
 
 
 def compress_documents_for_query(

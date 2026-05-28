@@ -18,8 +18,9 @@ def test_gemini_call_includes_runtime_date_context(monkeypatch) -> None:
             return FakeResponse()
 
     class FakeClient:
-        def __init__(self, *, api_key: str):
+        def __init__(self, *, api_key: str, http_options):
             captured["api_key"] = api_key
+            captured["timeout"] = http_options.timeout
             self.models = FakeModels()
 
     monkeypatch.setattr(gemini_service.genai, "Client", FakeClient)
@@ -28,6 +29,7 @@ def test_gemini_call_includes_runtime_date_context(monkeypatch) -> None:
 
     assert reply == "ok"
     assert captured["model"] == gemini_service.settings.gemini_model
+    assert captured["timeout"] == gemini_service.settings.gemini_timeout_ms
     assert "Current date:" in captured["contents"]
     assert "Timezone: Asia/Seoul" in captured["contents"]
     assert "Do not use the model training cutoff as today's date." in captured["contents"]

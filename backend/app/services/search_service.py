@@ -180,6 +180,8 @@ def search_documents(
             primary_rows,
             effective_domain,
             top_k,
+            query=query,
+            source_scope=policy.source_scope,
             low_confidence_threshold=low_confidence_threshold,
             enable_parent_expansion=enable_parent_expansion,
         )
@@ -194,6 +196,8 @@ def search_documents(
             primary_rows,
             effective_domain,
             top_k,
+            query=query,
+            source_scope=policy.source_scope,
             low_confidence_threshold=low_confidence_threshold,
             enable_parent_expansion=enable_parent_expansion,
         )
@@ -227,6 +231,8 @@ def search_documents(
         merged_rows,
         effective_domain,
         top_k,
+        query=query,
+        source_scope=policy.source_scope,
         low_confidence_threshold=low_confidence_threshold,
         enable_parent_expansion=enable_parent_expansion,
     )
@@ -310,6 +316,7 @@ def rerank_candidate_rows(
         domain_match = _domain_match_score(effective_domain, row.get("domain") or row.get("category"))
         detail_boost = _detail_boost(effective_details, row)
         scope_boost = _scope_boost(source_scope, row)
+        source_scope_adjustment = _source_scope_adjustment(effective_domain, source_scope, row)
         exact = _exact_phrase_score(query=query, title=row.get("title") or "", text=row.get("text") or "")
         source_penalty = _source_penalty(row)
         fallback_penalty = 0.35 if row.get("fallback_used") else 0.0
@@ -321,7 +328,19 @@ def rerank_candidate_rows(
             + title * weights["title"]
             + domain_match * weights["domain"]
         )
-        score = max(min(base_score + detail_boost + scope_boost + exact - source_penalty - fallback_penalty, 1.0), 0.0)
+        score = max(
+            min(
+                base_score
+                + detail_boost
+                + scope_boost
+                + source_scope_adjustment
+                + exact
+                - source_penalty
+                - fallback_penalty,
+                1.0,
+            ),
+            0.0,
+        )
         ranked_row = dict(row)
         ranked_row["score"] = round(score, 6)
         ranked_row["score_breakdown"] = {
@@ -333,6 +352,7 @@ def rerank_candidate_rows(
             "category": round(domain_match, 6),
             "detail": round(detail_boost, 6),
             "scope": round(scope_boost, 6),
+            "source_scope_adjustment": round(source_scope_adjustment, 6),
             "exact": round(exact, 6),
             "source_penalty": round(source_penalty, 6),
             "fallback_penalty": round(fallback_penalty, 6),
@@ -361,10 +381,13 @@ def _finalize_rows(
     domain: str | None,
     top_k: int,
     *,
+    query: str = "",
+    source_scope: str | None = None,
     low_confidence_threshold: float = LOW_CONFIDENCE_THRESHOLD,
     enable_parent_expansion: bool = True,
 ) -> list[dict[str, Any]]:
     deduped = _dedupe_canonical_rows(rows, domain)
+    deduped = _filter_broad_university_rows(deduped, domain=domain, query=query, source_scope=source_scope)
     ranked = sorted(
         deduped,
         key=lambda row: (
@@ -389,6 +412,79 @@ def _dedupe_canonical_rows(rows: list[dict[str, Any]], domain: str | None) -> li
         if existing is None or _canonical_selection_key(row, domain) > _canonical_selection_key(existing, domain):
             selected[key] = row
     return list(selected.values())
+
+
+def _filter_broad_university_rows(
+    rows: list[dict[str, Any]],
+    *,
+    domain: str | None,
+    query: str,
+    source_scope: str | None,
+) -> list[dict[str, Any]]:
+    if domain != "graduation" or source_scope == "department":
+        return rows
+
+    university_rows = [row for row in rows if _is_university_wide_row(row)]
+    if not university_rows:
+        return rows
+    title_topic_rows = [row for row in university_rows if _title_matches_broad_topic(query=query, row=row)]
+    if title_topic_rows:
+        return title_topic_rows
+    topic_rows = [row for row in university_rows if _matches_broad_topic(query=query, row=row)]
+    if topic_rows:
+        return topic_rows
+    return university_rows
+
+
+def _matches_broad_topic(*, query: str, row: dict[str, Any]) -> bool:
+    query_terms = _query_topic_terms(query)
+    if not query_terms:
+        return True
+
+    title = _normalize_text(str(row.get("title") or ""))
+    text = _normalize_text(str(row.get("text") or ""))
+    haystack = f"{title} {text[:1200]}"
+    return any(term in haystack for term in query_terms)
+
+
+def _title_matches_broad_topic(*, query: str, row: dict[str, Any]) -> bool:
+    query_terms = _query_topic_terms(query)
+    if not query_terms:
+        return False
+    title = _normalize_text(str(row.get("title") or ""))
+    return any(term in title for term in query_terms)
+
+
+def _query_topic_terms(query: str) -> list[str]:
+    normalized = _normalize_text(query)
+    stopwords = {
+        "알려줘",
+        "알려주세요",
+        "궁금해",
+        "뭐야",
+        "어떻게",
+        "어디서",
+        "확인",
+        "보고",
+        "싶어",
+    }
+    terms = [token for token in _tokenize(normalized) if token not in stopwords]
+    compounds: list[str] = []
+    if "졸업" in normalized and "요건" in normalized:
+        compounds.extend(["졸업요건", "졸업 요건", "졸업안내"])
+    if "신청" in normalized and "기간" in normalized:
+        compounds.extend(["신청기간", "신청 기간"])
+    if "제출" in normalized and "서류" in normalized:
+        compounds.extend(["제출서류", "제출 서류"])
+    return list(dict.fromkeys([*compounds, *terms]))
+
+
+def _is_university_wide_row(row: dict[str, Any]) -> bool:
+    department = str(row.get("department") or "").strip().casefold()
+    source_url = str(row.get("source_url") or "").casefold()
+    if department == "university":
+        return True
+    return "/www/contents.do" in source_url
 
 
 def _canonical_dedupe_key(row: dict[str, Any], domain: str | None) -> str:
@@ -435,6 +531,18 @@ def _canonical_priority(row: dict[str, Any], domain: str | None) -> float:
             priority -= 0.3
         if "학사일정" in title:
             priority += 0.5
+    if domain == "graduation":
+        source_url = str(row.get("source_url") or "").casefold()
+        if row_domain == "graduation":
+            priority += 1.0
+        if department in {"university", "?숆탳", "蹂멸탳", ""}:
+            priority += 1.0
+        else:
+            priority -= 0.4
+        if "/www/contents.do" in source_url:
+            priority += 0.8
+        if "downloadbbsfile.do" in source_url:
+            priority -= 0.3
     return priority
 
 
@@ -969,6 +1077,30 @@ def _scope_boost(source_scope: str | None, row: Dict[str, Any]) -> float:
     if source_scope == "university":
         return 0.08 if row.get("department") == "university" else 0.0
     return 0.0
+
+
+def _source_scope_adjustment(domain: str | None, source_scope: str | None, row: Dict[str, Any]) -> float:
+    """Prefer university-wide guides for broad policy questions."""
+    if domain != "graduation" or source_scope == "department":
+        return 0.0
+
+    department = str(row.get("department") or "").strip().casefold()
+    source_url = str(row.get("source_url") or "").casefold()
+    adjustment = 0.0
+
+    if department == "university":
+        adjustment += 0.30
+    elif department:
+        adjustment -= 0.18
+
+    if "/www/contents.do" in source_url:
+        adjustment += 0.18
+    if "downloadbbsfile.do" in source_url:
+        adjustment -= 0.08
+    if "selectbbsnttview.do" in source_url and department and department != "university":
+        adjustment -= 0.06
+
+    return adjustment
 
 
 def _exact_phrase_score(*, query: str, title: str, text: str) -> float:

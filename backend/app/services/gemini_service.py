@@ -2,6 +2,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from google import genai
+from google.genai import types
 
 from app.core.config import settings
 from app.schemas import SearchResult
@@ -31,7 +32,10 @@ def _with_current_context(prompt: str) -> str:
 
 def _call_gemini(prompt: str) -> str:
     try:
-        client = genai.Client(api_key=settings.google_api_key)
+        client = genai.Client(
+            api_key=settings.google_api_key,
+            http_options=types.HttpOptions(timeout=settings.gemini_timeout_ms),
+        )
         response = client.models.generate_content(
             model=settings.gemini_model,
             contents=_with_current_context(prompt),

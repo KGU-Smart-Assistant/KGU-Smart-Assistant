@@ -181,6 +181,28 @@ def _klue_bert_decision(user_input: str) -> ChatDecision | None:
     if prediction.confidence < settings.intent_classifier_confidence_threshold:
         return None
 
+    if prediction.route == "llm":
+        rag_classification = _classify_rag_query(_normalize_query(user_input))
+        if rag_classification is not None and rag_classification.domain != "unknown":
+            return ChatDecision(
+                route="rag",
+                db_intent="unknown",
+                reason=(
+                    f"rag-classifier-override:{prediction.label}:{prediction.confidence:.3f}:"
+                    f"{rag_classification.domain}:{rag_classification.confidence:.3f}"
+                ),
+                rag_domain=rag_classification.domain,
+                rag_domains=rag_classification.domains,
+                rag_detail=rag_classification.detail,
+                rag_details=rag_classification.details,
+                source_scope=rag_classification.source_scope,
+                rag_confidence=rag_classification.confidence,
+                rag_ambiguity=rag_classification.ambiguity,
+                rewritten_queries=rag_classification.rewritten_queries,
+                matched_keywords=rag_classification.matched_keywords,
+                intent_scores=rag_classification.intent_scores,
+            )
+
     return ChatDecision(
         route=prediction.route,
         db_intent=prediction.db_intent if prediction.route == "relational_db" else "unknown",
@@ -315,7 +337,10 @@ def _answer_from_rag(user_input: str, decision: ChatDecision) -> ChatResult:
     answer_status: Literal["answered", "partial", "insufficient"] = "answered"
     unverified: tuple[str, ...] = ()
     reply = rag_result.reply
-    if _is_partial_rag_decision(decision):
+    if _is_generation_failure_reply(reply):
+        answer_status = "insufficient"
+        unverified = ("답변 생성 실패",)
+    elif _is_partial_rag_decision(decision):
         answer_status = "partial"
         unverified = (_unverified_reason(decision),)
         reply = _partial_rag_reply(decision, rag_result.reply)
@@ -870,6 +895,18 @@ def _blocked_rag_reply(decision: ChatDecision) -> str | None:
 
 def _is_partial_rag_decision(decision: ChatDecision) -> bool:
     return decision.rag_ambiguity in {"multi_domain", "missing_detail"}
+
+
+def _is_generation_failure_reply(reply: str) -> bool:
+    failure_markers = (
+        "Gemini API 사용량 제한",
+        "Gemini 모델 수요가 높아",
+        "GemINI 모델 수요가 높아",
+        "설정된 Gemini 모델을 찾을 수 없습니다",
+        "서버 오류가 발생했습니다:",
+        "응답을 생성하지 못했습니다",
+    )
+    return any(marker in reply for marker in failure_markers)
 
 
 def _clarification_rag_reply(decision: ChatDecision) -> str:
