@@ -8,12 +8,13 @@ export default function ChatMessage({ message, onLinkButtonClick }) {
   // 발신자가 챗봇인지 판단 (목업 데이터 기준)
   const isBot = message.sender === "bot";
   const { t } = useLanguage();
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(() =>
+    message.isThinking ? Math.floor((Date.now() - message.startTime) / 1000) : 0,
+  );
 
   useEffect(() => {
     let interval;
     if (message.isThinking) {
-      setElapsedSeconds(Math.floor((Date.now() - message.startTime) / 1000));
       interval = setInterval(() => {
         setElapsedSeconds(Math.floor((Date.now() - message.startTime) / 1000));
       }, 500);

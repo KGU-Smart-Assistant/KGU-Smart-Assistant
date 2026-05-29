@@ -12,6 +12,7 @@ from app.services.gemini_service import get_gemini_response
 from app.core.config import settings
 from app.services.klue_bert_intent_classifier import classify_with_klue_bert
 from app.services.map_service import get_map_response
+from app.services.relational_db_service import answer_from_relational_db_search
 from app.services.rag_detail_classifier import classify_rag_details_with_klue_bert
 from app.services.rag_domain_classifier import classify_rag_domains_with_klue_bert
 from app.services.langchain_rag_service import answer_with_langchain_rag
@@ -20,7 +21,7 @@ from app.services.weather_service import get_weather_response
 
 ChatRoute = Literal["llm", "relational_db", "rag", "weather"]
 AtomicChatRoute = ChatRoute
-DbIntent = Literal["map", "phone", "unknown"]
+DbIntent = Literal["map", "phone", "info_link", "unknown"]
 RagAmbiguity = Literal["clear", "multi_domain", "low_confidence", "missing_detail", "needs_clarification"]
 
 
@@ -152,16 +153,16 @@ def decide_chat_plan(user_input: str) -> ChatPlan:
     prompt = f"""
 You classify a user question for a university assistant.
 Return only valid JSON with this schema:
-{{"actions":[{{"query":"atomic user question","route":"llm|relational_db|rag|weather","db_intent":"map|phone|unknown"}}],"reason":"short reason"}}
+{{"actions":[{{"query":"atomic user question","route":"llm|relational_db|rag|weather","db_intent":"map|phone|info_link|unknown"}}],"reason":"short reason"}}
 
 Routing rules:
 - llm: basic general knowledge or casual conversation that does not need local data.
-- relational_db: exact campus data stored in relational DB, such as place locations or phone numbers.
+- relational_db: exact campus data stored in relational DB, such as place locations, phone numbers, or saved shortcut URLs.
 - rag: information that must be grounded in crawled documents, notices, policies, schedules, or other text sources.
 - weather: current or forecast weather questions that need live weather API data.
 - If the user asks for multiple independent things, split them into atomic queries and return multiple actions in the order they should be answered.
 - Use relational_db for campus location/path/phone/contact requests.
-- For relational_db, set db_intent to map for location/path requests and phone for phone/contact requests.
+- For relational_db, set db_intent to map for location/path requests, phone for phone/contact requests, and info_link for saved shortcut URL/link/page requests.
 
 User question:
 {user_input}
@@ -767,7 +768,7 @@ def _parse_decision(raw: str) -> ChatDecision | None:
 
     if route not in {"llm", "relational_db", "rag", "weather"}:
         return None
-    if db_intent not in {"map", "phone", "unknown"}:
+    if db_intent not in {"map", "phone", "info_link", "unknown"}:
         db_intent = "unknown"
 
     query = payload.get("query")
@@ -827,7 +828,7 @@ def _decision_from_payload(
 
     if route not in {"llm", "relational_db", "rag", "weather"}:
         return None
-    if db_intent not in {"map", "phone", "unknown"}:
+    if db_intent not in {"map", "phone", "info_link", "unknown"}:
         db_intent = "unknown"
     if route != "relational_db":
         db_intent = "unknown"
@@ -958,3 +959,44 @@ def _detail_label(detail: str | None) -> str | None:
     if detail is None or detail == "unknown":
         return None
     return labels.get(detail, detail)
+
+
+def _answer_from_relational_db(
+    user_input: str,
+    decision: ChatDecision,
+    db: Session,
+) -> ChatResult:
+    db_intent = decision.db_intent
+
+    if db_intent == "phone":
+        reply = get_phone(user_input, db)
+        return ChatResult(
+            reply=reply,
+            intent="전화",
+            route="relational_db",
+            sources=[ChatSource(type="relational_db", title="kgu_contacts")],
+        )
+
+    if db_intent == "map":
+        reply = get_map_response(user_input, db)
+        return ChatResult(
+            reply=reply,
+            intent="지도",
+            route="relational_db",
+            sources=[ChatSource(type="relational_db", title="kgu_places")],
+        )
+
+    relational_answer = answer_from_relational_db_search(user_input, db)
+    return ChatResult(
+        reply=relational_answer.reply,
+        intent=relational_answer.intent,
+        route="relational_db",
+        sources=[
+            ChatSource(
+                type="relational_db",
+                title=relational_answer.source_title,
+                source_url=relational_answer.source_url,
+            )
+        ],
+        answer_status="answered" if relational_answer.answered else "insufficient",
+    )

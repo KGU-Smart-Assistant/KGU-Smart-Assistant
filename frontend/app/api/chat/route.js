@@ -66,7 +66,7 @@ export async function POST(request) {
       },
       { status: backendResponse.ok ? 502 : backendResponse.status },
     );
-  } catch (error) {
+  } catch {
     return Response.json(
       {
         reply:

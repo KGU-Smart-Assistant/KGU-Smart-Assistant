@@ -11,10 +11,10 @@ if TYPE_CHECKING:
 
 
 ClassifierRoute = Literal["llm", "relational_db", "rag", "weather"]
-ClassifierDbIntent = Literal["map", "phone", "unknown"]
+ClassifierDbIntent = Literal["map", "phone", "info_link", "unknown"]
 
 _ROUTES: set[str] = {"llm", "relational_db", "rag", "weather"}
-_DB_INTENTS: set[str] = {"map", "phone", "unknown"}
+_DB_INTENTS: set[str] = {"map", "phone", "info_link", "unknown"}
 
 _LEGACY_LABELS: dict[str, tuple[ClassifierRoute, ClassifierDbIntent]] = {
     "llm": ("llm", "unknown"),
@@ -22,6 +22,8 @@ _LEGACY_LABELS: dict[str, tuple[ClassifierRoute, ClassifierDbIntent]] = {
     "db": ("relational_db", "unknown"),
     "map": ("relational_db", "map"),
     "phone": ("relational_db", "phone"),
+    "info_link": ("relational_db", "info_link"),
+    "link": ("relational_db", "info_link"),
     "rag": ("rag", "unknown"),
     "weather": ("weather", "unknown"),
 }

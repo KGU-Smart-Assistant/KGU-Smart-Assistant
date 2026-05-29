@@ -1,0 +1,147 @@
+[
+  {
+    "id": "notice",
+    "title": "kguInfo.notice.title",
+    "links": [
+      {"label": "kguInfo.notice.integrated", "url": "https://www.kyonggi.ac.kr/www/selectBbsNttList.do?bbsNo=1073&key=7520"},
+      {"label": "kguInfo.notice.materials", "url": "https://www.kyonggi.ac.kr/www/selectBbsNttList.do?bbsNo=684&key=5143"}
+    ]
+  },
+  {
+    "id": "academic-calendar",
+    "title": "kguInfo.academicCalendar.title",
+    "links": [
+      {"label": "kguInfo.academicCalendar.schedule", "url": "https://www.kyonggi.ac.kr/www/selectTnSchafsSchdulListUS.do?key=5695&sc1=10"}
+    ]
+  },
+  {
+    "id": "classes",
+    "title": "kguInfo.classes.title",
+    "links": [
+      {"label": "kguInfo.classes.classTime", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=8430&"},
+      {"label": "kguInfo.classes.registration", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=8431&"},
+      {"label": "kguInfo.classes.creditTransfer", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=8432&"},
+      {"label": "kguInfo.classes.elearning", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=8433&"},
+      {"label": "kguInfo.classes.virtualUniv", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=8434&"},
+      {"label": "kguInfo.classes.crossCampus", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=8435&"},
+      {"label": "kguInfo.classes.retake", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=8436&"},
+      {"label": "kguInfo.classes.deptPhone", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=8437&"},
+      {"label": "kguInfo.classes.registrationLink", "url": "http://sugang.kyonggi.ac.kr/?"},
+      {"label": "kguInfo.classes.grades", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=8426"}
+    ]
+  },
+  {
+    "id": "school-register",
+    "title": "kguInfo.schoolRegister.title",
+    "links": [
+      {"label": "kguInfo.schoolRegister.readmission", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=8411&"},
+      {"label": "kguInfo.schoolRegister.leaveOfAbsence", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=8412&"},
+      {"label": "kguInfo.schoolRegister.returnToSchool", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=8413&"},
+      {"label": "kguInfo.schoolRegister.withdrawal", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=8489&"},
+      {"label": "kguInfo.schoolRegister.doubleMajor", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=8414&"},
+      {"label": "kguInfo.schoolRegister.transfer", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=8415&"},
+      {"label": "kguInfo.schoolRegister.majorChange", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=8416&"},
+      {"label": "kguInfo.schoolRegister.integrated", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=8417&"},
+      {"label": "kguInfo.schoolRegister.majorAssignment", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=8423&"},
+      {"label": "kguInfo.schoolRegister.warning", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=8424&"},
+      {"label": "kguInfo.schoolRegister.creditRecognition", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=8706&"},
+      {"label": "kguInfo.schoolRegister.summerSession", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=8427&"},
+      {"label": "kguInfo.schoolRegister.degreeDelay", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=8421&"},
+      {"label": "kguInfo.schoolRegister.recordCorrection", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=8422&"}
+    ]
+  },
+  {
+    "id": "graduation",
+    "title": "kguInfo.graduation.title",
+    "links": [
+      {"label": "kguInfo.graduation.requirements", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=8418&"},
+      {"label": "kguInfo.graduation.early", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=8419&"}
+    ]
+  },
+  {
+    "id": "scholarship",
+    "title": "kguInfo.scholarship.title",
+    "links": [
+      {"label": "kguInfo.scholarship.intro", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=7995"},
+      {"label": "kguInfo.scholarship.internal", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=5693"},
+      {"label": "kguInfo.scholarship.external", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=5694"},
+      {"label": "kguInfo.scholarship.national", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=5790"},
+      {"label": "kguInfo.scholarship.loan", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=5789"},
+      {"label": "kguInfo.scholarship.notice", "url": "https://www.kyonggi.ac.kr/www/selectBbsNttList.do?key=7996&bbsNo=1073&dc=11D70"},
+      {"label": "kguInfo.scholarship.materials", "url": "https://www.kyonggi.ac.kr/www/selectBbsNttList.do?key=7997&bbsNo=684&dc=11D70"},
+      {"label": "kguInfo.scholarship.faq", "url": "https://www.kyonggi.ac.kr/www/selectBbsNttList.do?key=7998&bbsNo=904"},
+      {"label": "kguInfo.scholarship.website", "url": "https://www.kyonggi.ac.kr/scholarship/index.do"},
+      {"label": "kguInfo.scholarship.future", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=7790"}
+    ]
+  },
+  {
+    "id": "tuition",
+    "title": "kguInfo.tuition.title",
+    "links": [
+      {"label": "kguInfo.tuition.payment", "url": "https://www.kyonggi.ac.kr/jaemu/contents.do?key=3262"},
+      {"label": "kguInfo.tuition.committee", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=5813&"}
+    ]
+  },
+  {
+    "id": "certificate",
+    "title": "kguInfo.certificate.title",
+    "links": [
+      {"label": "kguInfo.certificate.issuance", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=5729"},
+      {"label": "kguInfo.certificate.various", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=7813&"},
+      {"label": "kguInfo.certificate.forms", "url": "https://enter.kyonggi.ac.kr/cms/FR_CON/index.do?MENU_ID=340"}
+    ]
+  },
+  {
+    "id": "career",
+    "title": "kguInfo.career.title",
+    "links": [
+      {"label": "kguInfo.career.support", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=5782&"},
+      {"label": "kguInfo.career.intro", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=5345"},
+      {"label": "kguInfo.career.services", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=7793&"},
+      {"label": "kguInfo.career.facilities", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=7794&"},
+      {"label": "kguInfo.career.notice", "url": "https://www.kyonggi.ac.kr/www/selectBbsNttList.do?key=5347&bbsNo=1073&dc=11Q10"},
+      {"label": "kguInfo.career.materials", "url": "https://www.kyonggi.ac.kr/www/selectBbsNttList.do?key=5348&bbsNo=684&dc=11Q10"},
+      {"label": "kguInfo.career.faq", "url": "https://www.kyonggi.ac.kr/www/selectBbsNttList.do?key=5349&bbsNo=774"},
+      {"label": "kguInfo.career.website", "url": "https://job.kyonggi.ac.kr/"},
+      {"label": "kguInfo.career.jobCenter", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=7788"},
+      {"label": "kguInfo.career.jobCenterIntro", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=5221"},
+      {"label": "kguInfo.career.programs", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=7789"},
+      {"label": "kguInfo.career.internshipIntro", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=5351"},
+      {"label": "kguInfo.career.internshipNotice", "url": "https://www.kyonggi.ac.kr/www/selectBbsNttList.do?key=5353&bbsNo=1073&dc=11Q42"},
+      {"label": "kguInfo.career.internshipMaterials", "url": "https://www.kyonggi.ac.kr/www/selectBbsNttList.do?key=5354&bbsNo=684&dc=11Q42"},
+      {"label": "kguInfo.career.internshipFaq", "url": "https://www.kyonggi.ac.kr/www/selectBbsNttList.do?key=5355&bbsNo=777"},
+      {"label": "kguInfo.career.fieldPractice", "url": "https://www.kyonggi.ac.kr/educate/contents.do?key=363&"},
+      {"label": "kguInfo.career.system", "url": "https://intern.kyonggi.ac.kr/main.do"}
+    ]
+  },
+  {
+    "id": "student-life",
+    "title": "kguInfo.studentLife.title",
+    "links": [
+      {"label": "kguInfo.studentLife.menu", "url": "https://www.kyonggi.ac.kr/www/selectTnRstrntMenuListU.do?key=7138&sc1=30&"},
+      {"label": "kguInfo.studentLife.phone", "url": "https://www.kyonggi.ac.kr/www/selectTnTelnoListU.do?key=5155&sc1=%EC%88%98%EC%9B%90&"},
+      {"label": "kguInfo.studentLife.shuttle", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=9853"},
+      {"label": "kguInfo.studentLife.lms", "url": "https://lms.kyonggi.ac.kr/login.php"},
+      {"label": "kguInfo.studentLife.barun", "url": "https://barun.kyonggi.ac.kr/"},
+      {"label": "kguInfo.studentLife.kutis", "url": "https://kutis.kyonggi.ac.kr/webkutis/view/indexWeb.jsp"},
+      {"label": "kguInfo.studentLife.attendance", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=5127"},
+      {"label": "kguInfo.studentLife.heyoung", "url": "https://www.kyonggi.ac.kr/comcenter/contents.do?key=6887"},
+      {"label": "kguInfo.studentLife.plagiarism", "url": "https://www.kyonggi.ac.kr/copykillerlogin.do"},
+      {"label": "kguInfo.studentLife.virtualUniv", "url": "https://www.kcucon.or.kr/"},
+      {"label": "kguInfo.studentLife.survey", "url": "https://barun.kyonggi.ac.kr/ko/regular/index/current/list/2026/10?reloaded=true"},
+      {"label": "kguInfo.studentLife.library", "url": "https://library.kyonggi.ac.kr/"},
+      {"label": "kguInfo.studentLife.cloud", "url": "https://cloud.kyonggi.ac.kr/t/kyonggi.ac.kr"},
+      {"label": "kguInfo.studentLife.tuitionPrint", "url": "https://kutis.kyonggi.ac.kr/webkutis/view/indexSimpleWeb.jsp"},
+      {"label": "kguInfo.studentLife.news", "url": "http://kgunews.com/"},
+      {"label": "kguInfo.studentLife.safety", "url": "https://safety.kyonggi.ac.kr/ushm/main/home.do"},
+      {"label": "kguInfo.studentLife.whistleblow", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=7706&"},
+      {"label": "kguInfo.studentLife.parking", "url": "https://www.kyonggi.ac.kr/www/contents.do?key=5751"},
+      {"label": "kguInfo.studentLife.wifi", "url": "https://www.kyonggi.ac.kr/comcenter/contents.do?key=6891"},
+      {"label": "kguInfo.studentLife.remoteSupport", "url": "https://113366.com/security_kgu"},
+      {"label": "kguInfo.studentLife.dorm", "url": "https://dorm.kyonggi.ac.kr:446/"},
+      {"label": "kguInfo.studentLife.reserve", "url": "https://www.kyonggi.ac.kr/reservist/index.do"},
+      {"label": "kguInfo.studentLife.sw", "url": "https://swuniv.kyonggi.ac.kr/"},
+      {"label": "kguInfo.studentLife.admission", "url": "https://enter.kyonggi.ac.kr/intro.do"}
+    ]
+  }
+]

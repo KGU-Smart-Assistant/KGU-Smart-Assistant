@@ -7,7 +7,7 @@ from pathlib import Path
 
 from sqlalchemy import select
 
-from app.models import KguContact, KguPlace
+from app.models import KguContact, KguInfoLink, KguPlace
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 _PLACE_JSON_FILES = (
@@ -15,6 +15,7 @@ _PLACE_JSON_FILES = (
     "kgu_suwon_lecture_halls.json",
 )
 _CONTACT_JSON_FILES = ("kgu_contacts.json",)
+_INFO_LINK_JSON_FILES = ("kgu_info_links.json",)
 
 
 def seed_places_from_json(db) -> int:
@@ -76,5 +77,49 @@ def seed_contacts_from_json(db) -> int:
                 existing.phone = phone
                 existing.description = desc
             count += 1
+        db.commit()
+    return count
+
+
+def seed_info_links_from_json(db) -> int:
+    count = 0
+    for fname in _INFO_LINK_JSON_FILES:
+        path = DATA_DIR / fname
+        if not path.is_file():
+            continue
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(raw, list):
+            continue
+        for group_order, group in enumerate(raw):
+            group_id = group["id"]
+            group_title = group["title"]
+            for link_order, link in enumerate(group.get("links", [])):
+                label = link["label"]
+                url = link["url"]
+                existing = db.execute(
+                    select(KguInfoLink).where(
+                        KguInfoLink.group_id == group_id,
+                        KguInfoLink.label == label,
+                        KguInfoLink.url == url,
+                    )
+                ).scalar_one_or_none()
+                if existing is None:
+                    db.add(
+                        KguInfoLink(
+                            group_id=group_id,
+                            group_title=group_title,
+                            group_order=group_order,
+                            label=label,
+                            url=url,
+                            link_order=link_order,
+                            is_active=True,
+                        )
+                    )
+                else:
+                    existing.group_title = group_title
+                    existing.group_order = group_order
+                    existing.link_order = link_order
+                    existing.is_active = True
+                count += 1
         db.commit()
     return count

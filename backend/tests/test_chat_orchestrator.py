@@ -380,6 +380,37 @@ def test_explicit_db_lookup_uses_relational_db_unknown(question: str) -> None:
     assert decision.db_intent == "unknown"
 
 
+def test_answer_chat_searches_postgres_for_unknown_relational_db_intent(monkeypatch) -> None:
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_with_klue_bert",
+        lambda _: SimpleNamespace(
+            route="relational_db",
+            db_intent="unknown",
+            confidence=0.99,
+            label="relational_db",
+        ),
+    )
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "answer_from_relational_db_search",
+        lambda user_input, db: SimpleNamespace(
+            reply="장학금 공지 바로가기입니다.\nhttps://example.com/scholarship",
+            intent="바로가기",
+            source_title="kgu_info_links",
+            source_url="https://example.com/scholarship",
+            answered=True,
+        ),
+    )
+
+    result = chat_orchestrator.answer_chat("장학금 공지 링크 알려줘", db=None)
+
+    assert result.route == "relational_db"
+    assert result.intent == "바로가기"
+    assert "https://example.com/scholarship" in result.reply
+    assert result.sources[0].title == "kgu_info_links"
+
+
 def test_phone_keyword_has_priority_over_department_rag_keyword() -> None:
     decision = chat_orchestrator.decide_chat_route("청소년학과 전화번호 알려줘")
 
