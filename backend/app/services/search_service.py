@@ -32,6 +32,95 @@ HARD_FILTER_CONFIDENCE_THRESHOLD = 0.75
 PARENT_EXPANSION_WINDOW = 1
 MAX_PARENT_EXPANDED_CHUNKS = 20
 
+CANONICAL_SOURCE_CONFIGS: dict[str, dict[str, tuple[str, ...]]] = {
+    "academic_calendar": {
+        "url_fragments": ("selecttnschafsschdullistus.do?key=5695",),
+        "title_fragments": ("학사일정(학부)",),
+    },
+    "academic_status": {
+        "url_fragments": (
+            "contents.do?key=8412",
+            "contents.do?key=8413",
+            "contents.do?key=8489",
+            "contents.do?key=8423",
+            "contents.do?key=8706",
+        ),
+        "departments": ("academic_affairs",),
+    },
+    "course_registration": {
+        "url_fragments": (
+            "contents.do?key=8431",
+            "contents.do?key=8430",
+            "contents.do?key=8432",
+            "contents.do?key=8433",
+            "contents.do?key=8434",
+            "contents.do?key=8435",
+            "contents.do?key=8436",
+            "contents.do?key=8427",
+            "contents.do?key=8429",
+        ),
+        "departments": ("academic_affairs",),
+    },
+    "document_materials": {
+        "url_fragments": ("contents.do?key=5729",),
+        "title_fragments": ("증명서 발급",),
+    },
+    "graduation": {
+        "url_fragments": ("contents.do?key=8418",),
+        "title_fragments": ("1. 졸업안내",),
+    },
+    "major_change": {
+        "url_fragments": (
+            "contents.do?key=8414",
+            "contents.do?key=8415",
+            "contents.do?key=8416",
+            "contents.do?key=7776",
+        ),
+        "departments": ("academic_affairs",),
+    },
+    "multi_major": {
+        "url_fragments": (
+            "contents.do?key=8420",
+            "contents.do?key=8414",
+            "contents.do?key=7776",
+            "contents.do?key=9913",
+            "contents.do?key=9914",
+            "contents.do?key=9881",
+        ),
+        "departments": ("academic_affairs",),
+    },
+    "scholarship": {
+        "url_fragments": (
+            "contents.do?key=3066",
+            "contents.do?key=3067",
+            "contents.do?key=3068",
+            "contents.do?key=3069",
+            "contents.do?key=3071",
+            "contents.do?key=3072",
+            "contents.do?key=3073",
+            "contents.do?key=3074",
+            "contents.do?key=3075",
+            "contents.do?key=3076",
+            "contents.do?key=3084",
+        ),
+        "departments": ("scholarship_support",),
+    },
+    "teaching_certification": {
+        "url_fragments": (
+            "contents.do?key=8490",
+            "contents.do?key=8491",
+            "contents.do?key=8492",
+            "contents.do?key=8493",
+            "contents.do?key=8494",
+        ),
+        "departments": ("academic_affairs",),
+    },
+    "tuition": {
+        "url_fragments": ("contents.do?key=3262",),
+        "departments": ("finance_accounting",),
+    },
+}
+
 
 
 @dataclass(frozen=True)
@@ -416,9 +505,9 @@ def _prefer_canonical_rows(
     domain: str | None,
     source_scope: str | None,
 ) -> list[dict[str, Any]]:
-    if domain != "graduation" or source_scope == "department":
+    if source_scope == "department" or domain not in CANONICAL_SOURCE_CONFIGS:
         return rows
-    canonical_rows = [row for row in rows if _is_canonical_graduation_source(row)]
+    canonical_rows = [row for row in rows if _is_canonical_source(domain, row)]
     return canonical_rows or rows
 
 
@@ -466,7 +555,7 @@ def _canonical_priority(row: dict[str, Any], domain: str | None) -> float:
             priority -= 0.3
         if "학사일정" in title:
             priority += 0.5
-    if domain == "graduation" and _is_canonical_graduation_source(row):
+    if domain in CANONICAL_SOURCE_CONFIGS and _is_canonical_source(domain, row):
         priority += 1.2
     return priority
 
@@ -1005,17 +1094,28 @@ def _scope_boost(source_scope: str | None, row: Dict[str, Any]) -> float:
 
 
 def _canonical_source_boost(domain: str | None, source_scope: str | None, row: Dict[str, Any]) -> float:
-    if domain == "graduation" and source_scope != "department" and _is_canonical_graduation_source(row):
+    if domain in CANONICAL_SOURCE_CONFIGS and source_scope != "department" and _is_canonical_source(domain, row):
         return CANONICAL_SOURCE_BOOST
     return 0.0
 
 
-def _is_canonical_graduation_source(row: Dict[str, Any]) -> bool:
-    if row.get("department") != "university":
+def _is_canonical_source(domain: str | None, row: Dict[str, Any]) -> bool:
+    if not domain:
+        return False
+    config = CANONICAL_SOURCE_CONFIGS.get(domain)
+    if not config:
         return False
     source_url = str(row.get("source_url") or "").casefold()
     title = str(row.get("title") or "").strip()
-    return "contents.do?key=8418" in source_url or title == "1. 졸업안내"
+    department = str(row.get("department") or "").strip().casefold()
+    url_fragments = config.get("url_fragments", ())
+    title_fragments = config.get("title_fragments", ())
+    departments = config.get("departments", ())
+    if url_fragments and any(fragment.casefold() in source_url for fragment in url_fragments):
+        return True
+    if title_fragments and any(fragment.casefold() in title.casefold() for fragment in title_fragments):
+        return True
+    return bool(departments and department in departments and url_fragments and "contents.do" in source_url)
 
 
 def _exact_phrase_score(*, query: str, title: str, text: str) -> float:

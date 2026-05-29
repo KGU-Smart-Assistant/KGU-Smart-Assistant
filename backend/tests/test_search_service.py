@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from app.services import search_service
 
 
@@ -349,6 +351,62 @@ def test_search_documents_prefers_university_graduation_requirements(monkeypatch
     )
 
     assert [result.chunk_id for result in results] == ["university-graduation"]
+    assert results[0].score_breakdown["canonical"] == search_service.CANONICAL_SOURCE_BOOST
+
+
+@pytest.mark.parametrize(
+    ("domain", "canonical_url"),
+    [
+        ("academic_calendar", "https://www.kyonggi.ac.kr/www/selectTnSchafsSchdulListUS.do?key=5695"),
+        ("course_registration", "https://www.kyonggi.ac.kr/www/contents.do?key=8431"),
+        ("tuition", "https://www.kyonggi.ac.kr/jaemu/contents.do?key=3262"),
+        ("scholarship", "https://www.kyonggi.ac.kr/scholarship/contents.do?key=3066"),
+        ("document_materials", "https://www.kyonggi.ac.kr/www/contents.do?key=5729"),
+        ("academic_status", "https://www.kyonggi.ac.kr/www/contents.do?key=8412"),
+        ("major_change", "https://www.kyonggi.ac.kr/www/contents.do?key=8415"),
+        ("multi_major", "https://www.kyonggi.ac.kr/www/contents.do?key=8420"),
+        ("teaching_certification", "https://www.kyonggi.ac.kr/www/contents.do?key=8491"),
+    ],
+)
+def test_search_documents_prefers_common_academic_sources(monkeypatch, domain, canonical_url) -> None:
+    monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])
+
+    def _query_embedded_chunks(*, query_embedding, top_k, domain):
+        return [
+            {
+                "chunk_id": "department-notice",
+                "doc_id": "doc-dept",
+                "distance": 0.05,
+                "text": "학과 공지 신청 조건 안내",
+                "title": "[학과] 신청 조건 안내",
+                "source_url": "https://www.kyonggi.ac.kr/u_department/selectBbsNttView.do?bbsNo=1073",
+                "domain": domain,
+                "department": "history",
+            },
+            {
+                "chunk_id": "common-source",
+                "doc_id": "doc-common",
+                "distance": 0.2,
+                "text": "경기대학교 공통 학사 안내 신청 조건 방법",
+                "title": "공통 학사 안내",
+                "source_url": canonical_url,
+                "domain": domain,
+                "department": "academic_affairs",
+            },
+        ]
+
+    monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
+
+    results = search_service.search_documents(
+        query="신청 조건 알려줘",
+        top_k=2,
+        rag_domain=domain,
+        rag_detail="eligibility",
+        rag_confidence=0.95,
+    )
+
+    assert [result.chunk_id for result in results] == ["common-source"]
     assert results[0].score_breakdown["canonical"] == search_service.CANONICAL_SOURCE_BOOST
 
 
