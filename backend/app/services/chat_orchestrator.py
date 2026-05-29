@@ -12,7 +12,10 @@ from app.services.gemini_service import get_gemini_response
 from app.core.config import settings
 from app.services.klue_bert_intent_classifier import classify_with_klue_bert
 from app.services.map_service import get_map_response
-from app.services.relational_db_service import answer_from_relational_db_search
+from app.services.relational_db_service import (
+    answer_from_relational_db_search,
+    answer_info_link_from_relational_db_search,
+)
 from app.services.rag_detail_classifier import classify_rag_details_with_klue_bert
 from app.services.rag_domain_classifier import classify_rag_domains_with_klue_bert
 from app.services.langchain_rag_service import answer_with_langchain_rag
@@ -967,6 +970,22 @@ def _answer_from_relational_db(
     db: Session,
 ) -> ChatResult:
     db_intent = decision.db_intent
+
+    if db_intent == "info_link":
+        relational_answer = answer_info_link_from_relational_db_search(user_input, db)
+        return ChatResult(
+            reply=relational_answer.reply,
+            intent=relational_answer.intent,
+            route="relational_db",
+            sources=[
+                ChatSource(
+                    type="relational_db",
+                    title=relational_answer.source_title,
+                    source_url=relational_answer.source_url,
+                )
+            ],
+            answer_status="answered" if relational_answer.answered else "insufficient",
+        )
 
     if db_intent == "phone":
         reply = get_phone(user_input, db)

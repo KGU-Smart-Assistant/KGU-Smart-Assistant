@@ -60,3 +60,7 @@
 {"expected_db_intent":"unknown","expected_ambiguity":"clear","text":"편입 모집요강 공지 찾아줘","expected_rag_detail":"announcement_lookup","expected_rag_domains":["admission_transfer"],"expected_route":"rag","expected_rag_domain":"admission_transfer","failure_type":"announcement_lookup","memo":"편입 모집요강 공지"}
 {"expected_db_intent":"unknown","expected_ambiguity":"clear","text":"학생상담은 어디서 신청해?","expected_rag_detail":"procedure","expected_rag_domains":["student_life"],"expected_route":"rag","expected_rag_domain":"student_life","failure_type":"procedure","memo":"상담 신청 절차"}
 {"expected_db_intent":"unknown","expected_ambiguity":"clear","text":"상담 신청 방법 알려줘","expected_rag_detail":"procedure","expected_rag_domains":["student_life"],"expected_route":"rag","expected_rag_domain":"student_life","failure_type":"procedure","memo":"상담 신청 방법"}
+{"text":"LMS 바로가기 링크 알려줘","expected_route":"relational_db","expected_db_intent":"info_link","failure_type":"info_link","memo":"LMS shortcut link"}
+{"text":"KUTIS 링크 알려줘","expected_route":"relational_db","expected_db_intent":"info_link","failure_type":"info_link","memo":"KUTIS shortcut link"}
+{"text":"수강신청 링크 알려줘","expected_route":"relational_db","expected_db_intent":"info_link","failure_type":"info_link","memo":"course registration shortcut link"}
+{"text":"경기대 수강신청 사이트 알려줘","expected_route":"relational_db","expected_db_intent":"info_link","failure_type":"info_link","memo":"course registration site link"}

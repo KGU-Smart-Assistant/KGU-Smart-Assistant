@@ -5,7 +5,7 @@ from pathlib import Path
 
 DATA_PATH = Path(__file__).resolve().parents[1] / "app" / "data" / "intent_training_seed.jsonl"
 EXPECTED_ROUTES = {"llm", "relational_db", "rag", "weather"}
-EXPECTED_DB_INTENTS = {"unknown", "map", "phone"}
+EXPECTED_DB_INTENTS = {"unknown", "map", "phone", "info_link"}
 
 
 def test_intent_training_seed_data_has_expected_routes_and_db_intents() -> None:
@@ -24,6 +24,7 @@ def test_intent_training_seed_data_has_expected_routes_and_db_intents() -> None:
     assert routes["relational_db"] >= 10
     assert db_intents["map"] >= 10
     assert db_intents["phone"] >= 10
+    assert db_intents["info_link"] >= 10
     assert db_intents["unknown"] >= 10
 
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -27,6 +27,11 @@ class _Candidate:
     reply: str
     source_title: str
     source_url: str | None = None
+
+
+def _candidate_sort_key(candidate: _Candidate) -> tuple[int, int, str]:
+    is_translation_key = candidate.title.startswith("kguInfo.")
+    return (-candidate.score, 1 if is_translation_key else 0, candidate.title)
 
 
 _STOPWORDS = (
@@ -59,21 +64,36 @@ _STOPWORDS = (
     "가는길",
 )
 
+_KOREAN_STOPWORDS = (
+    "알려줘",
+    "알려",
+    "찾아줘",
+    "찾아",
+    "주세요",
+    "관련",
+    "정보",
+    "조회",
+    "검색",
+    "안내",
+    "어디",
+    "뭐야",
+)
+
 _INFO_LINK_ALIASES: dict[str, tuple[str, ...]] = {
     "notice": ("공지", "공지사항", "자료실"),
     "academiccalendar": ("학사일정", "일정"),
-    "classes": ("수업", "수강", "수강신청", "성적"),
+    "classes": ("수업", "수강", "성적"),
     "schoolregister": ("학적", "휴학", "복학", "자퇴", "전과", "다전공"),
     "graduation": ("졸업", "졸업요건"),
     "scholarship": ("장학", "장학금", "국가장학금"),
     "tuition": ("등록금", "납부"),
     "certificate": ("증명서", "증명", "양식"),
     "career": ("취업", "진로", "현장실습"),
-    "studentlife": ("학생생활", "식단", "학식", "셔틀", "lms", "kutis", "기숙사"),
+    "studentlife": ("학생생활", "식단", "학식", "셔틀", "기숙사"),
     "integrated": ("통합",),
     "materials": ("자료실", "자료", "서류", "양식"),
     "schedule": ("일정",),
-    "registration": ("수강신청", "신청"),
+    "registration": ("신청",),
     "notice": ("공지", "공지사항"),
     "website": ("홈페이지", "사이트"),
     "faq": ("faq", "자주묻는질문"),
@@ -90,9 +110,29 @@ def _tokens(value: str) -> tuple[str, ...]:
     raw_tokens = re.split(r"[^\w가-힣]+", value.casefold())
     tokens = {_normalize(token) for token in raw_tokens if len(_normalize(token)) >= 2}
     compact = _normalize(value)
-    for stopword in sorted(_STOPWORDS, key=len, reverse=True):
+    for stopword in sorted((*_STOPWORDS, *_KOREAN_STOPWORDS), key=len, reverse=True):
         compact = compact.replace(_normalize(stopword), "")
     if len(compact) >= 2:
+        tokens.add(compact)
+    return tuple(sorted(tokens, key=len, reverse=True))
+
+
+def _filtered_tokens(value: str) -> tuple[str, ...]:
+    stopwords = {
+        _normalize(stopword)
+        for stopword in (*_STOPWORDS, *_KOREAN_STOPWORDS)
+        if _normalize(stopword)
+    }
+    raw_tokens = re.split(r"[^\w가-힣]+", value.casefold())
+    tokens = {
+        _normalize(token)
+        for token in raw_tokens
+        if len(_normalize(token)) >= 2 and _normalize(token) not in stopwords
+    }
+    compact = _normalize(value)
+    for stopword in sorted(stopwords, key=len, reverse=True):
+        compact = compact.replace(stopword, "")
+    if len(compact) >= 2 and compact not in stopwords:
         tokens.add(compact)
     return tuple(sorted(tokens, key=len, reverse=True))
 
@@ -113,6 +153,35 @@ def _score(query_tokens: tuple[str, ...], *fields: str | None) -> int:
             elif haystack in token and len(haystack) >= 2:
                 best = max(best, 120 + len(haystack))
     return best
+
+
+def _crawler_score(
+    query_tokens: tuple[str, ...],
+    *,
+    title: str | None,
+    text: str | None,
+    domain: str | None,
+    department: str | None,
+) -> int:
+    title_text = _normalize(title or "")
+    body_text = _normalize(text or "")
+    domain_text = _normalize(domain or "")
+    department_text = _normalize(department or "")
+    score = 0
+    for token in query_tokens:
+        if len(token) < 2:
+            continue
+        if token == title_text:
+            score += 300 + len(token)
+        elif token in title_text:
+            score += 140 + len(token)
+        if token in body_text:
+            score += 70 + len(token)
+        if token in domain_text:
+            score += 45 + len(token)
+        if token in department_text:
+            score += 45 + len(token)
+    return score
 
 
 def _wants_link(user_input: str) -> bool:
@@ -139,8 +208,53 @@ def _info_link_search_text(group_title: str, label: str, url: str) -> str:
     return " ".join((group_title, label, url, *aliases))
 
 
+def _query_crawler_document_rows(
+    db: Session,
+    query_tokens: tuple[str, ...],
+    *,
+    limit: int = 40,
+) -> list[tuple[str, str, str, str | None, str | None]]:
+    searchable_tokens = [token for token in query_tokens if len(token) >= 2][:8]
+    if not searchable_tokens:
+        return []
+
+    conditions = []
+    for token in searchable_tokens:
+        pattern = f"%{token}%"
+        conditions.extend(
+            [
+                CrawlerDocumentChunk.title.ilike(pattern),
+                CrawlerDocumentChunk.text.ilike(pattern),
+                CrawlerDocument.title.ilike(pattern),
+                CrawlerDocument.content.ilike(pattern),
+                CrawlerDocument.domain.ilike(pattern),
+                CrawlerDocument.department.ilike(pattern),
+                CrawlerDocument.source_url.ilike(pattern),
+            ]
+        )
+
+    return (
+        db.execute(
+            select(
+                CrawlerDocumentChunk.title,
+                CrawlerDocumentChunk.text,
+                CrawlerDocumentChunk.source_url,
+                CrawlerDocument.domain,
+                CrawlerDocument.department,
+            )
+            .join(CrawlerDocument, CrawlerDocument.doc_id == CrawlerDocumentChunk.doc_id)
+            .where(CrawlerDocumentChunk.status.in_(("active", "updated")))
+            .where(CrawlerDocument.status.in_(("active", "updated")))
+            .where(or_(*conditions))
+            .order_by(CrawlerDocumentChunk.last_seen_at.desc(), CrawlerDocumentChunk.chunk_id)
+            .limit(limit)
+        )
+        .all()
+    )
+
+
 def answer_from_relational_db_search(user_input: str, db: Session) -> RelationalDbAnswer:
-    tokens = _tokens(user_input)
+    tokens = _filtered_tokens(user_input)
     candidates: list[_Candidate] = []
 
     try:
@@ -156,22 +270,7 @@ def answer_from_relational_db_search(user_input: str, db: Session) -> Relational
             )
             .all()
         )
-        crawler_rows = (
-            db.execute(
-                select(
-                    CrawlerDocumentChunk.title,
-                    CrawlerDocumentChunk.text,
-                    CrawlerDocumentChunk.source_url,
-                    CrawlerDocument.domain,
-                    CrawlerDocument.department,
-                )
-                .join(CrawlerDocument, CrawlerDocument.doc_id == CrawlerDocumentChunk.doc_id)
-                .where(CrawlerDocumentChunk.status.in_(("active", "updated")))
-                .order_by(CrawlerDocumentChunk.last_seen_at.desc(), CrawlerDocumentChunk.chunk_id)
-                .limit(100)
-            )
-            .all()
-        )
+        crawler_rows = _query_crawler_document_rows(db, tokens)
     except SQLAlchemyError:
         return RelationalDbAnswer(
             reply="PostgreSQL 데이터를 조회하는 중 오류가 발생했습니다.",
@@ -230,7 +329,13 @@ def answer_from_relational_db_search(user_input: str, db: Session) -> Relational
             )
 
     for title, text, source_url, domain, department in crawler_rows:
-        score = _score(tokens, title, text, domain, department)
+        score = _crawler_score(
+            tokens,
+            title=title,
+            text=text,
+            domain=domain,
+            department=department,
+        )
         if score > 0:
             snippet = _snippet(text, tokens)
             candidates.append(
@@ -255,7 +360,7 @@ def answer_from_relational_db_search(user_input: str, db: Session) -> Relational
             answered=False,
         )
 
-    best = sorted(candidates, key=lambda item: (-item.score, item.kind, item.title))[0]
+    best = sorted(candidates, key=_candidate_sort_key)[0]
     intent = {
         "phone": "전화",
         "map": "지도",
@@ -265,6 +370,60 @@ def answer_from_relational_db_search(user_input: str, db: Session) -> Relational
     return RelationalDbAnswer(
         reply=best.reply,
         intent=intent,
+        source_title=best.source_title,
+        source_url=best.source_url,
+    )
+
+
+def answer_info_link_from_relational_db_search(user_input: str, db: Session) -> RelationalDbAnswer:
+    tokens = _filtered_tokens(user_input)
+    try:
+        link_rows = (
+            db.execute(
+                select(KguInfoLink.group_title, KguInfoLink.label, KguInfoLink.url)
+                .where(KguInfoLink.is_active.is_(True))
+                .order_by(KguInfoLink.group_order, KguInfoLink.link_order)
+            )
+            .all()
+        )
+    except SQLAlchemyError:
+        return RelationalDbAnswer(
+            reply="PostgreSQL 데이터를 조회하는 중 오류가 발생했습니다.",
+            intent="DB",
+            source_title="kgu_info_links",
+            answered=False,
+        )
+
+    candidates: list[_Candidate] = []
+    for group_title, label, url in link_rows:
+        search_text = _info_link_search_text(group_title, label, url)
+        score = _score(tokens, search_text)
+        if _wants_link(user_input):
+            score += 80
+        if score > 0:
+            candidates.append(
+                _Candidate(
+                    score=score,
+                    kind="info_link",
+                    title=label,
+                    reply=f"{label} 바로가기입니다.\n{url}",
+                    source_title="kgu_info_links",
+                    source_url=url,
+                )
+            )
+
+    if not candidates:
+        return RelationalDbAnswer(
+            reply="PostgreSQL에서 요청하신 바로가기 링크를 찾지 못했습니다. 바로가기 이름을 더 구체적으로 입력해 주세요.",
+            intent="바로가기",
+            source_title="kgu_info_links",
+            answered=False,
+        )
+
+    best = sorted(candidates, key=_candidate_sort_key)[0]
+    return RelationalDbAnswer(
+        reply=best.reply,
+        intent="바로가기",
         source_title=best.source_title,
         source_url=best.source_url,
     )

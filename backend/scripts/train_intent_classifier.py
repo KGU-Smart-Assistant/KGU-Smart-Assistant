@@ -12,12 +12,13 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 
 ROUTES = {"llm", "relational_db", "rag", "weather"}
-DB_INTENTS = {"map", "phone", "unknown"}
+DB_INTENTS = {"map", "phone", "info_link", "unknown"}
 LABELS = [
     "llm",
     "relational_db",
     "relational_db:map",
     "relational_db:phone",
+    "relational_db:info_link",
     "rag",
     "weather",
 ]
@@ -33,7 +34,7 @@ class IntentExample:
 
     @property
     def label(self) -> str:
-        if self.route == "relational_db" and self.db_intent in {"map", "phone"}:
+        if self.route == "relational_db" and self.db_intent in {"map", "phone", "info_link"}:
             return f"{self.route}:{self.db_intent}"
         return self.route
 
@@ -89,6 +90,7 @@ def main() -> None:
         num_labels=len(LABELS),
         id2label=ID_TO_LABEL,
         label2id=LABEL_TO_ID,
+        ignore_mismatched_sizes=True,
     )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

@@ -69,3 +69,7 @@
 {"text":"공부 집중하는 방법 알려줘","expected_route":"llm","expected_db_intent":"unknown","category":"llm","difficulty":"normal"}
 {"text":"발표 긴장 줄이는 법 알려줘","expected_route":"llm","expected_db_intent":"unknown","category":"llm","difficulty":"normal"}
 {"text":"간단하게 자기소개 예시 써줘","expected_route":"llm","expected_db_intent":"unknown","category":"llm","difficulty":"normal"}
+{"text":"LMS 바로가기 링크 알려줘","expected_route":"relational_db","expected_db_intent":"info_link","category":"relational_db","difficulty":"normal"}
+{"text":"KUTIS 링크 알려줘","expected_route":"relational_db","expected_db_intent":"info_link","category":"relational_db","difficulty":"normal"}
+{"text":"수강신청 링크 알려줘","expected_route":"relational_db","expected_db_intent":"info_link","category":"relational_db","difficulty":"normal"}
+{"text":"경기대 수강신청 사이트 알려줘","expected_route":"relational_db","expected_db_intent":"info_link","category":"relational_db","difficulty":"normal"}

@@ -41,6 +41,7 @@ def build_examples() -> list[Example]:
         *build_rag_examples(),
         *build_map_examples(),
         *build_phone_examples(),
+        *build_info_link_examples(),
         *build_relational_unknown_examples(),
         *build_weather_examples(),
         *build_llm_examples(),
@@ -285,6 +286,51 @@ def build_relational_unknown_examples() -> list[Example]:
         for request in requests
     ]
     return examples[:90]
+
+
+def build_info_link_examples() -> list[Example]:
+    subjects = [
+        "LMS",
+        "lms",
+        "KUTIS",
+        "kutis",
+        "수강신청",
+        "수강 신청",
+        "수강신청 시스템",
+        "통합공지사항",
+        "통합자료실",
+        "학사일정",
+        "졸업요건",
+        "장학공지",
+        "장학자료실",
+        "국가장학금",
+        "등록금 납부",
+        "증명서 발급",
+        "취업공지",
+        "현장실습 시스템",
+        "학식 메뉴",
+        "셔틀버스",
+        "전자출결",
+        "도서관",
+        "기숙사",
+        "입학처",
+        "경기대 LMS",
+        "경기대 KUTIS",
+        "경기대 수강신청",
+    ]
+    requests = [
+        "바로가기 링크 알려줘",
+        "링크 알려줘",
+        "주소 알려줘",
+        "사이트 알려줘",
+        "페이지 열 수 있는 링크 줘",
+        "접속 주소 뭐야?",
+    ]
+    return [
+        Example(f"{subject} {request}", "relational_db", "info_link")
+        for subject in subjects
+        for request in requests
+    ]
 
 
 def build_weather_examples() -> list[Example]:

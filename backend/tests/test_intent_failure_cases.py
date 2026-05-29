@@ -5,7 +5,7 @@ from pathlib import Path
 
 DATA_PATH = Path(__file__).resolve().parents[1] / "app" / "data" / "intent_failure_cases.jsonl"
 VALID_ROUTES = {"llm", "relational_db", "rag", "weather"}
-VALID_DB_INTENTS = {"unknown", "map", "phone"}
+VALID_DB_INTENTS = {"unknown", "map", "phone", "info_link"}
 VALID_RAG_DETAILS = {
     "period",
     "eligibility",
