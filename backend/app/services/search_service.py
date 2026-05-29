@@ -27,6 +27,7 @@ MAX_KEYWORD_CANDIDATES = 30
 LOW_CONFIDENCE_THRESHOLD = 0.35
 PRIMARY_DETAIL_BOOST = 0.08
 SECONDARY_DETAIL_BOOST = 0.04
+CANONICAL_SOURCE_BOOST = 0.20
 HARD_FILTER_CONFIDENCE_THRESHOLD = 0.75
 PARENT_EXPANSION_WINDOW = 1
 MAX_PARENT_EXPANDED_CHUNKS = 20
@@ -180,6 +181,7 @@ def search_documents(
             primary_rows,
             effective_domain,
             top_k,
+            source_scope=policy.source_scope,
             low_confidence_threshold=low_confidence_threshold,
             enable_parent_expansion=enable_parent_expansion,
         )
@@ -194,6 +196,7 @@ def search_documents(
             primary_rows,
             effective_domain,
             top_k,
+            source_scope=policy.source_scope,
             low_confidence_threshold=low_confidence_threshold,
             enable_parent_expansion=enable_parent_expansion,
         )
@@ -227,6 +230,7 @@ def search_documents(
         merged_rows,
         effective_domain,
         top_k,
+        source_scope=policy.source_scope,
         low_confidence_threshold=low_confidence_threshold,
         enable_parent_expansion=enable_parent_expansion,
     )
@@ -310,6 +314,7 @@ def rerank_candidate_rows(
         domain_match = _domain_match_score(effective_domain, row.get("domain") or row.get("category"))
         detail_boost = _detail_boost(effective_details, row)
         scope_boost = _scope_boost(source_scope, row)
+        canonical_boost = _canonical_source_boost(effective_domain, source_scope, row)
         exact = _exact_phrase_score(query=query, title=row.get("title") or "", text=row.get("text") or "")
         source_penalty = _source_penalty(row)
         fallback_penalty = 0.35 if row.get("fallback_used") else 0.0
@@ -321,7 +326,19 @@ def rerank_candidate_rows(
             + title * weights["title"]
             + domain_match * weights["domain"]
         )
-        score = max(min(base_score + detail_boost + scope_boost + exact - source_penalty - fallback_penalty, 1.0), 0.0)
+        score = max(
+            min(
+                base_score
+                + detail_boost
+                + scope_boost
+                + canonical_boost
+                + exact
+                - source_penalty
+                - fallback_penalty,
+                1.0,
+            ),
+            0.0,
+        )
         ranked_row = dict(row)
         ranked_row["score"] = round(score, 6)
         ranked_row["score_breakdown"] = {
@@ -333,6 +350,7 @@ def rerank_candidate_rows(
             "category": round(domain_match, 6),
             "detail": round(detail_boost, 6),
             "scope": round(scope_boost, 6),
+            "canonical": round(canonical_boost, 6),
             "exact": round(exact, 6),
             "source_penalty": round(source_penalty, 6),
             "fallback_penalty": round(fallback_penalty, 6),
@@ -361,10 +379,12 @@ def _finalize_rows(
     domain: str | None,
     top_k: int,
     *,
+    source_scope: str | None = None,
     low_confidence_threshold: float = LOW_CONFIDENCE_THRESHOLD,
     enable_parent_expansion: bool = True,
 ) -> list[dict[str, Any]]:
     deduped = _dedupe_canonical_rows(rows, domain)
+    deduped = _prefer_canonical_rows(deduped, domain, source_scope)
     ranked = sorted(
         deduped,
         key=lambda row: (
@@ -389,6 +409,17 @@ def _dedupe_canonical_rows(rows: list[dict[str, Any]], domain: str | None) -> li
         if existing is None or _canonical_selection_key(row, domain) > _canonical_selection_key(existing, domain):
             selected[key] = row
     return list(selected.values())
+
+
+def _prefer_canonical_rows(
+    rows: list[dict[str, Any]],
+    domain: str | None,
+    source_scope: str | None,
+) -> list[dict[str, Any]]:
+    if domain != "graduation" or source_scope == "department":
+        return rows
+    canonical_rows = [row for row in rows if _is_canonical_graduation_source(row)]
+    return canonical_rows or rows
 
 
 def _canonical_dedupe_key(row: dict[str, Any], domain: str | None) -> str:
@@ -435,6 +466,8 @@ def _canonical_priority(row: dict[str, Any], domain: str | None) -> float:
             priority -= 0.3
         if "학사일정" in title:
             priority += 0.5
+    if domain == "graduation" and _is_canonical_graduation_source(row):
+        priority += 1.2
     return priority
 
 
@@ -969,6 +1002,20 @@ def _scope_boost(source_scope: str | None, row: Dict[str, Any]) -> float:
     if source_scope == "university":
         return 0.08 if row.get("department") == "university" else 0.0
     return 0.0
+
+
+def _canonical_source_boost(domain: str | None, source_scope: str | None, row: Dict[str, Any]) -> float:
+    if domain == "graduation" and source_scope != "department" and _is_canonical_graduation_source(row):
+        return CANONICAL_SOURCE_BOOST
+    return 0.0
+
+
+def _is_canonical_graduation_source(row: Dict[str, Any]) -> bool:
+    if row.get("department") != "university":
+        return False
+    source_url = str(row.get("source_url") or "").casefold()
+    title = str(row.get("title") or "").strip()
+    return "contents.do?key=8418" in source_url or title == "1. 졸업안내"
 
 
 def _exact_phrase_score(*, query: str, title: str, text: str) -> float:

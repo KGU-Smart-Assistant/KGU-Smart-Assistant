@@ -310,6 +310,48 @@ def test_search_documents_soft_boosts_department_scope(monkeypatch) -> None:
     assert [result.chunk_id for result in results] == ["department", "university"]
 
 
+def test_search_documents_prefers_university_graduation_requirements(monkeypatch) -> None:
+    monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])
+
+    def _query_embedded_chunks(*, query_embedding, top_k, domain):
+        return [
+            {
+                "chunk_id": "department-graduation",
+                "doc_id": "doc-dept",
+                "distance": 0.08,
+                "text": "사학과 졸업요건 규정 안내",
+                "title": "[사학] 졸업요건 규정 안내",
+                "source_url": "https://www.kyonggi.ac.kr/u_history/selectBbsNttView.do?bbsNo=1073",
+                "domain": "graduation",
+                "department": "history",
+            },
+            {
+                "chunk_id": "university-graduation",
+                "doc_id": "doc-university",
+                "distance": 0.16,
+                "text": "학적업무 졸업요건 졸업학점 졸업논문 인권과 성평등교육 졸업인증제 안내",
+                "title": "1. 졸업안내",
+                "source_url": "https://www.kyonggi.ac.kr/www/contents.do?key=8418",
+                "domain": "graduation",
+                "department": "university",
+            },
+        ]
+
+    monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
+
+    results = search_service.search_documents(
+        query="졸업요건 알려줘",
+        top_k=2,
+        rag_domain="graduation",
+        rag_detail="eligibility",
+        rag_confidence=0.95,
+    )
+
+    assert [result.chunk_id for result in results] == ["university-graduation"]
+    assert results[0].score_breakdown["canonical"] == search_service.CANONICAL_SOURCE_BOOST
+
+
 def test_search_documents_accepts_secondary_rag_details_without_keyword_boost(monkeypatch) -> None:
     monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
     monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])
