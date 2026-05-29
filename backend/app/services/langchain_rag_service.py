@@ -479,8 +479,42 @@ def _generate_answer(payload: dict, *, answer_fn: AnswerFn, confidence_threshold
             low_confidence=True,
         )
 
-    reply = answer_fn(payload["prompt"])
+    try:
+        reply = answer_fn(payload["prompt"])
+    except Exception as exc:
+        reply = _model_error_fallback_reply(
+            question=str(payload["question"]),
+            documents=documents,
+            error_message=str(exc),
+        )
+        return LangChainRagResult(
+            reply=reply,
+            documents=documents,
+            context=payload["context"],
+            expanded_queries=[],
+            confidence=round(confidence, 6),
+            low_confidence=False,
+        )
+    if _is_model_error_reply(reply):
+        return LangChainRagResult(
+            reply=_model_error_fallback_reply(
+                question=str(payload["question"]),
+                documents=documents,
+                error_message=reply,
+            ),
+            documents=documents,
+            context=payload["context"],
+            expanded_queries=[],
+            confidence=round(confidence, 6),
+            low_confidence=False,
+        )
     reply = _control_answer_language(payload, reply, answer_fn=answer_fn)
+    if _is_model_error_reply(reply):
+        reply = _model_error_fallback_reply(
+            question=str(payload["question"]),
+            documents=documents,
+            error_message=reply,
+        )
     reply = ensure_source_urls(reply, documents)
     return LangChainRagResult(
         reply=reply,
@@ -568,6 +602,57 @@ def _source_only_reply(documents: list[Document]) -> str:
     for number, title, url in _numbered_source_lines(documents):
         lines.append(f"- [{number}] {title}: {url}")
     return "\n".join(lines)
+
+
+def _is_model_error_reply(reply: str) -> bool:
+    normalized = reply.casefold()
+    error_markers = (
+        "429",
+        "503",
+        "unavailable",
+        "resource_exhausted",
+        "quota",
+        "사용량 제한",
+        "수요가 높아",
+        "모델을 찾을 수",
+        "서버 오류",
+        "api 사용량",
+        "gemini api",
+    )
+    return any(marker in normalized for marker in error_markers)
+
+
+def _model_error_fallback_reply(
+    *,
+    question: str,
+    documents: list[Document],
+    error_message: str,
+) -> str:
+    lines = [
+        "현재 생성 모델 응답이 불안정해 검색된 자료를 기준으로만 안내합니다.",
+        "아래 내용은 검색된 공식 자료의 핵심 발췌이며, 세부 기준은 출처에서 확인해 주세요.",
+        "",
+        "검색 기준:",
+        f"- 질문: {question}",
+    ]
+    if error_message:
+        lines.append("- 생성 모델 상태: 응답 생성 실패")
+    lines.extend(["", "검색된 자료:"])
+    for number, document in enumerate(documents[:3], start=1):
+        title = str(document.metadata.get("title") or "문서")
+        snippet = _fallback_snippet(document.page_content)
+        lines.append(f"- [{number}] {title}: {snippet}")
+    lines.extend(["", "출처:"])
+    for number, title, url in _numbered_source_lines(documents):
+        lines.append(f"- [{number}] {title}: {url}")
+    return "\n".join(lines)
+
+
+def _fallback_snippet(text: str, *, max_length: int = 260) -> str:
+    cleaned = re.sub(r"\s+", " ", text).strip()
+    if len(cleaned) <= max_length:
+        return cleaned
+    return cleaned[:max_length].rstrip() + "..."
 
 
 def _low_confidence_reply(documents: list[Document]) -> str:

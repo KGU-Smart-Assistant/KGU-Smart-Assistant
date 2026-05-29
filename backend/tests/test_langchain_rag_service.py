@@ -155,6 +155,33 @@ def test_langchain_chain_uses_source_only_reply_when_korean_rewrite_fails() -> N
     assert "https://example.com/scholarship" in result.reply
 
 
+def test_langchain_chain_uses_snippet_fallback_when_model_quota_fails() -> None:
+    class StaticRetriever(BaseRetriever):
+        def _get_relevant_documents(self, query: str, *, run_manager=None):
+            return [
+                search_result_to_document(
+                    _search_result(
+                        title="졸업요건 안내",
+                        text="졸업요건은 졸업학점, 졸업논문, 인권과 성평등교육, 졸업인증제를 이수해야 합니다.",
+                        score=0.92,
+                        confidence=0.92,
+                    )
+                )
+            ]
+
+    chain = build_rag_chain(
+        retriever=StaticRetriever(),
+        answer_fn=lambda prompt: "현재 Gemini API 사용량 제한에 도달했습니다. 잠시 후 다시 시도해 주세요.",
+    )
+    result = chain.invoke("졸업요건 알려줘")
+
+    assert "검색된 자료를 기준으로만 안내합니다" in result.reply
+    assert "졸업요건은 졸업학점" in result.reply
+    assert "현재 Gemini API 사용량 제한" not in result.reply
+    assert "https://example.com/scholarship" in result.reply
+    assert result.low_confidence is False
+
+
 def test_answer_with_langchain_rag_returns_documents_context_and_trace() -> None:
     def fake_search(*, query, top_k, category):
         return [_search_result()]
