@@ -19,7 +19,14 @@ from app.crawlers.embedding_pipeline import embed_text
 from app.db.vector_store import query_embedded_chunks
 from app.schemas.search import SearchResult
 from app.services.gemini_service import get_gemini_response
-from app.services.search_service import LOW_CONFIDENCE_THRESHOLD, RetrievalPolicy, rerank_candidate_rows, search_documents
+from app.services.search_service import (
+    LOW_CONFIDENCE_THRESHOLD,
+    RetrievalPolicy,
+    _query_anchor_terms,
+    _row_matches_any_anchor,
+    rerank_candidate_rows,
+    search_documents,
+)
 
 SearchFn = Callable[..., List[SearchResult]]
 AnswerFn = Callable[[str], str]
@@ -39,7 +46,7 @@ RAG_PROMPT = PromptTemplate.from_template(
 영어 답변을 쓰지 말고, URL·고유명사·공식 명칭을 제외한 모든 설명은 자연스러운 한국어로 작성해라.
 근거에 없는 항목은 "검색된 자료에서는 확인할 수 없습니다"라고 말해라.
 답변 본문에서 근거를 사용할 때는 해당 검색 근거 번호를 [1]처럼 표시해라.
-답변 끝에는 반드시 "출처:" 섹션을 포함하고 "[1] 제목: URL" 형식으로 사용한 URL을 적어라.
+답변 끝에 별도의 "출처:" 섹션을 직접 쓰지 마라. 시스템이 URL 목록을 별도로 붙인다.
 
 검색 근거:
 {context}
@@ -144,7 +151,9 @@ class HybridSearchRetriever(BaseRetriever):
             documents=ranked_documents,
             domain=self.rag_domain or self.category,
             source_scope=self.source_scope,
-        )[: self.top_k]
+        )
+        documents = _filter_documents_by_query_anchor(query=query, documents=documents)
+        documents = _dedupe_documents_by_topic(documents, domain=self.rag_domain or self.category)[: self.top_k]
         if self.compress_documents:
             return compress_documents_for_query(query, documents)
         return documents
@@ -394,6 +403,47 @@ def _dedupe_documents_by_source_url(documents: list[Document]) -> list[Document]
     return selected
 
 
+def _dedupe_documents_by_topic(documents: list[Document], *, domain: str | None) -> list[Document]:
+    if domain not in {"academic_status", "academic_calendar"}:
+        return documents
+
+    selected: list[Document] = []
+    seen_topics: set[str] = set()
+    for document in documents:
+        title = str(document.metadata.get("title") or "")
+        topic = re.sub(r"^\[[^\]]+\]\s*", "", title).strip()
+        topic_key = _normalize_text(topic)
+        if len(topic_key) < 8:
+            selected.append(document)
+            continue
+        if topic_key in seen_topics:
+            continue
+        seen_topics.add(topic_key)
+        selected.append(document)
+    return selected
+
+
+def _filter_documents_by_query_anchor(*, query: str, documents: list[Document]) -> list[Document]:
+    anchors = _query_anchor_terms(query)
+    if not anchors:
+        return documents
+
+    aligned = [
+        document
+        for document in documents
+        if _row_matches_any_anchor(
+            {
+                "title": document.metadata.get("title"),
+                "text": document.page_content,
+                "source_url": document.metadata.get("source_url"),
+                "department": document.metadata.get("department"),
+            },
+            anchors,
+        )
+    ]
+    return aligned or documents
+
+
 def compress_documents_for_query(
     query: str,
     documents: list[Document],
@@ -599,6 +649,9 @@ def _generate_answer(payload: dict, *, answer_fn: AnswerFn, confidence_threshold
 
 def ensure_source_urls(reply: str, documents: list[Document]) -> str:
     source_lines = _numbered_source_lines(documents)
+    cited_numbers = _cited_source_numbers(reply)
+    if cited_numbers:
+        source_lines = [line for line in source_lines if line[0] in cited_numbers]
     urls = [url for _number, _title, url in source_lines]
     if not urls:
         return reply
@@ -609,6 +662,10 @@ def ensure_source_urls(reply: str, documents: list[Document]) -> str:
         f"- [{number}] {title}: {url}" for number, title, url in source_lines
     ]
     return reply.rstrip() + "\n".join(formatted_sources)
+
+
+def _cited_source_numbers(reply: str) -> set[int]:
+    return {int(number) for number in re.findall(r"\[(\d+)\]", reply)}
 
 
 def _control_answer_language(payload: dict, reply: str, *, answer_fn: AnswerFn) -> str:

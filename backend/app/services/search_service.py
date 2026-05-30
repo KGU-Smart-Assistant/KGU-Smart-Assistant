@@ -30,6 +30,29 @@ SECONDARY_DETAIL_BOOST = 0.04
 HARD_FILTER_CONFIDENCE_THRESHOLD = 0.75
 PARENT_EXPANSION_WINDOW = 1
 MAX_PARENT_EXPANDED_CHUNKS = 20
+QUERY_ANCHOR_STOPWORDS = {
+    "경기대학교",
+    "경기대",
+    "알려줘",
+    "알려주세요",
+    "궁금해",
+    "확인",
+    "보고",
+    "싶어",
+    "어떻게",
+    "어디서",
+    "신청",
+    "절차",
+    "방법",
+    "기간",
+    "일정",
+    "공지",
+    "안내",
+    "기준",
+    "자료",
+    "찾아줘",
+    "주세요",
+}
 
 
 
@@ -388,6 +411,7 @@ def _finalize_rows(
 ) -> list[dict[str, Any]]:
     deduped = _dedupe_canonical_rows(rows, domain)
     deduped = _filter_broad_university_rows(deduped, domain=domain, query=query, source_scope=source_scope)
+    deduped = _filter_query_anchor_rows(deduped, query=query)
     ranked = sorted(
         deduped,
         key=lambda row: (
@@ -434,6 +458,82 @@ def _filter_broad_university_rows(
     if topic_rows:
         return topic_rows
     return university_rows
+
+
+def _filter_query_anchor_rows(rows: list[dict[str, Any]], *, query: str) -> list[dict[str, Any]]:
+    anchors = _query_anchor_terms(query)
+    if not anchors:
+        return rows
+
+    aligned = [row for row in rows if _row_matches_any_anchor(row, anchors)]
+    if not aligned:
+        return rows
+
+    for row in aligned:
+        breakdown = dict(row.get("score_breakdown") or {})
+        breakdown["query_anchor_match"] = 1.0
+        anchor_boost = _query_anchor_boost(row, anchors)
+        if anchor_boost:
+            row["score"] = round(min(float(row.get("score") or 0.0) + anchor_boost, 1.0), 6)
+            breakdown["query_anchor_boost"] = round(anchor_boost, 6)
+        row["score_breakdown"] = breakdown
+    return aligned
+
+
+def _query_anchor_terms(query: str) -> list[str]:
+    normalized = _normalize_text(query)
+    if "국가" in normalized and "장학" in normalized:
+        return ["국가장학금", "국가장학"]
+
+    terms: list[str] = []
+    for token in _tokenize(normalized):
+        if token in QUERY_ANCHOR_STOPWORDS:
+            continue
+        if token.endswith(("은", "는", "이", "가", "을", "를")) and len(token) > 2:
+            token = token[:-1]
+        if token and token not in QUERY_ANCHOR_STOPWORDS:
+            terms.append(token)
+
+    if "졸업" in normalized and "요건" in normalized:
+        terms.append("졸업요건")
+    if "컴퓨터" in normalized:
+        terms.extend(["컴퓨터", "u_computer"])
+    if "휴학" in normalized:
+        terms.append("휴학")
+    if "복학" in normalized:
+        terms.append("복학")
+
+    variants: list[str] = []
+    for term in terms:
+        variants.append(term)
+        for suffix in ("학과", "학부", "전공"):
+            if term.endswith(suffix) and len(term) > len(suffix) + 1:
+                variants.append(term[: -len(suffix)])
+    return list(dict.fromkeys(term for term in variants if len(term) >= 2))
+
+
+def _row_matches_any_anchor(row: dict[str, Any], anchors: list[str]) -> bool:
+    title = _normalize_text(str(row.get("title") or ""))
+    text = _normalize_text(str(row.get("text") or ""))
+    source_url = str(row.get("source_url") or "").casefold()
+    department = _normalize_text(str(row.get("department") or ""))
+    haystack = f"{title} {text[:1600]} {source_url} {department}"
+    return any(anchor in haystack for anchor in anchors)
+
+
+def _query_anchor_boost(row: dict[str, Any], anchors: list[str]) -> float:
+    title = _normalize_text(str(row.get("title") or ""))
+    source_url = str(row.get("source_url") or "").casefold()
+    department = _normalize_text(str(row.get("department") or ""))
+    text = _normalize_text(str(row.get("text") or ""))
+
+    if any(anchor in title for anchor in anchors):
+        return 0.30
+    if any(anchor in source_url or anchor in department for anchor in anchors):
+        return 0.12
+    if any(anchor in text[:1600] for anchor in anchors):
+        return 0.04
+    return 0.0
 
 
 def _matches_broad_topic(*, query: str, row: dict[str, Any]) -> bool:
@@ -493,7 +593,8 @@ def _canonical_dedupe_key(row: dict[str, Any], domain: str | None) -> str:
         if value:
             return f"{field}:{value}"
     normalized_text = _normalize_text(str(row.get("text") or ""))
-    if domain == "academic_calendar" and normalized_text:
+    row_domain = _normalize_domain(str(row.get("domain") or row.get("category") or ""))
+    if (domain == "academic_calendar" or row_domain == "academic_calendar") and normalized_text:
         return f"text:{normalized_text}"
     chunk_id = str(row.get("chunk_id") or "").strip()
     if chunk_id:
@@ -564,6 +665,8 @@ def _mark_low_confidence(row: dict[str, Any], threshold: float) -> dict[str, Any
 
 def _should_hard_filter(domain: str | None, rag_confidence: float | None) -> bool:
     if not domain or domain in {"default", "unknown"}:
+        return False
+    if domain == "department_notice":
         return False
     if rag_confidence is None:
         return True
@@ -767,15 +870,19 @@ def _run_search_attempt(
     source_scope: str | None,
     attempt: str,
 ) -> list[dict[str, Any]]:
-    query_embedding = embed_text(query)
     candidate_count = _candidate_count(top_k)
-    vector_rows = _mark_vector_rows(
-        _query_vector_candidates(
-            query_embedding=query_embedding,
-            top_k=candidate_count,
-            categories=categories,
+    vector_rows: list[dict[str, Any]] = []
+    try:
+        query_embedding = embed_text(query)
+        vector_rows = _mark_vector_rows(
+            _query_vector_candidates(
+                query_embedding=query_embedding,
+                top_k=candidate_count,
+                categories=categories,
+            )
         )
-    )
+    except Exception as exc:
+        logger.warning("Vector embedding failed; continuing with keyword search only: %s", exc)
     keyword_rows = _query_keyword_chunks(
         query=query,
         top_k=min(candidate_count, MAX_KEYWORD_CANDIDATES),
