@@ -7,6 +7,16 @@ import { ExternalLink } from "lucide-react";
 export default function ChatMessage({ message, onLinkButtonClick }) {
   // 발신자가 챗봇인지 판단 (목업 데이터 기준)
   const isBot = message.sender === "bot";
+  const canShowSources = message.answer_status !== "insufficient";
+  const sources = canShowSources && Array.isArray(message.sources)
+    ? message.sources.filter((source) => source?.source_url)
+    : [];
+  const sourceHeading = sources.some((source) => /^tel:|maps\?|google\.com\/maps/i.test(source.source_url))
+    ? "바로가기"
+    : "출처";
+  const displayReply = isBot && typeof message.reply === "string"
+    ? message.reply.replace(/\n{0,2}\s*(출처|Sources?)\s*:.*$/is, "").trim()
+    : message.reply;
   const { t } = useLanguage();
   const [elapsedSeconds, setElapsedSeconds] = useState(() =>
     message.isThinking ? Math.floor((Date.now() - message.startTime) / 1000) : 0,
@@ -65,7 +75,30 @@ export default function ChatMessage({ message, onLinkButtonClick }) {
           ) : (
             <>
               {/* 실제 텍스트 대답 내용 */}
-              <p className="text-sm leading-relaxed whitespace-pre-wrap break-words overflow-wrap-anywhere" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{message.reply}</p>
+              <p className="text-sm leading-relaxed whitespace-pre-wrap break-words overflow-wrap-anywhere" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{displayReply}</p>
+
+              {isBot && sources.length > 0 && (
+                <div className="mt-3 border-t border-gray-200 pt-2">
+                  <div className="mb-1 text-xs font-semibold text-gray-600">{sourceHeading}</div>
+                  <div className="flex flex-col gap-1.5">
+                    {sources.slice(0, 5).map((source, index) => (
+                      <a
+                        key={`${source.source_url}-${index}`}
+                        href={source.source_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-start gap-1.5 text-xs font-medium text-[#003876] underline-offset-2 hover:underline"
+                      >
+                        <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        <span className="break-words">
+                          {source.source_number ? `[${source.source_number}] ` : ""}
+                          {source.title || source.source_url}
+                        </span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* 링크 버튼들 표시 (하위 항목들 - 클릭 시 챗봇으로 전송) */}
               {message.links && message.links.length > 0 && (

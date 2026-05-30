@@ -12,7 +12,7 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5173",
     ]
     google_api_key: str
-    gemini_model: str = "gemini-3-flash-preview"
+    gemini_model: str = "gemini-2.5-flash"
     kakao_rest_api_key: str | None = None
     kakao_map_api_key: str | None = None
     kakao_local_base_url: str = "https://dapi.kakao.com"
@@ -27,7 +27,11 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg2://postgres:postgres@localhost:5432/kgusmart"
     intent_classifier_model_name: str | None = None
     intent_classifier_confidence_threshold: float = 0.7
+    intent_classifier_fast_fallback_threshold: float = 0.35
     intent_classifier_device: int = -1
+    chat_planner_mode: str = "balanced"
+    chat_model_warmup: bool = True
+    rag_max_rewritten_queries: int = 5
     rag_domain_classifier_model_name: str | None = None
     rag_domain_classifier_confidence_threshold: float = 0.5
     rag_domain_classifier_top_k: int = 3

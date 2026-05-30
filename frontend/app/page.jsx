@@ -77,6 +77,13 @@ export default function Home() {
         sender: "bot",
         reply: botResponse.reply,
         intent: botResponse.intent,
+        route: botResponse.route,
+        sources: botResponse.sources,
+        rag_domain: botResponse.rag_domain,
+        rag_domains: botResponse.rag_domains,
+        rag_detail: botResponse.rag_detail,
+        rag_details: botResponse.rag_details,
+        answer_status: botResponse.answer_status,
       };
       // 로딩 메시지를 실제 메시지로 교체
       setMessages((prev) => prev.map(msg => 

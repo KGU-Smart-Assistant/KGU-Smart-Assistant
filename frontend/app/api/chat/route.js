@@ -9,10 +9,8 @@ const backendChatApiPath =
 const createBackendChatUrl = () =>
   new URL(backendChatApiPath, backendApiBaseUrl).toString();
 
-const normalizeIntent = (intent) => {
-  const allowedIntents = ["지도", "전화", "학식", "일반"];
-  return allowedIntents.includes(intent) ? intent : "일반";
-};
+const normalizeIntent = (intent) =>
+  typeof intent === "string" && intent.trim() ? intent : "일반";
 
 const normalizeChatData = (data) => {
   if (!data || typeof data.reply !== "string") {
@@ -22,6 +20,13 @@ const normalizeChatData = (data) => {
   return {
     reply: data.reply,
     intent: normalizeIntent(data.intent),
+    route: data.route,
+    sources: Array.isArray(data.sources) ? data.sources : [],
+    rag_domain: data.rag_domain,
+    rag_domains: Array.isArray(data.rag_domains) ? data.rag_domains : [],
+    rag_detail: data.rag_detail,
+    rag_details: Array.isArray(data.rag_details) ? data.rag_details : [],
+    answer_status: data.answer_status,
   };
 };
 
@@ -60,9 +65,9 @@ export async function POST(request) {
 
     return Response.json(
       {
-        reply:
-          "백엔드 응답을 읽지 못했습니다. 잠시 후 다시 시도해주세요.",
+        reply: "백엔드 응답을 읽지 못했습니다. 잠시 후 다시 시도해주세요.",
         intent: "일반",
+        sources: [],
       },
       { status: backendResponse.ok ? 502 : backendResponse.status },
     );
@@ -72,6 +77,7 @@ export async function POST(request) {
         reply:
           "백엔드 서버에 연결하지 못했습니다. 로컬 백엔드 실행 상태를 확인해주세요.",
         intent: "일반",
+        sources: [],
       },
       { status: 502 },
     );

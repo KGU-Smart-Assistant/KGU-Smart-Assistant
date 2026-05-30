@@ -934,6 +934,7 @@ def test_answer_chat_returns_insufficient_when_results_do_not_ground_answer(monk
     assert result.route == "rag"
     assert result.answer_status == "insufficient"
     assert result.unverified
+    assert result.sources == []
     assert "근거를 확인할 수 없습니다" in result.reply
 
 
@@ -958,6 +959,37 @@ def test_answer_chat_returns_insufficient_for_low_confidence_search_result(monke
     assert result.route == "rag"
     assert result.answer_status == "insufficient"
     assert result.unverified
+    assert result.sources == []
+
+
+def test_answer_chat_hides_sources_when_rag_cannot_generate_answer(monkeypatch) -> None:
+    search_result = SearchResult(
+        chunk_id="chunk-1",
+        doc_id="doc-1",
+        score=0.91,
+        text="장학금 신청 안내입니다.",
+        title="장학금 신청 안내",
+        source_url="https://example.com/scholarship",
+    )
+
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "answer_with_langchain_rag",
+        lambda *args, **kwargs: LangChainRagResult(
+            reply="현재 답변을 생성하지 못했습니다. 질문을 조금 더 구체적으로 다시 입력해 주세요.",
+            documents=[search_result_to_document(search_result)],
+            context="장학금 신청 안내입니다.",
+            confidence=0.91,
+            low_confidence=False,
+        ),
+    )
+
+    result = chat_orchestrator.answer_chat("장학금 신청 기간 알려줘", db=None)
+
+    assert result.route == "rag"
+    assert result.answer_status == "insufficient"
+    assert result.sources == []
+    assert "https://example.com/scholarship" not in result.reply
 
 
 

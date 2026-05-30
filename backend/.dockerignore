@@ -14,6 +14,13 @@ Dockerfile
 .tmp
 .pytest_tmp
 .crawl4ai-data
+models
+*.zip
+reports
+evaluation
+data
+__pycache__
+*.log
 kGU-chatbot
 app.db
 *.db
