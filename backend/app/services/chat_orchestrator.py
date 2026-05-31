@@ -26,6 +26,7 @@ ChatRoute = Literal["llm", "relational_db", "rag", "weather"]
 AtomicChatRoute = ChatRoute
 DbIntent = Literal["map", "phone", "info_link", "unknown"]
 RagAmbiguity = Literal["clear", "multi_domain", "low_confidence", "missing_detail", "needs_clarification"]
+RAG_LLM_OVERRIDE_CONFIDENCE_THRESHOLD = 0.9
 
 
 @dataclass(frozen=True)
@@ -196,7 +197,12 @@ def _klue_bert_decision(user_input: str) -> ChatDecision | None:
 
     if prediction.route == "llm":
         rag_classification = _classify_rag_query(_normalize_query(user_input))
-        if rag_classification is not None and rag_classification.domain != "unknown":
+        if (
+            rag_classification is not None
+            and rag_classification.domain != "unknown"
+            and rag_classification.confidence >= RAG_LLM_OVERRIDE_CONFIDENCE_THRESHOLD
+            and rag_classification.ambiguity == "clear"
+        ):
             return ChatDecision(
                 route="rag",
                 db_intent="unknown",
@@ -949,9 +955,15 @@ def _is_unanswered_rag_reply(reply: str) -> bool:
         "답변을 생성하지 못했습니다",
         "관련 자료를 충분히 찾지 못했습니다",
         "검색된 자료를 바탕으로 답변을 생성하지 못했습니다",
+        "검색된 자료에서 확인할 수 없습니다",
+        "검색된 자료에서는 확인할 수 없습니다",
         "현재 답변을 생성하지 못했습니다",
     )
     return any(marker in reply for marker in markers)
+
+
+def _is_generation_failure_reply(reply: str) -> bool:
+    return _is_unanswered_rag_reply(reply)
 
 
 def _clarification_rag_reply(decision: ChatDecision) -> str:
@@ -996,6 +1008,8 @@ def _insufficient_rag_reply(decision: ChatDecision) -> str:
 
 
 def _unverified_reason(decision: ChatDecision) -> str:
+    if not decision.matched_keywords:
+        return "경기대학교 자료에서 확인 가능한 직접 근거"
     domain_text = _domain_label(decision.rag_domain) or "질문 의도"
     detail_text = _detail_label(decision.rag_detail)
     if detail_text:
