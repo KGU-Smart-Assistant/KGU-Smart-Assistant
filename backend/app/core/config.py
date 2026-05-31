@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     chat_planner_mode: str = "balanced"
     chat_model_warmup: bool = True
     rag_max_rewritten_queries: int = 5
+    rag_clarify_on_low_confidence: bool = True
+    rag_clarify_on_multi_domain: bool = True
+    rag_clarify_on_missing_detail: bool = False
     rag_domain_classifier_model_name: str | None = None
     rag_domain_classifier_confidence_threshold: float = 0.5
     rag_domain_classifier_top_k: int = 3

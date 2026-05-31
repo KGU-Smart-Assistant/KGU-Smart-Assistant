@@ -22,8 +22,6 @@ from app.services.gemini_service import get_gemini_response
 from app.services.search_service import (
     LOW_CONFIDENCE_THRESHOLD,
     RetrievalPolicy,
-    _query_anchor_terms,
-    _row_matches_any_anchor,
     rerank_candidate_rows,
     search_documents,
 )
@@ -490,6 +488,20 @@ def _filter_documents_by_query_anchor(*, query: str, documents: list[Document]) 
         )
     ]
     return aligned or documents
+
+
+def _query_anchor_terms(query: str) -> list[str]:
+    return _query_topic_terms(query)
+
+
+def _row_matches_any_anchor(row: dict, anchors: list[str]) -> bool:
+    haystack = _normalize_text(
+        " ".join(
+            str(row.get(key) or "")
+            for key in ("title", "text", "source_url", "department")
+        )
+    )
+    return any(_normalize_text(anchor) in haystack for anchor in anchors if anchor)
 
 
 def compress_documents_for_query(
