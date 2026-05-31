@@ -440,6 +440,35 @@ def test_high_confidence_general_klue_bert_is_not_overridden_by_phone_keyword(
     assert decision.db_intent == "unknown"
 
 
+def test_rag_classifier_overrides_high_confidence_general_route_for_document_question(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(chat_orchestrator.settings, "intent_classifier_model_name", "test-model")
+    monkeypatch.setattr(chat_orchestrator.settings, "intent_classifier_confidence_threshold", 0.7)
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_with_klue_bert",
+        lambda _: SimpleNamespace(
+            route="llm",
+            db_intent="unknown",
+            confidence=0.99,
+            label="general",
+        ),
+    )
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_rag_domains_with_klue_bert",
+        lambda _: (SimpleNamespace(domain="graduation", score=0.92),),
+    )
+    monkeypatch.setattr(chat_orchestrator, "classify_rag_details_with_klue_bert", lambda _: ())
+
+    decision = chat_orchestrator.decide_chat_route("졸업하려면 전공 학점 몇 학점 필요해?")
+
+    assert decision.route == "rag"
+    assert decision.rag_domain == "graduation"
+    assert decision.reason.startswith("rag-classifier-override:general:0.990:graduation")
+
+
 def test_decide_chat_route_parses_llm_json_when_heuristic_is_general(monkeypatch) -> None:
     monkeypatch.setattr(chat_orchestrator, "classify_with_klue_bert", lambda _: None)
     monkeypatch.setattr(
@@ -990,6 +1019,51 @@ def test_answer_chat_hides_sources_when_rag_cannot_generate_answer(monkeypatch) 
     assert result.answer_status == "insufficient"
     assert result.sources == []
     assert "https://example.com/scholarship" not in result.reply
+
+
+def test_answer_chat_marks_generation_failure_as_insufficient(monkeypatch) -> None:
+    search_result = SearchResult(
+        chunk_id="chunk-1",
+        doc_id="doc-1",
+        score=0.91,
+        text="등록금 납부 기간 안내입니다.",
+        title="등록금 납부 안내",
+        source_url="https://example.com/tuition",
+    )
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_with_klue_bert",
+        lambda _: SimpleNamespace(route="rag", db_intent="unknown", confidence=0.99, label="rag"),
+    )
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_rag_domains_with_klue_bert",
+        lambda _: (SimpleNamespace(domain="tuition", score=0.92),),
+    )
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_rag_details_with_klue_bert",
+        lambda _: (SimpleNamespace(detail="period", score=0.99),),
+    )
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "answer_with_langchain_rag",
+        lambda user_input, **kwargs: LangChainRagResult(
+            reply="현재 Gemini 모델 수요가 높아 응답을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+            documents=[search_result_to_document(search_result)],
+            context=search_result.text,
+            expanded_queries=[user_input],
+            confidence=0.91,
+            low_confidence=False,
+        ),
+    )
+
+    result = chat_orchestrator.answer_chat("등록금 납부 기간은 언제야?", db=None)
+
+    assert result.route == "rag"
+    assert result.answer_status == "insufficient"
+    assert result.unverified == ("답변 생성 실패",)
+    assert result.sources
 
 
 

@@ -194,6 +194,28 @@ def _klue_bert_decision(user_input: str) -> ChatDecision | None:
     ):
         return None
 
+    if prediction.route == "llm":
+        rag_classification = _classify_rag_query(_normalize_query(user_input))
+        if rag_classification is not None and rag_classification.domain != "unknown":
+            return ChatDecision(
+                route="rag",
+                db_intent="unknown",
+                reason=(
+                    f"rag-classifier-override:{prediction.label}:{prediction.confidence:.3f}:"
+                    f"{rag_classification.domain}:{rag_classification.confidence:.3f}"
+                ),
+                rag_domain=rag_classification.domain,
+                rag_domains=rag_classification.domains,
+                rag_detail=rag_classification.detail,
+                rag_details=rag_classification.details,
+                source_scope=rag_classification.source_scope,
+                rag_confidence=rag_classification.confidence,
+                rag_ambiguity=rag_classification.ambiguity,
+                rewritten_queries=rag_classification.rewritten_queries,
+                matched_keywords=rag_classification.matched_keywords,
+                intent_scores=rag_classification.intent_scores,
+            )
+
     return ChatDecision(
         route=prediction.route,
         db_intent=prediction.db_intent if prediction.route == "relational_db" else "unknown",
@@ -328,7 +350,11 @@ def _answer_from_rag(user_input: str, decision: ChatDecision) -> ChatResult:
     answer_status: Literal["answered", "partial", "insufficient"] = "answered"
     unverified: tuple[str, ...] = ()
     reply = rag_result.reply
-    if _is_partial_rag_decision(decision):
+    if _is_generation_failure_reply(reply):
+        answer_status = "partial"
+        unverified = ("답변 생성 실패로 검색 근거 요약",)
+        reply = _extractive_rag_fallback_reply(rag_result.documents)
+    elif _is_partial_rag_decision(decision):
         answer_status = "partial"
         unverified = (_unverified_reason(decision),)
         reply = _partial_rag_reply(decision, rag_result.reply)
@@ -337,6 +363,8 @@ def _answer_from_rag(user_input: str, decision: ChatDecision) -> ChatResult:
         unverified = (_unverified_reason(decision),)
         reply = _insufficient_rag_reply(decision)
         sources = []
+
+    sources = _filter_sources_by_reply_citations(sources, reply)
 
     return ChatResult(
         reply=reply,
@@ -873,6 +901,35 @@ def _chat_sources_from_documents(documents) -> list[ChatSource]:
             )
         )
     return sources
+
+
+def _filter_sources_by_reply_citations(sources: list[ChatSource], reply: str) -> list[ChatSource]:
+    cited = {int(number) for number in re.findall(r"\[(\d+)\]", reply)}
+    if not cited:
+        return sources
+    filtered = [source for source in sources if source.source_number in cited]
+    return filtered or sources
+
+
+def _extractive_rag_fallback_reply(documents) -> str:
+    if not documents:
+        return "답변 생성 모델이 응답하지 않아 요약을 만들지 못했습니다. 질문을 조금 더 구체적으로 다시 입력해 주세요."
+
+    lines = [
+        "답변 생성 모델이 일시적으로 응답하지 않아, 검색된 근거를 기준으로 확인 가능한 내용만 정리합니다.",
+        "",
+        "확인된 관련 문서:",
+    ]
+    for index, document in enumerate(documents[:5], start=1):
+        metadata = document.metadata
+        number = int(metadata.get("source_number") or index)
+        title = str(metadata.get("title") or "문서")
+        published_at = str(metadata.get("published_at") or "")[:10]
+        suffix = f" (게시일: {published_at})" if published_at else ""
+        lines.append(f"- [{number}] {title}{suffix}")
+    lines.append("")
+    lines.append("세부 날짜, 자격, 제출서류는 아래 출처 원문에서 최종 확인해 주세요.")
+    return "\n".join(lines)
 
 
 def _blocked_rag_reply(decision: ChatDecision) -> str | None:

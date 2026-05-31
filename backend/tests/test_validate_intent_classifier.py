@@ -34,11 +34,11 @@ def test_validate_text_reports_expected_match(monkeypatch: pytest.MonkeyPatch) -
         threshold=0.7,
         device=-1,
         expected_route="relational_db",
-        expected_db_intent="map",
+        expected_db_intent="unknown",
     )
 
     assert result.route == "relational_db"
-    assert result.db_intent == "map"
+    assert result.db_intent == "unknown"
     assert result.accepted is True
     assert result.matched_expected is True
 

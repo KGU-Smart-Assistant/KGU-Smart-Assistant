@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import lru_cache
+import logging
+from pathlib import Path
+import re
 
 from typing import Sequence
 
@@ -10,6 +13,7 @@ from app.services.domain_taxonomy import CANONICAL_DETAIL_LABELS
 
 
 RAG_DETAIL_LABELS: tuple[str, ...] = CANONICAL_DETAIL_LABELS
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -86,14 +90,33 @@ def _get_classifier():
     except ImportError:
         return None
 
-    return pipeline(
-        "text-classification",
-        model=settings.rag_detail_classifier_model_name,
-        tokenizer=settings.rag_detail_classifier_model_name,
-        device=settings.rag_detail_classifier_device,
-        top_k=None,
-        function_to_apply="sigmoid",
-    )
+    model_name = _resolve_local_model_name(settings.rag_detail_classifier_model_name)
+    try:
+        return pipeline(
+            "text-classification",
+            model=model_name,
+            tokenizer=model_name,
+            device=settings.rag_detail_classifier_device,
+            top_k=None,
+            function_to_apply="sigmoid",
+        )
+    except Exception as exc:
+        logger.warning("RAG detail classifier unavailable: %s", exc)
+        return None
+
+
+def _resolve_local_model_name(model_name: str | None) -> str | None:
+    if not model_name:
+        return model_name
+    path = Path(model_name)
+    if path.exists():
+        return model_name
+    if path.parent == Path("models"):
+        base_name = re.sub(r"-v\d+$", "", path.name)
+        candidates = sorted(path.parent.glob(f"{base_name}-v*"))
+        if candidates:
+            return str(candidates[-1])
+    return model_name
 
 
 def labels_to_multihot(details: Sequence[str]) -> list[float]:

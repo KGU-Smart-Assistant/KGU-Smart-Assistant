@@ -23,6 +23,11 @@ __pycache__
 *.log
 kGU-chatbot
 app.db
+.tmp-root-owned-*
+.pytest_tmp
+.crawl4ai-data
+kGU-chatbot
+app.db
 *.db
 *.sqlite
 *.sqlite3

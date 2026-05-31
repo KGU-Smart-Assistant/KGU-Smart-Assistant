@@ -31,6 +31,29 @@ CANONICAL_SOURCE_BOOST = 0.20
 HARD_FILTER_CONFIDENCE_THRESHOLD = 0.75
 PARENT_EXPANSION_WINDOW = 1
 MAX_PARENT_EXPANDED_CHUNKS = 20
+QUERY_ANCHOR_STOPWORDS = {
+    "경기대학교",
+    "경기대",
+    "알려줘",
+    "알려주세요",
+    "궁금해",
+    "확인",
+    "보고",
+    "싶어",
+    "어떻게",
+    "어디서",
+    "신청",
+    "절차",
+    "방법",
+    "기간",
+    "일정",
+    "공지",
+    "안내",
+    "기준",
+    "자료",
+    "찾아줘",
+    "주세요",
+}
 
 CANONICAL_SOURCE_CONFIGS: dict[str, dict[str, tuple[str, ...]]] = {
     "academic_calendar": {
@@ -517,7 +540,8 @@ def _canonical_dedupe_key(row: dict[str, Any], domain: str | None) -> str:
         if value:
             return f"{field}:{value}"
     normalized_text = _normalize_text(str(row.get("text") or ""))
-    if domain == "academic_calendar" and normalized_text:
+    row_domain = _normalize_domain(str(row.get("domain") or row.get("category") or ""))
+    if (domain == "academic_calendar" or row_domain == "academic_calendar") and normalized_text:
         return f"text:{normalized_text}"
     chunk_id = str(row.get("chunk_id") or "").strip()
     if chunk_id:
@@ -578,6 +602,8 @@ def _mark_low_confidence(row: dict[str, Any], threshold: float) -> dict[str, Any
 
 def _should_hard_filter(domain: str | None, rag_confidence: float | None) -> bool:
     if not domain or domain in {"default", "unknown"}:
+        return False
+    if domain == "department_notice":
         return False
     if rag_confidence is None:
         return True
@@ -781,15 +807,19 @@ def _run_search_attempt(
     source_scope: str | None,
     attempt: str,
 ) -> list[dict[str, Any]]:
-    query_embedding = embed_text(query)
     candidate_count = _candidate_count(top_k)
-    vector_rows = _mark_vector_rows(
-        _query_vector_candidates(
-            query_embedding=query_embedding,
-            top_k=candidate_count,
-            categories=categories,
+    vector_rows: list[dict[str, Any]] = []
+    try:
+        query_embedding = embed_text(query)
+        vector_rows = _mark_vector_rows(
+            _query_vector_candidates(
+                query_embedding=query_embedding,
+                top_k=candidate_count,
+                categories=categories,
+            )
         )
-    )
+    except Exception as exc:
+        logger.warning("Vector embedding failed; continuing with keyword search only: %s", exc)
     keyword_rows = _query_keyword_chunks(
         query=query,
         top_k=min(candidate_count, MAX_KEYWORD_CANDIDATES),
