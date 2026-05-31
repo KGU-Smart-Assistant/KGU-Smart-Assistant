@@ -508,6 +508,168 @@
 {"text": "총무팀 전화 문의는 어느 번호로 하면 돼?", "route": "relational_db", "db_intent": "phone"}
 {"text": "총무팀 사무실 번호 찾아줘", "route": "relational_db", "db_intent": "phone"}
 {"text": "총무팀 통화 가능한 번호 알려줘", "route": "relational_db", "db_intent": "phone"}
+{"text": "LMS 바로가기 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "LMS 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "LMS 주소 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "LMS 사이트 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "LMS 페이지 열 수 있는 링크 줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "LMS 접속 주소 뭐야?", "route": "relational_db", "db_intent": "info_link"}
+{"text": "lms 바로가기 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "lms 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "lms 주소 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "lms 사이트 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "lms 페이지 열 수 있는 링크 줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "lms 접속 주소 뭐야?", "route": "relational_db", "db_intent": "info_link"}
+{"text": "KUTIS 바로가기 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "KUTIS 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "KUTIS 주소 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "KUTIS 사이트 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "KUTIS 페이지 열 수 있는 링크 줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "KUTIS 접속 주소 뭐야?", "route": "relational_db", "db_intent": "info_link"}
+{"text": "kutis 바로가기 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "kutis 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "kutis 주소 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "kutis 사이트 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "kutis 페이지 열 수 있는 링크 줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "kutis 접속 주소 뭐야?", "route": "relational_db", "db_intent": "info_link"}
+{"text": "수강신청 바로가기 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "수강신청 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "수강신청 주소 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "수강신청 사이트 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "수강신청 페이지 열 수 있는 링크 줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "수강신청 접속 주소 뭐야?", "route": "relational_db", "db_intent": "info_link"}
+{"text": "수강 신청 바로가기 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "수강 신청 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "수강 신청 주소 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "수강 신청 사이트 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "수강 신청 페이지 열 수 있는 링크 줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "수강 신청 접속 주소 뭐야?", "route": "relational_db", "db_intent": "info_link"}
+{"text": "수강신청 시스템 바로가기 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "수강신청 시스템 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "수강신청 시스템 주소 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "수강신청 시스템 사이트 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "수강신청 시스템 페이지 열 수 있는 링크 줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "수강신청 시스템 접속 주소 뭐야?", "route": "relational_db", "db_intent": "info_link"}
+{"text": "통합공지사항 바로가기 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "통합공지사항 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "통합공지사항 주소 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "통합공지사항 사이트 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "통합공지사항 페이지 열 수 있는 링크 줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "통합공지사항 접속 주소 뭐야?", "route": "relational_db", "db_intent": "info_link"}
+{"text": "통합자료실 바로가기 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "통합자료실 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "통합자료실 주소 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "통합자료실 사이트 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "통합자료실 페이지 열 수 있는 링크 줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "통합자료실 접속 주소 뭐야?", "route": "relational_db", "db_intent": "info_link"}
+{"text": "학사일정 바로가기 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "학사일정 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "학사일정 주소 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "학사일정 사이트 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "학사일정 페이지 열 수 있는 링크 줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "학사일정 접속 주소 뭐야?", "route": "relational_db", "db_intent": "info_link"}
+{"text": "졸업요건 바로가기 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "졸업요건 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "졸업요건 주소 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "졸업요건 사이트 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "졸업요건 페이지 열 수 있는 링크 줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "졸업요건 접속 주소 뭐야?", "route": "relational_db", "db_intent": "info_link"}
+{"text": "장학공지 바로가기 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "장학공지 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "장학공지 주소 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "장학공지 사이트 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "장학공지 페이지 열 수 있는 링크 줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "장학공지 접속 주소 뭐야?", "route": "relational_db", "db_intent": "info_link"}
+{"text": "장학자료실 바로가기 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "장학자료실 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "장학자료실 주소 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "장학자료실 사이트 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "장학자료실 페이지 열 수 있는 링크 줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "장학자료실 접속 주소 뭐야?", "route": "relational_db", "db_intent": "info_link"}
+{"text": "국가장학금 바로가기 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "국가장학금 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "국가장학금 주소 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "국가장학금 사이트 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "국가장학금 페이지 열 수 있는 링크 줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "국가장학금 접속 주소 뭐야?", "route": "relational_db", "db_intent": "info_link"}
+{"text": "등록금 납부 바로가기 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "등록금 납부 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "등록금 납부 주소 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "등록금 납부 사이트 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "등록금 납부 페이지 열 수 있는 링크 줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "등록금 납부 접속 주소 뭐야?", "route": "relational_db", "db_intent": "info_link"}
+{"text": "증명서 발급 바로가기 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "증명서 발급 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "증명서 발급 주소 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "증명서 발급 사이트 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "증명서 발급 페이지 열 수 있는 링크 줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "증명서 발급 접속 주소 뭐야?", "route": "relational_db", "db_intent": "info_link"}
+{"text": "취업공지 바로가기 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "취업공지 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "취업공지 주소 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "취업공지 사이트 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "취업공지 페이지 열 수 있는 링크 줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "취업공지 접속 주소 뭐야?", "route": "relational_db", "db_intent": "info_link"}
+{"text": "현장실습 시스템 바로가기 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "현장실습 시스템 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "현장실습 시스템 주소 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "현장실습 시스템 사이트 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "현장실습 시스템 페이지 열 수 있는 링크 줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "현장실습 시스템 접속 주소 뭐야?", "route": "relational_db", "db_intent": "info_link"}
+{"text": "학식 메뉴 바로가기 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "학식 메뉴 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "학식 메뉴 주소 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "학식 메뉴 사이트 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "학식 메뉴 페이지 열 수 있는 링크 줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "학식 메뉴 접속 주소 뭐야?", "route": "relational_db", "db_intent": "info_link"}
+{"text": "셔틀버스 바로가기 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "셔틀버스 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "셔틀버스 주소 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "셔틀버스 사이트 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "셔틀버스 페이지 열 수 있는 링크 줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "셔틀버스 접속 주소 뭐야?", "route": "relational_db", "db_intent": "info_link"}
+{"text": "전자출결 바로가기 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "전자출결 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "전자출결 주소 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "전자출결 사이트 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "전자출결 페이지 열 수 있는 링크 줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "전자출결 접속 주소 뭐야?", "route": "relational_db", "db_intent": "info_link"}
+{"text": "도서관 바로가기 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "도서관 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "도서관 주소 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "도서관 사이트 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "도서관 페이지 열 수 있는 링크 줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "도서관 접속 주소 뭐야?", "route": "relational_db", "db_intent": "info_link"}
+{"text": "기숙사 바로가기 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "기숙사 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "기숙사 주소 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "기숙사 사이트 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "기숙사 페이지 열 수 있는 링크 줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "기숙사 접속 주소 뭐야?", "route": "relational_db", "db_intent": "info_link"}
+{"text": "입학처 바로가기 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "입학처 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "입학처 주소 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "입학처 사이트 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "입학처 페이지 열 수 있는 링크 줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "입학처 접속 주소 뭐야?", "route": "relational_db", "db_intent": "info_link"}
+{"text": "경기대 LMS 바로가기 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "경기대 LMS 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "경기대 LMS 주소 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "경기대 LMS 사이트 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "경기대 LMS 페이지 열 수 있는 링크 줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "경기대 LMS 접속 주소 뭐야?", "route": "relational_db", "db_intent": "info_link"}
+{"text": "경기대 KUTIS 바로가기 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "경기대 KUTIS 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "경기대 KUTIS 주소 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "경기대 KUTIS 사이트 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "경기대 KUTIS 페이지 열 수 있는 링크 줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "경기대 KUTIS 접속 주소 뭐야?", "route": "relational_db", "db_intent": "info_link"}
+{"text": "경기대 수강신청 바로가기 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "경기대 수강신청 링크 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "경기대 수강신청 주소 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "경기대 수강신청 사이트 알려줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "경기대 수강신청 페이지 열 수 있는 링크 줘", "route": "relational_db", "db_intent": "info_link"}
+{"text": "경기대 수강신청 접속 주소 뭐야?", "route": "relational_db", "db_intent": "info_link"}
 {"text": "학교에 저장된 캠퍼스 기본 정보 조회해줘", "route": "relational_db", "db_intent": "unknown"}
 {"text": "학교에 저장된 캠퍼스 기본 정보 기준으로 답해줘", "route": "relational_db", "db_intent": "unknown"}
 {"text": "학교에 저장된 캠퍼스 기본 정보 관련 항목 있는지 확인해줘", "route": "relational_db", "db_intent": "unknown"}

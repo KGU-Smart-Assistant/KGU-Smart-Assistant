@@ -7,10 +7,8 @@ const chatApiPath =
 const createChatUrl = () =>
   apiBaseUrl ? new URL(chatApiPath, apiBaseUrl).toString() : chatApiPath;
 
-const normalizeIntent = (intent) => {
-  const allowedIntents = ["지도", "전화", "학식", "일반"];
-  return allowedIntents.includes(intent) ? intent : "일반";
-};
+const normalizeIntent = (intent) =>
+  typeof intent === "string" && intent.trim() ? intent : "일반";
 
 const normalizeChatResponse = (data) => {
   if (!data || typeof data.reply !== "string") {
@@ -20,6 +18,13 @@ const normalizeChatResponse = (data) => {
   return {
     reply: data.reply,
     intent: normalizeIntent(data.intent),
+    route: data.route,
+    sources: Array.isArray(data.sources) ? data.sources : [],
+    rag_domain: data.rag_domain,
+    rag_domains: Array.isArray(data.rag_domains) ? data.rag_domains : [],
+    rag_detail: data.rag_detail,
+    rag_details: Array.isArray(data.rag_details) ? data.rag_details : [],
+    answer_status: data.answer_status,
   };
 };
 

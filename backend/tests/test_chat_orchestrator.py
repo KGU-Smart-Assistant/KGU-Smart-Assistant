@@ -380,6 +380,37 @@ def test_explicit_db_lookup_uses_relational_db_unknown(question: str) -> None:
     assert decision.db_intent == "unknown"
 
 
+def test_answer_chat_searches_postgres_for_unknown_relational_db_intent(monkeypatch) -> None:
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "classify_with_klue_bert",
+        lambda _: SimpleNamespace(
+            route="relational_db",
+            db_intent="unknown",
+            confidence=0.99,
+            label="relational_db",
+        ),
+    )
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "answer_from_relational_db_search",
+        lambda user_input, db: SimpleNamespace(
+            reply="장학금 공지 바로가기입니다.\nhttps://example.com/scholarship",
+            intent="바로가기",
+            source_title="kgu_info_links",
+            source_url="https://example.com/scholarship",
+            answered=True,
+        ),
+    )
+
+    result = chat_orchestrator.answer_chat("장학금 공지 링크 알려줘", db=None)
+
+    assert result.route == "relational_db"
+    assert result.intent == "바로가기"
+    assert "https://example.com/scholarship" in result.reply
+    assert result.sources[0].title == "kgu_info_links"
+
+
 def test_phone_keyword_has_priority_over_department_rag_keyword() -> None:
     decision = chat_orchestrator.decide_chat_route("청소년학과 전화번호 알려줘")
 
@@ -932,6 +963,7 @@ def test_answer_chat_returns_insufficient_when_results_do_not_ground_answer(monk
     assert result.route == "rag"
     assert result.answer_status == "insufficient"
     assert result.unverified
+    assert result.sources == []
     assert "근거를 확인할 수 없습니다" in result.reply
 
 
@@ -956,6 +988,37 @@ def test_answer_chat_returns_insufficient_for_low_confidence_search_result(monke
     assert result.route == "rag"
     assert result.answer_status == "insufficient"
     assert result.unverified
+    assert result.sources == []
+
+
+def test_answer_chat_hides_sources_when_rag_cannot_generate_answer(monkeypatch) -> None:
+    search_result = SearchResult(
+        chunk_id="chunk-1",
+        doc_id="doc-1",
+        score=0.91,
+        text="장학금 신청 안내입니다.",
+        title="장학금 신청 안내",
+        source_url="https://example.com/scholarship",
+    )
+
+    monkeypatch.setattr(
+        chat_orchestrator,
+        "answer_with_langchain_rag",
+        lambda *args, **kwargs: LangChainRagResult(
+            reply="현재 답변을 생성하지 못했습니다. 질문을 조금 더 구체적으로 다시 입력해 주세요.",
+            documents=[search_result_to_document(search_result)],
+            context="장학금 신청 안내입니다.",
+            confidence=0.91,
+            low_confidence=False,
+        ),
+    )
+
+    result = chat_orchestrator.answer_chat("장학금 신청 기간 알려줘", db=None)
+
+    assert result.route == "rag"
+    assert result.answer_status == "insufficient"
+    assert result.sources == []
+    assert "https://example.com/scholarship" not in result.reply
 
 
 def test_answer_chat_marks_generation_failure_as_insufficient(monkeypatch) -> None:

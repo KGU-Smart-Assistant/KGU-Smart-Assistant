@@ -12,6 +12,17 @@ KGU chatbot
 docker-compose.yml
 Dockerfile
 .tmp
+.pytest_tmp
+.crawl4ai-data
+models
+*.zip
+reports
+evaluation
+data
+__pycache__
+*.log
+kGU-chatbot
+app.db
 .tmp-root-owned-*
 .pytest_tmp
 .crawl4ai-data

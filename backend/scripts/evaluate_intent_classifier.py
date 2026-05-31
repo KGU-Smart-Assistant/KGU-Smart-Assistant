@@ -15,7 +15,7 @@ from scripts.validate_intent_classifier import DB_INTENTS, ROUTES, parse_model_l
 
 
 Route = Literal["llm", "relational_db", "rag", "weather"]
-DbIntent = Literal["map", "phone", "unknown"]
+DbIntent = Literal["map", "phone", "info_link", "unknown"]
 
 
 @dataclass(frozen=True)
@@ -26,7 +26,7 @@ class EvalExample:
 
     @property
     def label(self) -> str:
-        if self.route == "relational_db" and self.db_intent in {"map", "phone"}:
+        if self.route == "relational_db" and self.db_intent in {"map", "phone", "info_link"}:
             return f"{self.route}:{self.db_intent}"
         return self.route
 
@@ -44,13 +44,13 @@ class EvalPrediction:
 
     @property
     def expected_label(self) -> str:
-        if self.expected_route == "relational_db" and self.expected_db_intent in {"map", "phone"}:
+        if self.expected_route == "relational_db" and self.expected_db_intent in {"map", "phone", "info_link"}:
             return f"{self.expected_route}:{self.expected_db_intent}"
         return self.expected_route
 
     @property
     def predicted_public_label(self) -> str:
-        if self.predicted_route == "relational_db" and self.predicted_db_intent in {"map", "phone"}:
+        if self.predicted_route == "relational_db" and self.predicted_db_intent in {"map", "phone", "info_link"}:
             return f"{self.predicted_route}:{self.predicted_db_intent}"
         return self.predicted_route
 

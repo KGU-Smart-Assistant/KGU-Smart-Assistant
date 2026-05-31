@@ -8,6 +8,7 @@ from .models import (
     CrawlerIngestRun,
     CrawlerSource,
     KguContact,
+    KguInfoLink,
     KguPlace,
 )
 
@@ -19,5 +20,6 @@ __all__ = [
     "CrawlerIngestRun",
     "CrawlerSource",
     "KguContact",
+    "KguInfoLink",
     "KguPlace",
 ]

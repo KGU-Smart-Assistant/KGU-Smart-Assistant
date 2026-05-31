@@ -4,8 +4,10 @@ from scripts.validate_intent_classifier import parse_model_label, validate_text
 
 
 def test_parse_model_label_maps_internal_relational_db_labels() -> None:
-    assert parse_model_label("relational_db:map") == ("relational_db", "unknown")
-    assert parse_model_label("relational_db/phone") == ("relational_db", "unknown")
+    assert parse_model_label("relational_db:map") == ("relational_db", "map")
+    assert parse_model_label("relational_db/phone") == ("relational_db", "phone")
+    assert parse_model_label("relational_db:info_link") == ("relational_db", "info_link")
+    assert parse_model_label("link") == ("relational_db", "info_link")
     assert parse_model_label("relational_db__unknown") == ("relational_db", "unknown")
 
 

@@ -4,169 +4,115 @@ import re
 from typing import Iterable
 
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.models import KguPlace
 
-# DB가 비어 있거나 매칭 실패 시에도 자주 묻는 장소(중앙도서관) — JSON과 동일 좌표 유지
-_FALLBACK_LIBRARY: tuple[str, float, float] = (
-    "경기대학교 수원캠퍼스 중앙도서관",
-    37.30125,
-    127.03645,
-)
-
-# 질문에서 제거(긴 것부터 처리)
 _STOPWORDS: tuple[str, ...] = (
-    "어디있어",
-    "어디있니",
-    "어딨어",
-    "어딨니",
-    "어디야",
-    "어디에",
-    "어디",
-    "어딨",
-    "물어봐",
-    "알려줘",
-    "알려",
-    "찾아줘",
-    "찾아",
     "위치",
+    "어디",
     "가는길",
     "가는",
     "길",
-    "좀",
-    "주세요",
-    "주세",
-    "해줘",
-    "해봐",
-    "알아",
-    "뭐야",
-    "뭐지",
+    "지도",
+    "찾아줘",
+    "찾아",
+    "알려줘",
+    "알려",
     "있어",
-    "있니",
-    "없어",
-    "없니",
+    "있나요",
+    "주세요",
+    "좀",
 )
 
-_PARTICLE_SUFFIXES = ("에서", "으로", "로", "에게", "은", "는", "이", "가", "을", "를", "에")
+
+def _normalize_text(value: str) -> str:
+    value = value.casefold()
+    return re.sub(r"[^\w가-힣]+", "", value)
 
 
-def _normalize_text(s: str) -> str:
-    s = s.lower()
-    s = re.sub(r"[^\w\s가-힣]", "", s)
-    s = re.sub(r"\s+", "", s)
-    return s
+def _tokenize(value: str) -> list[str]:
+    return [
+        _normalize_text(token)
+        for token in re.split(r"[^\w가-힣]+", value.casefold())
+        if len(_normalize_text(token)) >= 2
+    ]
 
 
-def _strip_stopwords(s: str) -> str:
-    for w in sorted(_STOPWORDS, key=len, reverse=True):
-        s = s.replace(w, "")
-    return _strip_particle_suffix(s)
+def _strip_stopwords(value: str) -> str:
+    normalized = _normalize_text(value)
+    for word in sorted(_STOPWORDS, key=len, reverse=True):
+        normalized = normalized.replace(_normalize_text(word), "")
+    return normalized
 
 
-def _strip_particle_suffix(s: str) -> str:
-    for suffix in _PARTICLE_SUFFIXES:
-        if s.endswith(suffix) and len(s) > len(suffix) + 1:
-            return s[: -len(suffix)]
-    return s
-
-
-def _name_match_tokens(name: str) -> list[str]:
-    """장소명에서 비교에 쓸 토큰(띄어쓰기 단위 + 전체)."""
-    n = _normalize_text(name)
-    if not n:
-        return []
-    parts = [p for p in re.split(r"\s+", name.strip()) if p]
-    tokens = {_normalize_text(p) for p in parts if len(_normalize_text(p)) >= 2}
-    tokens.add(n)
-    return list(tokens)
+def _query_terms(user_input: str) -> list[str]:
+    terms = set(_tokenize(user_input))
+    stripped = _strip_stopwords(user_input)
+    if len(stripped) >= 2:
+        terms.add(stripped)
+    return sorted(terms, key=len, reverse=True)
 
 
 def _score_place(
-    user_keywords: Iterable[str],
-    name_norm: str,
-    desc_norm: str,
+    terms: Iterable[str],
+    *,
+    name: str,
+    description: str | None,
 ) -> int:
-    """질문 키워드가 이름/설명에 포함되면 점수. 길수록 우선."""
-    haystacks = (name_norm, desc_norm)
-    best = 0
-    for kw in user_keywords:
-        if len(kw) < 2:
+    haystacks = (_normalize_text(name), _normalize_text(description or ""))
+    score = 0
+
+    for term in terms:
+        if len(term) < 2:
             continue
-        for hay in haystacks:
-            if not hay:
+        for haystack in haystacks:
+            if not haystack:
                 continue
-            if kw in hay:
-                best = max(best, 100 + len(kw))
-    return best
+            if term == haystack:
+                score = max(score, 300 + len(term))
+            elif term in haystack:
+                score = max(score, 200 + len(term))
+            elif haystack in term and len(haystack) >= 2:
+                score = max(score, 120 + len(haystack))
+
+    return score
 
 
 def _pick_best_match(
     user_input: str,
     rows: list[tuple[str, str | None, float, float]],
 ) -> tuple[str, float, float] | None:
-    user_norm = _normalize_text(user_input)
-    user_after_stop = _strip_stopwords(user_norm)
+    terms = _query_terms(user_input)
+    ranked: list[tuple[int, str, float, float]] = []
 
-    # 질문 핵심 키워드: 불용어 제거 후 남는 부분만 (예: "도서관어딨어" -> "도서관")
-    user_keywords: list[str] = []
-    if len(user_after_stop) >= 2:
-        user_keywords.append(user_after_stop)
-        stripped_keyword = _strip_particle_suffix(user_after_stop)
-        if stripped_keyword != user_after_stop and len(stripped_keyword) >= 2:
-            user_keywords.append(stripped_keyword)
+    for name, description, latitude, longitude in rows:
+        score = _score_place(terms, name=name, description=description)
+        if score > 0:
+            ranked.append((score, name, latitude, longitude))
 
-    best: tuple[str, float, float] | None = None
-    best_score = -1
+    if not ranked:
+        return None
 
-    for name, description, lat, lon in rows:
-        name_norm = _normalize_text(name)
-        desc_norm = _normalize_text(description or "")
-        tokens = _name_match_tokens(name)
-
-        score = _score_place(user_keywords, name_norm, desc_norm)
-        # "도서관" 처럼 짧은 호칭이 장소명 일부와 일치
-        for kw in user_keywords:
-            if len(kw) < 2:
-                continue
-            for t in tokens:
-                if len(t) < 2:
-                    continue
-                if kw in t or t in kw:
-                    score = max(score, 80 + min(len(kw), len(t)))
-
-        if score > best_score:
-            best_score = score
-            best = (name, float(lat), float(lon))
-
-    return best if best_score > 0 else None
+    _, name, latitude, longitude = sorted(ranked, key=lambda item: (-item[0], item[1]))[0]
+    return name, latitude, longitude
 
 
 def get_map_response(user_input: str, db: Session) -> str:
-    """
-    사용자 자연어에서 장소를 유추하고 좌표/지도 링크 반환
-    """
-    rows = db.execute(
-        select(KguPlace.name, KguPlace.description, KguPlace.latitude, KguPlace.longitude)
-    ).all()
-    candidates = [(r[0], r[1], float(r[2]), float(r[3])) for r in rows]
+    try:
+        rows = db.execute(
+            select(KguPlace.name, KguPlace.description, KguPlace.latitude, KguPlace.longitude)
+        ).all()
+    except SQLAlchemyError:
+        return "캠퍼스 위치 DB를 조회하는 중 오류가 발생했습니다."
+
+    candidates = [(row[0], row[1], float(row[2]), float(row[3])) for row in rows]
     best = _pick_best_match(user_input, candidates)
 
     if best is None:
-        un = _normalize_text(user_input)
-        us = _strip_stopwords(un)
-        if (
-            "도서관" in un
-            or "중앙도서관" in un
-            or "열람실" in un
-            or "도서관" in us
-            or "중앙도서관" in us
-        ):
-            best = (_FALLBACK_LIBRARY[0], _FALLBACK_LIBRARY[1], _FALLBACK_LIBRARY[2])
+        return "요청하신 위치를 찾지 못했습니다. 정확한 건물명이나 장소명을 포함해서 다시 질문해 주세요."
 
-    if best is None:
-        return "📍 요청하신 위치를 찾지 못했습니다. 정확한 건물/장소 이름을 포함해서 질문해주세요."
-
-    name, lat, lon = best
-    maps_url = f"https://www.google.com/maps?q={lat},{lon}"
-    return f"📍 {name} 위치입니다. 위도/경도: ({lat}, {lon})\n지도: {maps_url}"
+    name, latitude, longitude = best
+    maps_url = f"https://www.google.com/maps?q={latitude},{longitude}"
+    return f"{name} 위치입니다. 위도/경도: ({latitude}, {longitude})\n지도: {maps_url}"

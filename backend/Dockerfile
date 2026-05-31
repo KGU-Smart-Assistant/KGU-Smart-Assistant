@@ -8,7 +8,7 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONIOENCODING=utf-8
 ENV CRAWL4_AI_BASE_DIRECTORY=/app/.crawl4ai-data
 
-COPY requirements.txt requirements-crawlers.txt requirements-ml.txt ./
+COPY requirements.txt requirements-ml.txt requirements-crawlers.txt ./
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && if [ "$INSTALL_CRAWLER_DEPS" = "true" ]; then apt-get install -y --no-install-recommends \

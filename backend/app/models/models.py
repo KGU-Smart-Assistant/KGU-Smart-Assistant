@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -28,6 +28,20 @@ class KguContact(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     phone: Mapped[str] = mapped_column(String(64), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class KguInfoLink(Base):
+    __tablename__ = "kgu_info_links"
+    __table_args__ = (UniqueConstraint("group_id", "label", "url", name="uq_kgu_info_links_group_label_url"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    group_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    group_title: Mapped[str] = mapped_column(String(255), nullable=False)
+    group_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    label: Mapped[str] = mapped_column(String(255), nullable=False)
+    url: Mapped[str] = mapped_column(Text, nullable=False)
+    link_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 
 class CrawlerSource(Base):

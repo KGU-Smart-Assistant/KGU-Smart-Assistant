@@ -8,7 +8,7 @@ from app.services.rag_domain_classifier import RAG_DOMAIN_LABELS
 
 DATA_PATH = Path(__file__).resolve().parents[1] / "app" / "data" / "production_question_set.jsonl"
 VALID_ROUTES = {"llm", "relational_db", "rag", "weather"}
-VALID_DB_INTENTS = {"unknown", "map", "phone"}
+VALID_DB_INTENTS = {"unknown", "map", "phone", "info_link"}
 VALID_AMBIGUITIES = {"clear", "multi_domain", "low_confidence", "missing_detail", "needs_clarification"}
 
 

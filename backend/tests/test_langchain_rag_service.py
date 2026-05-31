@@ -106,13 +106,13 @@ def test_langchain_chain_formats_context_and_calls_answer_fn() -> None:
     result = chain.invoke("장학금 신청 기간 알려줘")
 
     assert "장학금 신청 기간은 5월 1일부터 5월 10일까지입니다." in result.reply
-    assert "https://example.com/scholarship" in result.reply
+    assert "https://example.com/scholarship" not in result.reply
     assert result.documents[0].metadata["source_url"] == "https://example.com/scholarship"
     assert "검색 근거:" in captured["prompt"]
     assert "영어 답변을 쓰지 말고" in captured["prompt"]
     assert "근거 번호를 [1]처럼" in captured["prompt"]
     assert "[1] 장학금 신청 안내" in captured["prompt"]
-    assert "- [1] 장학금 신청 안내: https://example.com/scholarship" in result.reply
+    assert "출처:" not in result.reply
     assert result.documents[0].metadata["source_number"] == 1
 
 
@@ -136,7 +136,7 @@ def test_langchain_chain_rewrites_english_answers_to_korean() -> None:
     assert len(calls) == 2
     assert "장학금 신청 기간은 5월 1일부터 5월 10일까지입니다." in result.reply
     assert "The scholarship" not in result.reply
-    assert "https://example.com/scholarship" in result.reply
+    assert "https://example.com/scholarship" not in result.reply
 
 
 def test_langchain_chain_uses_source_only_reply_when_korean_rewrite_fails() -> None:
@@ -150,9 +150,36 @@ def test_langchain_chain_uses_source_only_reply_when_korean_rewrite_fails() -> N
     )
     result = chain.invoke("장학금 신청 기간 알려줘")
 
-    assert "한국어 답변을 생성하지 못했습니다" in result.reply
-    assert "출처:" in result.reply
-    assert "https://example.com/scholarship" in result.reply
+    assert "답변을 생성하지 못했습니다" in result.reply
+    assert "출처:" not in result.reply
+    assert "https://example.com/scholarship" not in result.reply
+
+
+def test_langchain_chain_uses_snippet_fallback_when_model_quota_fails() -> None:
+    class StaticRetriever(BaseRetriever):
+        def _get_relevant_documents(self, query: str, *, run_manager=None):
+            return [
+                search_result_to_document(
+                    _search_result(
+                        title="졸업요건 안내",
+                        text="졸업요건은 졸업학점, 졸업논문, 인권과 성평등교육, 졸업인증제를 이수해야 합니다.",
+                        score=0.92,
+                        confidence=0.92,
+                    )
+                )
+            ]
+
+    chain = build_rag_chain(
+        retriever=StaticRetriever(),
+        answer_fn=lambda prompt: "현재 Gemini API 사용량 제한에 도달했습니다. 잠시 후 다시 시도해 주세요.",
+    )
+    result = chain.invoke("졸업요건 알려줘")
+
+    assert "현재 답변을 생성하지 못했습니다" in result.reply
+    assert "졸업요건은 졸업학점" not in result.reply
+    assert "현재 Gemini API 사용량 제한" not in result.reply
+    assert "https://example.com/scholarship" not in result.reply
+    assert result.low_confidence is False
 
 
 def test_answer_with_langchain_rag_returns_documents_context_and_trace() -> None:
@@ -172,7 +199,7 @@ def test_answer_with_langchain_rag_returns_documents_context_and_trace() -> None
     )
 
     assert "문서 근거 답변" in result.reply
-    assert "https://example.com/scholarship" in result.reply
+    assert "https://example.com/scholarship" not in result.reply
     assert result.documents[0].metadata["title"] == "장학금 신청 안내"
     assert "장학금 신청 기간" in result.context
     assert result.expanded_queries[0] == "장학금 신청 기간 알려줘"
@@ -194,8 +221,9 @@ def test_low_confidence_result_limits_answer_generation() -> None:
     result = chain.invoke("장학금 신청 기간 알려줘")
 
     assert result.low_confidence is True
-    assert "확정 답변은 제한" in result.reply
-    assert "https://example.com/scholarship" in result.reply
+    assert "관련 자료를 충분히 찾지 못했습니다" in result.reply
+    assert "출처:" not in result.reply
+    assert "https://example.com/scholarship" not in result.reply
 
 
 def test_chroma_vectorstore_retriever_adapts_rows_to_documents(monkeypatch) -> None:
@@ -267,10 +295,14 @@ def test_parent_expanded_metadata_flows_to_context_and_trace() -> None:
     trace_path.unlink(missing_ok=True)
 
 
-def test_ensure_source_urls_appends_missing_urls() -> None:
+def test_ensure_source_urls_strips_inline_source_section() -> None:
     document = search_result_to_document(_search_result())
 
-    reply = ensure_source_urls("답변입니다.", [document])
+    reply = ensure_source_urls(
+        "답변입니다.\n\n출처:\n- [1] 장학금 신청 안내: https://example.com/scholarship",
+        [document],
+    )
 
-    assert "출처:" in reply
-    assert "https://example.com/scholarship" in reply
+    assert reply == "답변입니다."
+    assert "출처:" not in reply
+    assert "https://example.com/scholarship" not in reply

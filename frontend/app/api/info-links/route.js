@@ -1,17 +1,17 @@
 const DEFAULT_BACKEND_API_BASE_URL = "http://127.0.0.1:8000";
-const DEFAULT_BACKEND_CONTACTS_API_PATH = "/api/v1/extra/contacts";
+const DEFAULT_BACKEND_INFO_LINKS_API_PATH = "/api/v1/extra/info-links";
 
 const backendApiBaseUrl =
   process.env.BACKEND_API_BASE_URL || DEFAULT_BACKEND_API_BASE_URL;
-const backendContactsApiPath =
-  process.env.BACKEND_CONTACTS_API_PATH || DEFAULT_BACKEND_CONTACTS_API_PATH;
+const backendInfoLinksApiPath =
+  process.env.BACKEND_INFO_LINKS_API_PATH || DEFAULT_BACKEND_INFO_LINKS_API_PATH;
 
-const createBackendContactsUrl = () =>
-  new URL(backendContactsApiPath, backendApiBaseUrl).toString();
+const createBackendInfoLinksUrl = () =>
+  new URL(backendInfoLinksApiPath, backendApiBaseUrl).toString();
 
 export async function GET() {
   try {
-    const backendResponse = await fetch(createBackendContactsUrl(), {
+    const backendResponse = await fetch(createBackendInfoLinksUrl(), {
       headers: {
         Accept: "application/json",
       },
@@ -20,13 +20,13 @@ export async function GET() {
 
     if (!backendResponse.ok) {
       return Response.json(
-        { contacts: [] },
+        { groups: [] },
         { status: backendResponse.status },
       );
     }
 
     return Response.json(await backendResponse.json());
   } catch {
-    return Response.json({ contacts: [] }, { status: 502 });
+    return Response.json({ groups: [] }, { status: 502 });
   }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useState } from "react";
 
 import krMain from "@/localisation_kr/mainpage.json";
 import enMain from "@/localisation_en/mainpage.json";
@@ -27,18 +27,18 @@ const dictionaries = {
 const LanguageContext = createContext();
 const defaultLanguage = "kr";
 
+const getInitialLanguage = () => {
+  if (typeof window === "undefined") {
+    return defaultLanguage;
+  }
+
+  const lang = new URLSearchParams(window.location.search).get("lang");
+  return dictionaries[lang] ? lang : defaultLanguage;
+};
 
 export function LanguageProvider({ children }) {
-  const [currentLang, setCurrentLang] = useState(defaultLanguage);
+  const [currentLang, setCurrentLang] = useState(getInitialLanguage);
 
-useEffect(() => {
-  const lang = new URLSearchParams(window.location.search).get("lang");
-  if (dictionaries[lang]) {
-    setCurrentLang(lang);
-  }
-}, []); // 기본 언어: 한국어(kr)
-
-  // 다국어 번역을 위한 t 함수
   const t = (keyPath, language = currentLang) => {
     const keys = keyPath.split(".");
     let current = dictionaries[language] ?? dictionaries[currentLang];
@@ -46,7 +46,7 @@ useEffect(() => {
       if (current && current[key] !== undefined) {
         current = current[key];
       } else {
-        return keyPath; // 키에 해당하는 값이 없으면 키를 그대로 반환
+        return keyPath;
       }
     }
     return current;

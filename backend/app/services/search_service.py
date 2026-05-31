@@ -27,6 +27,7 @@ MAX_KEYWORD_CANDIDATES = 30
 LOW_CONFIDENCE_THRESHOLD = 0.35
 PRIMARY_DETAIL_BOOST = 0.08
 SECONDARY_DETAIL_BOOST = 0.04
+CANONICAL_SOURCE_BOOST = 0.20
 HARD_FILTER_CONFIDENCE_THRESHOLD = 0.75
 PARENT_EXPANSION_WINDOW = 1
 MAX_PARENT_EXPANDED_CHUNKS = 20
@@ -52,6 +53,95 @@ QUERY_ANCHOR_STOPWORDS = {
     "자료",
     "찾아줘",
     "주세요",
+}
+
+CANONICAL_SOURCE_CONFIGS: dict[str, dict[str, tuple[str, ...]]] = {
+    "academic_calendar": {
+        "url_fragments": ("selecttnschafsschdullistus.do?key=5695",),
+        "title_fragments": ("학사일정(학부)",),
+    },
+    "academic_status": {
+        "url_fragments": (
+            "contents.do?key=8412",
+            "contents.do?key=8413",
+            "contents.do?key=8489",
+            "contents.do?key=8423",
+            "contents.do?key=8706",
+        ),
+        "departments": ("academic_affairs",),
+    },
+    "course_registration": {
+        "url_fragments": (
+            "contents.do?key=8431",
+            "contents.do?key=8430",
+            "contents.do?key=8432",
+            "contents.do?key=8433",
+            "contents.do?key=8434",
+            "contents.do?key=8435",
+            "contents.do?key=8436",
+            "contents.do?key=8427",
+            "contents.do?key=8429",
+        ),
+        "departments": ("academic_affairs",),
+    },
+    "document_materials": {
+        "url_fragments": ("contents.do?key=5729",),
+        "title_fragments": ("증명서 발급",),
+    },
+    "graduation": {
+        "url_fragments": ("contents.do?key=8418",),
+        "title_fragments": ("1. 졸업안내",),
+    },
+    "major_change": {
+        "url_fragments": (
+            "contents.do?key=8414",
+            "contents.do?key=8415",
+            "contents.do?key=8416",
+            "contents.do?key=7776",
+        ),
+        "departments": ("academic_affairs",),
+    },
+    "multi_major": {
+        "url_fragments": (
+            "contents.do?key=8420",
+            "contents.do?key=8414",
+            "contents.do?key=7776",
+            "contents.do?key=9913",
+            "contents.do?key=9914",
+            "contents.do?key=9881",
+        ),
+        "departments": ("academic_affairs",),
+    },
+    "scholarship": {
+        "url_fragments": (
+            "contents.do?key=3066",
+            "contents.do?key=3067",
+            "contents.do?key=3068",
+            "contents.do?key=3069",
+            "contents.do?key=3071",
+            "contents.do?key=3072",
+            "contents.do?key=3073",
+            "contents.do?key=3074",
+            "contents.do?key=3075",
+            "contents.do?key=3076",
+            "contents.do?key=3084",
+        ),
+        "departments": ("scholarship_support",),
+    },
+    "teaching_certification": {
+        "url_fragments": (
+            "contents.do?key=8490",
+            "contents.do?key=8491",
+            "contents.do?key=8492",
+            "contents.do?key=8493",
+            "contents.do?key=8494",
+        ),
+        "departments": ("academic_affairs",),
+    },
+    "tuition": {
+        "url_fragments": ("contents.do?key=3262",),
+        "departments": ("finance_accounting",),
+    },
 }
 
 
@@ -203,7 +293,6 @@ def search_documents(
             primary_rows,
             effective_domain,
             top_k,
-            query=query,
             source_scope=policy.source_scope,
             low_confidence_threshold=low_confidence_threshold,
             enable_parent_expansion=enable_parent_expansion,
@@ -219,7 +308,6 @@ def search_documents(
             primary_rows,
             effective_domain,
             top_k,
-            query=query,
             source_scope=policy.source_scope,
             low_confidence_threshold=low_confidence_threshold,
             enable_parent_expansion=enable_parent_expansion,
@@ -254,7 +342,6 @@ def search_documents(
         merged_rows,
         effective_domain,
         top_k,
-        query=query,
         source_scope=policy.source_scope,
         low_confidence_threshold=low_confidence_threshold,
         enable_parent_expansion=enable_parent_expansion,
@@ -339,7 +426,7 @@ def rerank_candidate_rows(
         domain_match = _domain_match_score(effective_domain, row.get("domain") or row.get("category"))
         detail_boost = _detail_boost(effective_details, row)
         scope_boost = _scope_boost(source_scope, row)
-        source_scope_adjustment = _source_scope_adjustment(effective_domain, source_scope, row)
+        canonical_boost = _canonical_source_boost(effective_domain, source_scope, row)
         exact = _exact_phrase_score(query=query, title=row.get("title") or "", text=row.get("text") or "")
         source_penalty = _source_penalty(row)
         fallback_penalty = 0.35 if row.get("fallback_used") else 0.0
@@ -356,7 +443,7 @@ def rerank_candidate_rows(
                 base_score
                 + detail_boost
                 + scope_boost
-                + source_scope_adjustment
+                + canonical_boost
                 + exact
                 - source_penalty
                 - fallback_penalty,
@@ -375,7 +462,7 @@ def rerank_candidate_rows(
             "category": round(domain_match, 6),
             "detail": round(detail_boost, 6),
             "scope": round(scope_boost, 6),
-            "source_scope_adjustment": round(source_scope_adjustment, 6),
+            "canonical": round(canonical_boost, 6),
             "exact": round(exact, 6),
             "source_penalty": round(source_penalty, 6),
             "fallback_penalty": round(fallback_penalty, 6),
@@ -404,14 +491,12 @@ def _finalize_rows(
     domain: str | None,
     top_k: int,
     *,
-    query: str = "",
     source_scope: str | None = None,
     low_confidence_threshold: float = LOW_CONFIDENCE_THRESHOLD,
     enable_parent_expansion: bool = True,
 ) -> list[dict[str, Any]]:
     deduped = _dedupe_canonical_rows(rows, domain)
-    deduped = _filter_broad_university_rows(deduped, domain=domain, query=query, source_scope=source_scope)
-    deduped = _filter_query_anchor_rows(deduped, query=query)
+    deduped = _prefer_canonical_rows(deduped, domain, source_scope)
     ranked = sorted(
         deduped,
         key=lambda row: (
@@ -438,153 +523,15 @@ def _dedupe_canonical_rows(rows: list[dict[str, Any]], domain: str | None) -> li
     return list(selected.values())
 
 
-def _filter_broad_university_rows(
+def _prefer_canonical_rows(
     rows: list[dict[str, Any]],
-    *,
     domain: str | None,
-    query: str,
     source_scope: str | None,
 ) -> list[dict[str, Any]]:
-    if domain != "graduation" or source_scope == "department":
+    if source_scope == "department" or domain not in CANONICAL_SOURCE_CONFIGS:
         return rows
-
-    university_rows = [row for row in rows if _is_university_wide_row(row)]
-    if not university_rows:
-        return rows
-    title_topic_rows = [row for row in university_rows if _title_matches_broad_topic(query=query, row=row)]
-    if title_topic_rows:
-        return title_topic_rows
-    topic_rows = [row for row in university_rows if _matches_broad_topic(query=query, row=row)]
-    if topic_rows:
-        return topic_rows
-    return university_rows
-
-
-def _filter_query_anchor_rows(rows: list[dict[str, Any]], *, query: str) -> list[dict[str, Any]]:
-    anchors = _query_anchor_terms(query)
-    if not anchors:
-        return rows
-
-    aligned = [row for row in rows if _row_matches_any_anchor(row, anchors)]
-    if not aligned:
-        return rows
-
-    for row in aligned:
-        breakdown = dict(row.get("score_breakdown") or {})
-        breakdown["query_anchor_match"] = 1.0
-        anchor_boost = _query_anchor_boost(row, anchors)
-        if anchor_boost:
-            row["score"] = round(min(float(row.get("score") or 0.0) + anchor_boost, 1.0), 6)
-            breakdown["query_anchor_boost"] = round(anchor_boost, 6)
-        row["score_breakdown"] = breakdown
-    return aligned
-
-
-def _query_anchor_terms(query: str) -> list[str]:
-    normalized = _normalize_text(query)
-    if "국가" in normalized and "장학" in normalized:
-        return ["국가장학금", "국가장학"]
-
-    terms: list[str] = []
-    for token in _tokenize(normalized):
-        if token in QUERY_ANCHOR_STOPWORDS:
-            continue
-        if token.endswith(("은", "는", "이", "가", "을", "를")) and len(token) > 2:
-            token = token[:-1]
-        if token and token not in QUERY_ANCHOR_STOPWORDS:
-            terms.append(token)
-
-    if "졸업" in normalized and "요건" in normalized:
-        terms.append("졸업요건")
-    if "컴퓨터" in normalized:
-        terms.extend(["컴퓨터", "u_computer"])
-    if "휴학" in normalized:
-        terms.append("휴학")
-    if "복학" in normalized:
-        terms.append("복학")
-
-    variants: list[str] = []
-    for term in terms:
-        variants.append(term)
-        for suffix in ("학과", "학부", "전공"):
-            if term.endswith(suffix) and len(term) > len(suffix) + 1:
-                variants.append(term[: -len(suffix)])
-    return list(dict.fromkeys(term for term in variants if len(term) >= 2))
-
-
-def _row_matches_any_anchor(row: dict[str, Any], anchors: list[str]) -> bool:
-    title = _normalize_text(str(row.get("title") or ""))
-    text = _normalize_text(str(row.get("text") or ""))
-    source_url = str(row.get("source_url") or "").casefold()
-    department = _normalize_text(str(row.get("department") or ""))
-    haystack = f"{title} {text[:1600]} {source_url} {department}"
-    return any(anchor in haystack for anchor in anchors)
-
-
-def _query_anchor_boost(row: dict[str, Any], anchors: list[str]) -> float:
-    title = _normalize_text(str(row.get("title") or ""))
-    source_url = str(row.get("source_url") or "").casefold()
-    department = _normalize_text(str(row.get("department") or ""))
-    text = _normalize_text(str(row.get("text") or ""))
-
-    if any(anchor in title for anchor in anchors):
-        return 0.30
-    if any(anchor in source_url or anchor in department for anchor in anchors):
-        return 0.12
-    if any(anchor in text[:1600] for anchor in anchors):
-        return 0.04
-    return 0.0
-
-
-def _matches_broad_topic(*, query: str, row: dict[str, Any]) -> bool:
-    query_terms = _query_topic_terms(query)
-    if not query_terms:
-        return True
-
-    title = _normalize_text(str(row.get("title") or ""))
-    text = _normalize_text(str(row.get("text") or ""))
-    haystack = f"{title} {text[:1200]}"
-    return any(term in haystack for term in query_terms)
-
-
-def _title_matches_broad_topic(*, query: str, row: dict[str, Any]) -> bool:
-    query_terms = _query_topic_terms(query)
-    if not query_terms:
-        return False
-    title = _normalize_text(str(row.get("title") or ""))
-    return any(term in title for term in query_terms)
-
-
-def _query_topic_terms(query: str) -> list[str]:
-    normalized = _normalize_text(query)
-    stopwords = {
-        "알려줘",
-        "알려주세요",
-        "궁금해",
-        "뭐야",
-        "어떻게",
-        "어디서",
-        "확인",
-        "보고",
-        "싶어",
-    }
-    terms = [token for token in _tokenize(normalized) if token not in stopwords]
-    compounds: list[str] = []
-    if "졸업" in normalized and "요건" in normalized:
-        compounds.extend(["졸업요건", "졸업 요건", "졸업안내"])
-    if "신청" in normalized and "기간" in normalized:
-        compounds.extend(["신청기간", "신청 기간"])
-    if "제출" in normalized and "서류" in normalized:
-        compounds.extend(["제출서류", "제출 서류"])
-    return list(dict.fromkeys([*compounds, *terms]))
-
-
-def _is_university_wide_row(row: dict[str, Any]) -> bool:
-    department = str(row.get("department") or "").strip().casefold()
-    source_url = str(row.get("source_url") or "").casefold()
-    if department == "university":
-        return True
-    return "/www/contents.do" in source_url
+    canonical_rows = [row for row in rows if _is_canonical_source(domain, row)]
+    return canonical_rows or rows
 
 
 def _canonical_dedupe_key(row: dict[str, Any], domain: str | None) -> str:
@@ -632,18 +579,8 @@ def _canonical_priority(row: dict[str, Any], domain: str | None) -> float:
             priority -= 0.3
         if "학사일정" in title:
             priority += 0.5
-    if domain == "graduation":
-        source_url = str(row.get("source_url") or "").casefold()
-        if row_domain == "graduation":
-            priority += 1.0
-        if department in {"university", "?숆탳", "蹂멸탳", ""}:
-            priority += 1.0
-        else:
-            priority -= 0.4
-        if "/www/contents.do" in source_url:
-            priority += 0.8
-        if "downloadbbsfile.do" in source_url:
-            priority -= 0.3
+    if domain in CANONICAL_SOURCE_CONFIGS and _is_canonical_source(domain, row):
+        priority += 1.2
     return priority
 
 
@@ -1186,28 +1123,29 @@ def _scope_boost(source_scope: str | None, row: Dict[str, Any]) -> float:
     return 0.0
 
 
-def _source_scope_adjustment(domain: str | None, source_scope: str | None, row: Dict[str, Any]) -> float:
-    """Prefer university-wide guides for broad policy questions."""
-    if domain != "graduation" or source_scope == "department":
-        return 0.0
+def _canonical_source_boost(domain: str | None, source_scope: str | None, row: Dict[str, Any]) -> float:
+    if domain in CANONICAL_SOURCE_CONFIGS and source_scope != "department" and _is_canonical_source(domain, row):
+        return CANONICAL_SOURCE_BOOST
+    return 0.0
 
-    department = str(row.get("department") or "").strip().casefold()
+
+def _is_canonical_source(domain: str | None, row: Dict[str, Any]) -> bool:
+    if not domain:
+        return False
+    config = CANONICAL_SOURCE_CONFIGS.get(domain)
+    if not config:
+        return False
     source_url = str(row.get("source_url") or "").casefold()
-    adjustment = 0.0
-
-    if department == "university":
-        adjustment += 0.30
-    elif department:
-        adjustment -= 0.18
-
-    if "/www/contents.do" in source_url:
-        adjustment += 0.18
-    if "downloadbbsfile.do" in source_url:
-        adjustment -= 0.08
-    if "selectbbsnttview.do" in source_url and department and department != "university":
-        adjustment -= 0.06
-
-    return adjustment
+    title = str(row.get("title") or "").strip()
+    department = str(row.get("department") or "").strip().casefold()
+    url_fragments = config.get("url_fragments", ())
+    title_fragments = config.get("title_fragments", ())
+    departments = config.get("departments", ())
+    if url_fragments and any(fragment.casefold() in source_url for fragment in url_fragments):
+        return True
+    if title_fragments and any(fragment.casefold() in title.casefold() for fragment in title_fragments):
+        return True
+    return bool(departments and department in departments and url_fragments and "contents.do" in source_url)
 
 
 def _exact_phrase_score(*, query: str, title: str, text: str) -> float:

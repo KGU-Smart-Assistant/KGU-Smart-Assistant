@@ -1,4 +1,5 @@
 import time
+from functools import lru_cache
 from typing import List
 
 from app.core.config import settings
@@ -14,6 +15,15 @@ def embed_text(
     max_retries: int = DEFAULT_EMBEDDING_RETRIES,
 ) -> List[float]:
     """Embed a single text string with Gemini embeddings."""
+    return list(_embed_text_cached(text, model, max_retries))
+
+
+@lru_cache(maxsize=512)
+def _embed_text_cached(
+    text: str,
+    model: str = DEFAULT_EMBEDDING_MODEL,
+    max_retries: int = DEFAULT_EMBEDDING_RETRIES,
+) -> tuple[float, ...]:
     client = _create_client()
     for attempt in range(max_retries + 1):
         try:
@@ -35,7 +45,7 @@ def embed_text(
     if not values:
         raise RuntimeError("Embedding vector is empty.")
 
-    return list(values)
+    return tuple(values)
 
 
 def embed_texts(
@@ -73,7 +83,14 @@ def _create_client():
             "google-genai is not installed. Install it before using embedding services."
         ) from exc
 
-    return genai.Client(api_key=settings.google_api_key)
+    return _get_client(settings.google_api_key)
+
+
+@lru_cache(maxsize=1)
+def _get_client(api_key: str):
+    from google import genai
+
+    return genai.Client(api_key=api_key)
 
 
 def _is_retryable_embedding_error(exc: Exception) -> bool:

@@ -6,8 +6,10 @@ from app.core.config import settings
 from app.db.session import get_db
 from app.models import KguPlace
 from app.schemas.contact import DepartmentContact, DepartmentContactListResponse
+from app.schemas.info_link import InfoLinkListResponse
 from app.schemas.map import CampusPlace, CampusPlaceListResponse, MapNavigationResponse
 from app.services.contact_service import get_department_contact, list_department_contacts
+from app.services.info_link_service import list_info_link_groups
 from app.services.kakao_map_service import KakaoMapServiceError, get_navigation_route
 
 router = APIRouter()
@@ -53,6 +55,14 @@ async def get_department_contact_by_id(
     if contact is None:
         raise HTTPException(status_code=404, detail="Department contact not found")
     return DepartmentContact(**contact)
+
+
+@router.get(
+    "/info-links",
+    response_model=InfoLinkListResponse,
+)
+async def get_info_links(db: Session = Depends(get_db)) -> InfoLinkListResponse:
+    return InfoLinkListResponse(groups=list_info_link_groups(db))
 
 
 @router.get("/places", response_model=CampusPlaceListResponse)

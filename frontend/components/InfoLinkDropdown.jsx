@@ -1,33 +1,56 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, ChevronDown, ExternalLink, Link2 } from "lucide-react";
 
-import { kguInfoLinks } from "@/data/kguInfoLinks";
 import { useLanguage } from "@/contexts/LanguageContext";
-
-const totalLinkCount = kguInfoLinks.reduce(
-  (sum, group) => sum + group.links.length,
-  0,
-);
+import { fetchInfoLinkGroups } from "@/lib/infoLinksApi";
 
 export default function InfoLinkDropdown({ onLinkClick }) {
   const { t } = useLanguage();
+  const [infoLinks, setInfoLinks] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
-  const [openGroupId, setOpenGroupId] = useState(kguInfoLinks[0]?.id ?? "");
+  const [openGroupId, setOpenGroupId] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetchInfoLinkGroups()
+      .then((groups) => {
+        if (!isMounted) {
+          return;
+        }
+        setInfoLinks(groups);
+        setOpenGroupId((currentId) => currentId || groups[0]?.id || "");
+      })
+      .catch((error) => {
+        console.warn("Failed to load info links.", error);
+        if (isMounted) {
+          setInfoLinks([]);
+          setOpenGroupId("");
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const totalLinkCount = useMemo(
+    () => infoLinks.reduce((sum, group) => sum + group.links.length, 0),
+    [infoLinks],
+  );
 
   const handleGroupClick = (group) => {
-    // 그룹 전체 클릭 시 - 모든 하위 링크 전달
     if (onLinkClick) {
-      onLinkClick(group.title, group.links, true); // isGroup = true
+      onLinkClick(group.title, group.links, true);
       setIsOpen(false);
     }
   };
 
   const handleSingleLinkClick = (linkLabel, linkUrl) => {
-    // 개별 링크 클릭 시 - 단일 링크만 전달
     if (onLinkClick) {
-      onLinkClick(linkLabel, [{ label: linkLabel, url: linkUrl }], false); // isGroup = false
+      onLinkClick(linkLabel, [{ label: linkLabel, url: linkUrl }], false);
       setIsOpen(false);
     }
   };
@@ -43,19 +66,18 @@ export default function InfoLinkDropdown({ onLinkClick }) {
                 {t("infoLinks.title")}
               </p>
               <p className="text-[11px] font-semibold text-[#69748a]">
-                {kguInfoLinks.length}{t("infoLinks.categories")} · {totalLinkCount}{t("infoLinks.links")}
+                {infoLinks.length}{t("infoLinks.categories")} · {totalLinkCount}{t("infoLinks.links")}
               </p>
             </div>
           </div>
 
           <div className="max-h-[calc(min(58vh,440px)-64px)] overflow-y-auto [scrollbar-width:none]">
-            {kguInfoLinks.map((group) => {
+            {infoLinks.map((group) => {
               const isGroupOpen = openGroupId === group.id;
 
               return (
                 <section key={group.id} className="border-b border-[#edf0f5] last:border-b-0">
                   <div className="flex">
-                    {/* 그룹 제목 클릭 영역 - 챗봇으로 전송 */}
                     <button
                       type="button"
                       onClick={() => handleGroupClick(group)}
@@ -75,8 +97,7 @@ export default function InfoLinkDropdown({ onLinkClick }) {
                         </span>
                       </span>
                     </button>
-                    
-                    {/* 확장/축소 버튼 */}
+
                     <button
                       type="button"
                       onClick={() =>
@@ -115,6 +136,12 @@ export default function InfoLinkDropdown({ onLinkClick }) {
                 </section>
               );
             })}
+
+            {infoLinks.length === 0 ? (
+              <div className="px-4 py-6 text-center text-sm font-semibold text-[#69748a]">
+                {t("infoLinks.title")}
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}
