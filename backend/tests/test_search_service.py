@@ -235,6 +235,100 @@ def test_search_documents_accepts_rag_domain_filters(monkeypatch) -> None:
     ]
 
 
+def test_search_documents_includes_academic_calendar_for_academic_status(monkeypatch) -> None:
+    captured = []
+
+    monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])
+
+    def _query_embedded_chunks(*, query_embedding, top_k, domain):
+        captured.append(domain)
+        return []
+
+    monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
+
+    search_service.search_documents(
+        query="휴학 신청 절차 알려줘",
+        top_k=2,
+        rag_domain="academic_status",
+        rag_confidence=0.95,
+    )
+
+    assert captured == ["academic_status", "academic_calendar", "general_notice", "department_notice", None]
+
+
+def test_search_documents_filters_top_k_by_query_anchor(monkeypatch) -> None:
+    monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])
+
+    def _query_embedded_chunks(*, query_embedding, top_k, domain):
+        return [
+            {
+                "chunk_id": "generic-application",
+                "doc_id": "doc-1",
+                "distance": 0.01,
+                "text": "부전공 신청제 도입 안내입니다.",
+                "title": "부전공 신청제 도입 안내",
+                "source_url": "https://example.com/minor",
+                "domain": domain,
+            },
+            {
+                "chunk_id": "leave-calendar",
+                "doc_id": "doc-2",
+                "distance": 0.3,
+                "text": "휴학 및 복학 신청 일정과 절차 안내입니다.",
+                "title": "2026학년도 1학기 복학 및 휴학 신청 일정 안내",
+                "source_url": "https://example.com/leave",
+                "domain": "academic_calendar",
+            },
+        ]
+
+    monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
+
+    results = search_service.search_documents(
+        query="휴학 신청 절차 알려줘",
+        top_k=2,
+        rag_domain="academic_status",
+        rag_confidence=0.95,
+    )
+
+    assert [result.chunk_id for result in results] == ["leave-calendar"]
+    assert results[0].score_breakdown["query_anchor_match"] == 1.0
+
+
+def test_search_documents_uses_soft_filter_for_department_notice(monkeypatch) -> None:
+    captured = []
+
+    monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])
+
+    def _query_embedded_chunks(*, query_embedding, top_k, domain):
+        captured.append(domain)
+        return [
+            {
+                "chunk_id": "computer-notice",
+                "doc_id": "doc-1",
+                "distance": 0.2,
+                "text": "학과 공지 안내입니다.",
+                "title": "공지사항",
+                "source_url": "https://www.kyonggi.ac.kr/u_computer/selectBbsNttList.do",
+                "domain": "career_support",
+            }
+        ]
+
+    monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
+
+    results = search_service.search_documents(
+        query="컴퓨터공학과 공지 알려줘",
+        top_k=2,
+        rag_domain="department_notice",
+        rag_confidence=0.95,
+    )
+
+    assert captured == [None]
+    assert results[0].chunk_id == "computer-notice"
+
+
 def test_search_documents_uses_soft_domain_boost_for_low_rag_confidence(monkeypatch) -> None:
     captured = []
 
@@ -424,6 +518,57 @@ def test_search_documents_dedupes_academic_calendar_and_prefers_university_sourc
     results = search_service.search_documents(query="2026 학사일정", top_k=2, rag_domain="academic_calendar")
 
     assert [result.chunk_id for result in results] == ["university-canonical"]
+
+
+def test_search_documents_prefers_university_graduation_guide_for_broad_question(monkeypatch) -> None:
+    monkeypatch.setattr(search_service, "embed_text", lambda query: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(search_service, "_query_keyword_chunks", lambda **kwargs: [])
+
+    def _query_embedded_chunks(*, query_embedding, top_k, domain):
+        return [
+            {
+                "chunk_id": "department-graduation",
+                "doc_id": "doc-dept",
+                "distance": 0.1,
+                "text": "Graduation requirements for one department.",
+                "title": "History graduation requirements notice",
+                "source_url": "https://www.kyonggi.ac.kr/u_history/selectBbsNttView.do?bbsNo=1073",
+                "domain": "graduation",
+                "department": "history",
+            },
+            {
+                "chunk_id": "university-graduation",
+                "doc_id": "doc-university",
+                "distance": 0.5,
+                "text": "공통 졸업요건과 졸업이수학점 안내입니다.",
+                "title": "1. 졸업안내",
+                "source_url": "https://www.kyonggi.ac.kr/www/contents.do?key=8418",
+                "domain": "graduation",
+                "department": "university",
+            },
+            {
+                "chunk_id": "teaching-certification",
+                "doc_id": "doc-teaching",
+                "distance": 0.2,
+                "text": "교직과정 이수 기준과 전공 이수 안내입니다.",
+                "title": "교직 및 전공 이수",
+                "source_url": "https://www.kyonggi.ac.kr/www/contents.do?key=8492",
+                "domain": "graduation",
+                "department": "university",
+            },
+        ]
+
+    monkeypatch.setattr(search_service, "query_embedded_chunks", _query_embedded_chunks)
+
+    results = search_service.search_documents(
+        query="졸업요건 알려줘",
+        top_k=2,
+        rag_domain="graduation",
+    )
+
+    assert results[0].chunk_id == "university-graduation"
+    assert results[0].score_breakdown["source_scope_adjustment"] > 0.0
+    assert [result.chunk_id for result in results] == ["university-graduation"]
 
 
 def test_search_documents_expands_adjacent_parent_chunks(monkeypatch) -> None:

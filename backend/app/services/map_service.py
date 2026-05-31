@@ -48,6 +48,8 @@ _STOPWORDS: tuple[str, ...] = (
     "없니",
 )
 
+_PARTICLE_SUFFIXES = ("에서", "으로", "로", "에게", "은", "는", "이", "가", "을", "를", "에")
+
 
 def _normalize_text(s: str) -> str:
     s = s.lower()
@@ -59,6 +61,13 @@ def _normalize_text(s: str) -> str:
 def _strip_stopwords(s: str) -> str:
     for w in sorted(_STOPWORDS, key=len, reverse=True):
         s = s.replace(w, "")
+    return _strip_particle_suffix(s)
+
+
+def _strip_particle_suffix(s: str) -> str:
+    for suffix in _PARTICLE_SUFFIXES:
+        if s.endswith(suffix) and len(s) > len(suffix) + 1:
+            return s[: -len(suffix)]
     return s
 
 
@@ -103,6 +112,9 @@ def _pick_best_match(
     user_keywords: list[str] = []
     if len(user_after_stop) >= 2:
         user_keywords.append(user_after_stop)
+        stripped_keyword = _strip_particle_suffix(user_after_stop)
+        if stripped_keyword != user_after_stop and len(stripped_keyword) >= 2:
+            user_keywords.append(stripped_keyword)
 
     best: tuple[str, float, float] | None = None
     best_score = -1

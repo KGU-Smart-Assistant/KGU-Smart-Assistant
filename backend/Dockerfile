@@ -8,7 +8,7 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONIOENCODING=utf-8
 ENV CRAWL4_AI_BASE_DIRECTORY=/app/.crawl4ai-data
 
-COPY requirements.txt requirements-crawlers.txt ./
+COPY requirements.txt requirements-crawlers.txt requirements-ml.txt ./
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && if [ "$INSTALL_CRAWLER_DEPS" = "true" ]; then apt-get install -y --no-install-recommends \
@@ -42,6 +42,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements-ml.txt
 RUN if [ "$INSTALL_CRAWLER_DEPS" = "true" ]; then \
     pip install --no-cache-dir -r requirements-crawlers.txt && \
     python -m playwright install chromium; \

@@ -13,7 +13,6 @@ class ChatSource(BaseModel):
     title: str
     source_url: str | None = None
     score: float | None = None
-    source_number: int | None = None
 
 
 class RagIntentScore(BaseModel):
@@ -37,7 +36,5 @@ class ChatResponse(BaseModel):
     rewritten_queries: list[str] = Field(default_factory=list)
     matched_keywords: list[str] = Field(default_factory=list)
     intent_scores: list[RagIntentScore] = Field(default_factory=list)
-    suggested_domains: list[str] = Field(default_factory=list)
-    suggested_details: list[str] = Field(default_factory=list)
     answer_status: Literal["answered", "partial", "insufficient"] = "answered"
     unverified: list[str] = Field(default_factory=list)

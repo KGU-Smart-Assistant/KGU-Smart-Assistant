@@ -67,7 +67,7 @@ DOMAIN_FILTERS: dict[str, list[str]] = {
     "tuition": ["tuition", "general_notice", "department_notice"],
     "course_registration": ["course_registration", "academic_calendar", "general_notice", "department_notice"],
     "academic_calendar": ["academic_calendar", "general_notice", "department_notice"],
-    "academic_status": ["academic_status", "general_notice", "department_notice"],
+    "academic_status": ["academic_status", "academic_calendar", "general_notice", "department_notice"],
     "major_change": ["major_change", "academic_status", "general_notice", "department_notice"],
     "multi_major": ["multi_major", "academic_status", "general_notice", "department_notice"],
     "admission_transfer": ["admission_transfer", "general_notice", "department_notice"],

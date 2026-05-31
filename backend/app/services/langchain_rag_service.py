@@ -19,7 +19,14 @@ from app.crawlers.embedding_pipeline import embed_text
 from app.db.vector_store import query_embedded_chunks
 from app.schemas.search import SearchResult
 from app.services.gemini_service import get_gemini_response
-from app.services.search_service import LOW_CONFIDENCE_THRESHOLD, RetrievalPolicy, rerank_candidate_rows, search_documents
+from app.services.search_service import (
+    LOW_CONFIDENCE_THRESHOLD,
+    RetrievalPolicy,
+    _query_anchor_terms,
+    _row_matches_any_anchor,
+    rerank_candidate_rows,
+    search_documents,
+)
 
 SearchFn = Callable[..., List[SearchResult]]
 AnswerFn = Callable[[str], str]
@@ -39,7 +46,7 @@ RAG_PROMPT = PromptTemplate.from_template(
 영어 답변을 쓰지 말고, URL·고유명사·공식 명칭을 제외한 모든 설명은 자연스러운 한국어로 작성해라.
 근거에 없는 항목은 "검색된 자료에서는 확인할 수 없습니다"라고 말해라.
 답변 본문에서 근거를 사용할 때는 해당 검색 근거 번호를 [1]처럼 표시해라.
-답변 끝에는 반드시 "출처:" 섹션을 포함하고 "[1] 제목: URL" 형식으로 사용한 URL을 적어라.
+답변 끝에 별도의 "출처:" 섹션을 직접 쓰지 마라. 시스템이 URL 목록을 별도로 붙인다.
 
 검색 근거:
 {context}
@@ -134,11 +141,19 @@ class HybridSearchRetriever(BaseRetriever):
                     continue
                 _merge_document_metadata(existing, document)
 
-        documents = sorted(
+        ranked_documents = sorted(
             documents_by_chunk.values(),
             key=lambda document: float(document.metadata.get("rerank_score") or 0.0),
             reverse=True,
-        )[: self.top_k]
+        )
+        documents = _filter_documents_for_broad_topic(
+            query=query,
+            documents=ranked_documents,
+            domain=self.rag_domain or self.category,
+            source_scope=self.source_scope,
+        )
+        documents = _filter_documents_by_query_anchor(query=query, documents=documents)
+        documents = _dedupe_documents_by_topic(documents, domain=self.rag_domain or self.category)[: self.top_k]
         if self.compress_documents:
             return compress_documents_for_query(query, documents)
         return documents
@@ -287,6 +302,146 @@ def expand_search_queries(query: str, *, max_queries: int = DEFAULT_EXPANDED_QUE
             if len(expanded) >= max_queries:
                 return expanded
     return expanded
+
+
+def _filter_documents_for_broad_topic(
+    *,
+    query: str,
+    documents: list[Document],
+    domain: str | None,
+    source_scope: str | None,
+) -> list[Document]:
+    if domain != "graduation" or source_scope == "department":
+        return _dedupe_documents_by_source_url(documents)
+
+    university_documents = [
+        document for document in documents if _is_university_wide_document(document)
+    ]
+    if not university_documents:
+        return _dedupe_documents_by_source_url(documents)
+
+    title_documents = [
+        document
+        for document in university_documents
+        if _document_title_matches_topic(query=query, document=document)
+    ]
+    if title_documents:
+        return _dedupe_documents_by_source_url(title_documents)
+
+    topic_documents = [
+        document
+        for document in university_documents
+        if _document_matches_topic(query=query, document=document)
+    ]
+    return _dedupe_documents_by_source_url(topic_documents or university_documents)
+
+
+def _is_university_wide_document(document: Document) -> bool:
+    metadata = document.metadata
+    department = str(metadata.get("department") or "").strip().casefold()
+    source_url = str(metadata.get("source_url") or "").casefold()
+    return department == "university" or "/www/contents.do" in source_url
+
+
+def _document_matches_topic(*, query: str, document: Document) -> bool:
+    terms = _query_topic_terms(query)
+    if not terms:
+        return True
+    metadata = document.metadata
+    title = _normalize_text(str(metadata.get("title") or ""))
+    text = _normalize_text(document.page_content)
+    haystack = f"{title} {text[:1200]}"
+    return any(term in haystack for term in terms)
+
+
+def _document_title_matches_topic(*, query: str, document: Document) -> bool:
+    terms = _query_topic_terms(query)
+    if not terms:
+        return False
+    title = _normalize_text(str(document.metadata.get("title") or ""))
+    return any(term in title for term in terms)
+
+
+def _query_topic_terms(query: str) -> list[str]:
+    normalized = _normalize_text(query)
+    stopwords = {
+        "알려줘",
+        "알려주세요",
+        "궁금해",
+        "뭐야",
+        "어떻게",
+        "어디서",
+        "확인",
+        "보고",
+        "싶어",
+    }
+    terms = [token for token in _tokenize(normalized) if token not in stopwords]
+    compounds: list[str] = []
+    if "졸업" in normalized and "요건" in normalized:
+        compounds.extend(["졸업요건", "졸업 요건", "졸업안내"])
+    if "신청" in normalized and "기간" in normalized:
+        compounds.extend(["신청기간", "신청 기간"])
+    if "제출" in normalized and "서류" in normalized:
+        compounds.extend(["제출서류", "제출 서류"])
+    return list(dict.fromkeys([*compounds, *terms]))
+
+
+def _normalize_text(text: str) -> str:
+    return re.sub(r"\s+", " ", text.strip().casefold())
+
+
+def _dedupe_documents_by_source_url(documents: list[Document]) -> list[Document]:
+    selected: list[Document] = []
+    seen_urls: set[str] = set()
+    for document in documents:
+        source_url = str(document.metadata.get("source_url") or "").strip()
+        key = source_url or str(document.metadata.get("chunk_id") or document.page_content)
+        if key in seen_urls:
+            continue
+        seen_urls.add(key)
+        selected.append(document)
+    return selected
+
+
+def _dedupe_documents_by_topic(documents: list[Document], *, domain: str | None) -> list[Document]:
+    if domain not in {"academic_status", "academic_calendar"}:
+        return documents
+
+    selected: list[Document] = []
+    seen_topics: set[str] = set()
+    for document in documents:
+        title = str(document.metadata.get("title") or "")
+        topic = re.sub(r"^\[[^\]]+\]\s*", "", title).strip()
+        topic_key = _normalize_text(topic)
+        if len(topic_key) < 8:
+            selected.append(document)
+            continue
+        if topic_key in seen_topics:
+            continue
+        seen_topics.add(topic_key)
+        selected.append(document)
+    return selected
+
+
+def _filter_documents_by_query_anchor(*, query: str, documents: list[Document]) -> list[Document]:
+    anchors = _query_anchor_terms(query)
+    if not anchors:
+        return documents
+
+    aligned = [
+        document
+        for document in documents
+        if _row_matches_any_anchor(
+            {
+                "title": document.metadata.get("title"),
+                "text": document.page_content,
+                "source_url": document.metadata.get("source_url"),
+                "department": document.metadata.get("department"),
+            },
+            anchors,
+        )
+    ]
+    return aligned or documents
 
 
 def compress_documents_for_query(
@@ -494,6 +649,9 @@ def _generate_answer(payload: dict, *, answer_fn: AnswerFn, confidence_threshold
 
 def ensure_source_urls(reply: str, documents: list[Document]) -> str:
     source_lines = _numbered_source_lines(documents)
+    cited_numbers = _cited_source_numbers(reply)
+    if cited_numbers:
+        source_lines = [line for line in source_lines if line[0] in cited_numbers]
     urls = [url for _number, _title, url in source_lines]
     if not urls:
         return reply
@@ -504,6 +662,10 @@ def ensure_source_urls(reply: str, documents: list[Document]) -> str:
         f"- [{number}] {title}: {url}" for number, title, url in source_lines
     ]
     return reply.rstrip() + "\n".join(formatted_sources)
+
+
+def _cited_source_numbers(reply: str) -> set[int]:
+    return {int(number) for number in re.findall(r"\[(\d+)\]", reply)}
 
 
 def _control_answer_language(payload: dict, reply: str, *, answer_fn: AnswerFn) -> str:
