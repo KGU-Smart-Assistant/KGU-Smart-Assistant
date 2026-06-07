@@ -45,6 +45,14 @@ def test_build_chunk_metadata_includes_retrieval_fields() -> None:
         title="Notice title",
         source_url="https://example.com/notices/1",
         source_type="pdf",
+        source_name="university_notices",
+        section_title="본문",
+        section_kind="STABLE_REFERENCE",
+        metadata_json={
+            "page_type": "LIST_PAGE",
+            "document_type": "POLICY_OR_GUIDE",
+            "vector_point_id": "vector-1",
+        },
         published_at="2026-04-01T09:00:00",
         embedding=[0.1, 0.2],
         embedding_model="gemini-embedding-001",
@@ -62,6 +70,39 @@ def test_build_chunk_metadata_includes_retrieval_fields() -> None:
     assert metadata["published_at"] == "2026-04-01T09:00:00"
     assert metadata["domain"] == "general_notice"
     assert metadata["department"] == "academic_affairs"
+    assert metadata["source_name"] == "university_notices"
+    assert metadata["section_title"] == "본문"
+    assert metadata["section_kind"] == "STABLE_REFERENCE"
+    assert metadata["page_type"] == "LIST_PAGE"
+    assert metadata["document_type"] == "POLICY_OR_GUIDE"
+    assert metadata["vector_point_id"] == "vector-1"
+
+
+def test_build_chunk_metadata_prefers_chunk_domain_over_source_domain() -> None:
+    chunk = EmbeddedChunk(
+        chunk_id="chunk-1",
+        doc_id="doc-1",
+        chunk_index=0,
+        text="chunk text",
+        title="Notice title",
+        source_url="https://example.com/notices/1",
+        source_type="html",
+        domain="scholarship",
+        department="student_support",
+        embedding=[0.1, 0.2],
+        embedding_model="gemini-embedding-001",
+    )
+
+    metadata = vector_store._build_chunk_metadata(
+        chunk=chunk,
+        domain="general_notice",
+        department="university",
+        source_name="university_notices",
+    )
+
+    assert metadata["domain"] == "scholarship"
+    assert metadata["department"] == "student_support"
+    assert metadata["source_name"] == "university_notices"
 
 
 def test_delete_embedded_chunks_for_documents_deletes_by_doc_id(monkeypatch) -> None:

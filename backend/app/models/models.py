@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -58,6 +58,9 @@ class CrawlerSource(Base):
 
 class CrawlerDocument(Base):
     __tablename__ = "crawler_documents"
+    __table_args__ = (
+        UniqueConstraint("canonical_doc_key", name="uq_crawler_documents_canonical_doc_key"),
+    )
 
     doc_id: Mapped[str] = mapped_column(String(255), primary_key=True)
     source_name: Mapped[str] = mapped_column(
@@ -79,10 +82,63 @@ class CrawlerDocument(Base):
     collected_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     last_seen_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="active")
+    canonical_doc_key: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    canonical_source_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    validity_status: Mapped[str] = mapped_column(String(32), nullable=False, default="unknown")
+    index_status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
+    vector_metadata_status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
+    skip_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    metadata_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    attachment_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    current_index_fingerprint: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    target_index_fingerprint: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    rebuild_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+
+
+class CrawlerDocumentSource(Base):
+    __tablename__ = "crawler_document_sources"
+    __table_args__ = (
+        UniqueConstraint(
+            "doc_id",
+            "source_name",
+            "source_url",
+            name="uq_crawler_document_sources_doc_source_url",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    doc_id: Mapped[str] = mapped_column(
+        String(255),
+        ForeignKey("crawler_documents.doc_id"),
+        nullable=False,
+        index=True,
+    )
+    source_name: Mapped[str] = mapped_column(
+        String(255),
+        ForeignKey("crawler_sources.name"),
+        nullable=False,
+        index=True,
+    )
+    source_url: Mapped[str] = mapped_column(Text, nullable=False)
+    domain: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    department: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    last_seen_run_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="active")
+    rebuild_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
 
 
 class CrawlerDocumentChunk(Base):
     __tablename__ = "crawler_document_chunks"
+    __table_args__ = (
+        UniqueConstraint(
+            "doc_id",
+            "index_fingerprint",
+            "chunk_index",
+            name="uq_crawler_document_chunks_doc_fingerprint_index",
+        ),
+    )
 
     chunk_id: Mapped[str] = mapped_column(String(255), primary_key=True)
     doc_id: Mapped[str] = mapped_column(
@@ -94,11 +150,36 @@ class CrawlerDocumentChunk(Base):
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    content: Mapped[str | None] = mapped_column(Text, nullable=True)
+    embedding_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    chunk_text_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     title: Mapped[str] = mapped_column(String(300), nullable=False)
     source_url: Mapped[str] = mapped_column(Text, nullable=False)
     source_type: Mapped[str] = mapped_column(String(32), nullable=False, default="html")
+    section_title: Mapped[str | None] = mapped_column(Text, nullable=True)
+    section_path: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    section_kind: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    embedding_eligibility: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    chunk_quality_status: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    document_quality_status: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    content_token_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    embedding_token_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    valid_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    chunk_valid_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    domain: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    department: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    source_name: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    prepared_body_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    prepared_artifact_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="active")
     last_seen_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    error_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    embedded_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    embedding_model: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    embedding_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    index_fingerprint: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    vector_point_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    metadata_json: Mapped[dict | None] = mapped_column(JSON, nullable=False, default=dict)
 
 
 class CrawlerAttachment(Base):
@@ -127,6 +208,8 @@ class CrawlerIngestRun(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     run_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    run_type: Mapped[str] = mapped_column(String(32), nullable=False, default="incremental")
+    rebuild_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     source_name: Mapped[str] = mapped_column(
         String(255),
         ForeignKey("crawler_sources.name"),

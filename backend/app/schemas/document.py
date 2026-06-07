@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Literal, Optional
+from typing import Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -29,6 +29,7 @@ class DocumentBase(BaseModel):
     author_department: Optional[str] = None
     published_at: Optional[datetime] = None
     attachment_urls: List[str] = Field(default_factory=list)
+    attachment_metadata: Dict[str, Dict[str, str]] = Field(default_factory=dict)
 
 
 class Document(DocumentBase):

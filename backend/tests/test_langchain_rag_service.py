@@ -35,6 +35,11 @@ def _search_result(
         title=title,
         source_url="https://example.com/scholarship",
         category="scholarship",
+        department="student_support",
+        source_name="scholarship_guides",
+        section_title="신청 대상",
+        section_kind="STABLE_REFERENCE",
+        vector_point_id="vector-1",
         published_at="2026-05-01T00:00:00",
         score_breakdown={"semantic": 0.8, "lexical": 1.0, "confidence": confidence},
     )
@@ -47,6 +52,11 @@ def test_search_result_to_document_preserves_metadata() -> None:
     assert document.metadata["chunk_id"] == "chunk-1"
     assert document.metadata["title"] == "장학금 신청 안내"
     assert document.metadata["domain"] == "scholarship"
+    assert document.metadata["department"] == "student_support"
+    assert document.metadata["source_name"] == "scholarship_guides"
+    assert document.metadata["section_title"] == "신청 대상"
+    assert document.metadata["section_kind"] == "STABLE_REFERENCE"
+    assert document.metadata["vector_point_id"] == "vector-1"
     assert document.metadata["confidence"] == 0.91
 
 

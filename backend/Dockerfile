@@ -34,10 +34,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
     libgomp1 \
     libglib2.0-0 \
-    libdbus-1-3 \
-    tesseract-ocr \
-    tesseract-ocr-kor \
-    tesseract-ocr-eng; \
+    libdbus-1-3; \
     fi \
     && rm -rf /var/lib/apt/lists/*
 

@@ -53,6 +53,10 @@ class SearchResult(BaseModel):
     domain: Optional[str] = None
     category: Optional[str] = Field(default=None, description="Deprecated. Mirrors domain for old clients.")
     department: Optional[str] = None
+    source_name: Optional[str] = None
+    section_title: Optional[str] = None
+    section_kind: Optional[str] = None
+    vector_point_id: Optional[str] = None
     published_at: Optional[str] = None
     score_breakdown: Dict[str, float] = Field(default_factory=dict)
 

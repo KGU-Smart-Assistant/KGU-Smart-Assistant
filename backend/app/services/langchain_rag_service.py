@@ -72,9 +72,10 @@ RAG_PROMPT = PromptTemplate.from_template(
 
 답변 규칙:
 - 아래 검색 근거에 있는 경기대학교 관련 사실만 사용해 한국어로 답하세요.
+- 영어 답변을 쓰지 말고, URL·고유명사·공식 명칭을 제외한 모든 설명은 자연스러운 한국어로 작성하세요.
 - 근거가 부족해 답변할 수 없으면 "검색된 자료에서 확인할 수 없습니다"라고 말하고, 출처 섹션이나 URL은 출력하지 마세요.
 - 날짜, 자격, 금액, 부서명, URL은 근거에 없으면 만들지 마세요.
-- 답변 본문에서 근거를 사용할 때 [1]처럼 근거 번호를 표시하세요.
+- 답변 본문에서 근거를 사용할 때 근거 번호를 [1]처럼 표시하세요.
 - 답변 본문에는 "출처:" 섹션이나 URL 목록을 쓰지 마세요. 출처 링크는 시스템이 별도로 표시합니다.
 
 검색 근거:
@@ -109,7 +110,7 @@ class LangChainRagResult:
     reply: str
     documents: list[Document]
     context: str
-    expanded_queries: list[str]
+    expanded_queries: list[str] | None = None
     trace_id: str | None = None
     confidence: float = 0.0
     low_confidence: bool = False
@@ -552,6 +553,10 @@ def search_result_to_document(result: SearchResult) -> Document:
         metadata["domain"] = result_domain
     if result.department:
         metadata["department"] = result.department
+    for key in ("source_name", "section_title", "section_kind", "vector_point_id"):
+        value = getattr(result, key, None)
+        if value:
+            metadata[key] = value
     if result.published_at:
         metadata["published_at"] = result.published_at
     if result.score_breakdown:
@@ -574,7 +579,18 @@ def row_to_document(row: dict) -> Document:
         "retrieval_score": row.get("score", 0.0),
         "confidence": row.get("score_breakdown", {}).get("confidence", row.get("score", 0.0)),
     }
-    for key in ("domain", "category", "department", "published_at", "score_breakdown", "parent_expanded"):
+    for key in (
+        "domain",
+        "category",
+        "department",
+        "source_name",
+        "section_title",
+        "section_kind",
+        "vector_point_id",
+        "published_at",
+        "score_breakdown",
+        "parent_expanded",
+    ):
         if row.get(key):
             metadata[key] = row[key]
     return Document(page_content=row.get("text", ""), metadata=metadata)

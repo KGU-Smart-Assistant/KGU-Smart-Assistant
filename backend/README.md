@@ -1,14 +1,14 @@
 # KGU Smart Assistant Backend
 
-## 실행 방법
+## Run
 
-`backend` 폴더에서 실행합니다.
+Run backend commands from this directory:
 
 ```powershell
 docker compose up -d --build
 ```
 
-프론트엔드까지 같이 실행하려면 폴더 구조가 아래처럼 되어 있어야 합니다.
+Expected repository layout:
 
 ```text
 KGU SmartAssistant/
@@ -18,23 +18,17 @@ KGU SmartAssistant/
     frontend-app/
 ```
 
-`docker-compose.yml`은 프론트엔드를 `../frontend/frontend-app` 경로에서 찾습니다.
+The compose file builds the frontend from `../frontend/frontend-app`.
 
-## 로컬에 생성되는 파일/폴더
+## Local Runtime Data
 
-실행하거나 크롤링하면 아래 폴더가 로컬에 생길 수 있습니다.
+Local runs may create:
 
 ```text
 backend/.tmp/
-backend/.crawl4ai-data/
 ```
 
-용도:
-
-- `.tmp/`: 크롤링 로그, ingest report, 임시 실행 결과 저장
-- `.crawl4ai-data/`: Crawl4AI/브라우저 실행 데이터 저장
-
-Docker volume으로는 아래 데이터가 생성됩니다.
+Docker volumes:
 
 ```text
 postgres_data
@@ -43,11 +37,58 @@ frontend_node_modules
 frontend_next
 ```
 
-이 데이터들도 로컬 실행 데이터입니다.
+These are local runtime data and should not be committed.
 
-## 접속 주소
+## Crawl Markdown
 
-- 프론트엔드: http://localhost:3000
-- 백엔드 API: http://localhost:8000
-- Swagger 문서: http://localhost:8000/docs
+The crawler uses Crawl4AI and writes Markdown files that can be reviewed and passed to `prepare_markdown`.
+
+Recommended: run crawling inside the dedicated Docker service so the browser/runtime dependencies stay isolated from the main backend image.
+
+`--max-pages` limits how many LIST pages are traversed for a source, not how many detail pages can be discovered from those lists.
+
+Start the crawler container:
+
+```powershell
+docker compose --profile crawler up -d --build crawler
+```
+
+Run the crawl + prepare pipeline inside the container:
+
+```powershell
+docker compose --profile crawler run --rm crawler `
+  python -m app.crawlers.run_pipeline `
+  --config app/crawlers/sources.yaml `
+  --crawl-output-dir data/crawled_markdown/run-local `
+  --prepared-output-dir data/prepared_markdown/run-local `
+  --force
+```
+
+You can also enter the running container and invoke the crawler manually:
+
+```powershell
+docker compose --profile crawler exec crawler sh
+```
+
+Direct Python execution still works for local development, but it requires the crawler dependencies in the host environment.
+
+```powershell
+python -m app.crawlers.crawl_markdown `
+  --config app/crawlers/sources.yaml `
+  --output-dir data/crawled_markdown/run-local `
+  --force
+```
+
+Install optional crawler dependencies before running it locally:
+
+```powershell
+pip install -r requirements-crawlers.txt
+python -m playwright install chromium
+```
+
+## URLs
+
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- Swagger docs: http://localhost:8000/docs
 - Chroma: http://localhost:8001

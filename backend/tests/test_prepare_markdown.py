@@ -1,0 +1,667 @@
+from __future__ import annotations
+
+import csv
+import hashlib
+import json
+from pathlib import Path
+
+import pytest
+
+from app.crawlers import prepare_markdown as prepare_module
+from app.crawlers.prepare_markdown import PrepareOptions, prepare_markdown
+
+
+CSV_FIELDNAMES = [
+    "recommended_action",
+    "doc_id",
+    "source_name",
+    "source_url",
+    "final_md_path",
+    "title",
+    "domain",
+    "department",
+    "filter_reason",
+    "confidence",
+    "document_type",
+    "published_at_metadata",
+    "relevant_end_date",
+    "title_period_end",
+]
+
+
+def _write_source_markdown(
+    root: Path,
+    *,
+    timestamp: str = "20260603072153",
+    source_name: str = "academic_affairs_notices",
+    filename: str = "0001-sample.md",
+    doc_id: str = "crawl-sample",
+    source_url: str = "https://www.kyonggi.ac.kr/www/selectBbsNttView.do?bbsNo=1&key=2&nttNo=3",
+    body: str | None = None,
+    attachment_urls: list[str] | None = None,
+) -> Path:
+    final_dir = root / timestamp / source_name / "final"
+    final_dir.mkdir(parents=True, exist_ok=True)
+    path = final_dir / filename
+    body = body or (
+        "# 2026학년도 샘플 공지\n\n"
+        "작성자: 학사혁신팀\n\n"
+        "## 신청 방법\n\n"
+        "학생은 KUTIS에서 신청서를 제출해야 합니다. "
+        "신청 기간은 2026.06.01부터 2026.06.30까지입니다. "
+        "제출 후 담당 부서에서 접수 여부를 확인하며, 보완이 필요한 경우 학생에게 별도로 안내합니다. "
+        "기간 내 제출하지 않은 신청서는 접수되지 않으므로 신청자는 반드시 마감 전 제출 상태를 확인해야 합니다. "
+        "문의는 sample@kgu.ac.kr 또는 031-249-9000으로 연락합니다.\n"
+    )
+    attachment_urls = attachment_urls or []
+    path.write_text(
+        "\n".join(
+            [
+                "---",
+                f'source_name: "{source_name}"',
+                f'doc_id: "{doc_id}"',
+                'source_type: "html"',
+                f'source_url: "{source_url}"',
+                'published_at: "2026-06-01T00:00:00"',
+                f"attachment_urls: {json.dumps(attachment_urls, ensure_ascii=False)}",
+                "---",
+                "",
+                body,
+            ]
+        ),
+        encoding="utf-8",
+    )
+    return path
+
+
+def _classification_row(
+    *,
+    input_dir: Path,
+    source_path: Path,
+    source_name: str = "academic_affairs_notices",
+    doc_id: str = "crawl-sample",
+    source_url: str = "https://www.kyonggi.ac.kr/www/selectBbsNttView.do?nttNo=3&key=2&bbsNo=1",
+    recommended_action: str = "KEEP",
+    title: str = "2026학년도 샘플 공지",
+    document_type: str = "APPLICATION",
+    relevant_end_date: str = "",
+) -> dict[str, str]:
+    return {
+        "recommended_action": recommended_action,
+        "doc_id": doc_id,
+        "source_name": source_name,
+        "source_url": source_url,
+        "final_md_path": f"{input_dir.name}/{source_path.relative_to(input_dir).as_posix()}",
+        "title": title,
+        "domain": "academic_calendar",
+        "department": "academic_affairs",
+        "filter_reason": "ACTIVE_OR_FUTURE_EXPLICIT_DATE",
+        "confidence": "HIGH",
+        "document_type": document_type,
+        "published_at_metadata": "2026-06-01T00:00:00",
+        "relevant_end_date": relevant_end_date,
+        "title_period_end": "",
+    }
+
+
+def _write_classification_csv(path: Path, rows: list[dict[str, str]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="") as file:
+        writer = csv.DictWriter(file, fieldnames=CSV_FIELDNAMES)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def _options(input_dir: Path, csv_path: Path, output_dir: Path, **overrides: object) -> PrepareOptions:
+    values = {
+        "input_dir": input_dir,
+        "classification_csv": csv_path,
+        "output_dir": output_dir,
+        "actions": ("KEEP", "MANUAL_REVIEW"),
+        "classification_effective_date": "2026-06-04",
+        "processing_effective_date": "2026-06-04",
+        "force": True,
+    }
+    values.update(overrides)
+    return PrepareOptions(**values)  # type: ignore[arg-type]
+
+
+def _read_chunks(path: Path) -> list[dict[str, object]]:
+    text = (path / "chunks" / "chunks.jsonl").read_text(encoding="utf-8")
+    return [json.loads(line) for line in text.splitlines() if line.strip()]
+
+
+def test_prepare_markdown_publishes_keep_chunks_with_embedding_schema(tmp_path: Path) -> None:
+    input_dir = tmp_path / "new-md-data"
+    source_path = _write_source_markdown(input_dir)
+    csv_path = tmp_path / "classification.csv"
+    _write_classification_csv(csv_path, [_classification_row(input_dir=input_dir, source_path=source_path)])
+
+    result = prepare_markdown(_options(input_dir, csv_path, tmp_path / "prepared"))
+
+    chunks = _read_chunks(tmp_path / "prepared")
+    assert result["published_chunks"] == 1
+    chunk = chunks[0]
+    assert chunk["chunk_index"] == 0
+    assert chunk["canonical_doc_key"] == [
+        "academic_affairs_notices",
+        "https://www.kyonggi.ac.kr/www/selectBbsNttView.do?bbsNo=1&key=2&nttNo=3",
+    ]
+    assert chunk["canonical_doc_key_hash"]
+    assert str(chunk["content"]).startswith("작성자: 학사혁신팀")
+    assert str(chunk["embedding_text"]).startswith("문서제목: 2026학년도 샘플 공지")
+    assert chunk["text"] == chunk["embedding_text"]
+    assert chunk["section_path"] == ["2026학년도 샘플 공지", "신청 방법"]
+    assert chunk["chunk_text_hash"] == hashlib.sha256(str(chunk["embedding_text"]).encode("utf-8")).hexdigest()
+    assert chunk["content_char_count"] == len(str(chunk["content"]))
+    assert chunk["embedding_char_count"] == len(str(chunk["embedding_text"]))
+    assert chunk["embedding_token_count"] >= chunk["content_token_count"]
+    for field in (
+        "source_name",
+        "source_url",
+        "prepared_body_hash",
+        "prepared_artifact_hash",
+        "tokenizer_name",
+        "tokenizer_version",
+        "chunking_version",
+        "quality_gate_version",
+    ):
+        assert chunk[field]
+    assert chunk["document_quality_status"] == "PASSED"
+    assert chunk["chunk_quality_status"] == "PASSED"
+    assert chunk["embedding_eligibility"] == "ELIGIBLE"
+
+    final_files = list((tmp_path / "prepared" / "final").rglob("*.md"))
+    assert len(final_files) == 1
+    assert "prepared_artifact_hash" not in final_files[0].read_text(encoding="utf-8").split("---", 2)[1]
+
+
+def test_manual_review_only_creates_preview_chunk_not_operational_chunk(tmp_path: Path) -> None:
+    input_dir = tmp_path / "new-md-data"
+    source_path = _write_source_markdown(input_dir)
+    csv_path = tmp_path / "classification.csv"
+    _write_classification_csv(
+        csv_path,
+        [_classification_row(input_dir=input_dir, source_path=source_path, recommended_action="MANUAL_REVIEW")],
+    )
+
+    prepare_markdown(_options(input_dir, csv_path, tmp_path / "prepared"))
+
+    assert _read_chunks(tmp_path / "prepared") == []
+    preview_files = list((tmp_path / "prepared" / "manual_review" / "chunk_preview").rglob("*.json"))
+    assert preview_files
+    preview_chunk = json.loads(preview_files[0].read_text(encoding="utf-8"))[0]
+    assert preview_chunk["preview"] is True
+    assert preview_chunk["embedding_eligibility"] == "NOT_ELIGIBLE"
+
+
+def test_prepare_markdown_rejects_missing_required_csv_columns(tmp_path: Path) -> None:
+    csv_path = tmp_path / "bad.csv"
+    csv_path.write_text("doc_id,source_name\ncrawl-sample,academic_affairs_notices\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="missing required columns"):
+        prepare_markdown(_options(tmp_path / "input", csv_path, tmp_path / "prepared"))
+
+
+def test_prepare_markdown_blocks_locator_outside_input_dir(tmp_path: Path) -> None:
+    input_dir = tmp_path / "new-md-data"
+    input_dir.mkdir()
+    csv_path = tmp_path / "classification.csv"
+    row = _classification_row(input_dir=input_dir, source_path=input_dir / "missing.md")
+    row["final_md_path"] = "../outside.md"
+    _write_classification_csv(csv_path, [row])
+
+    prepare_markdown(_options(input_dir, csv_path, tmp_path / "prepared"))
+
+    report = (tmp_path / "prepared" / "manifest" / "mapping_report.csv").read_text(encoding="utf-8")
+    assert "FAILED" in report
+
+
+def test_prepare_markdown_is_deterministic_for_same_input(tmp_path: Path) -> None:
+    input_dir = tmp_path / "new-md-data"
+    source_path = _write_source_markdown(input_dir)
+    csv_path = tmp_path / "classification.csv"
+    _write_classification_csv(csv_path, [_classification_row(input_dir=input_dir, source_path=source_path)])
+
+    first_dir = tmp_path / "run-a" / "prepared"
+    second_dir = tmp_path / "run-b" / "prepared"
+    first = prepare_markdown(_options(input_dir, csv_path, first_dir))
+    second = prepare_markdown(_options(input_dir, csv_path, second_dir))
+    first_chunk = _read_chunks(first_dir)[0]
+    second_chunk = _read_chunks(second_dir)[0]
+
+    assert first["chunks_jsonl_hash"] == second["chunks_jsonl_hash"]
+    assert first_chunk["chunk_id"] == second_chunk["chunk_id"]
+    assert first_chunk["chunk_text_hash"] == second_chunk["chunk_text_hash"]
+
+
+def test_mojibake_document_reports_severity_codes(tmp_path: Path) -> None:
+    input_dir = tmp_path / "new-md-data"
+    replacement = _write_source_markdown(
+        input_dir,
+        filename="replacement.md",
+        doc_id="crawl-replacement",
+        source_url="https://www.kyonggi.ac.kr/www/selectBbsNttView.do?bbsNo=1&key=2&nttNo=4",
+        body="# 깨진 문서\n\n## 본문\n\n본문에 � 문자가 있어 운영 chunk로 보내면 안 됩니다.\n",
+    )
+    known = _write_source_markdown(
+        input_dir,
+        filename="known.md",
+        doc_id="crawl-known",
+        source_url="https://www.kyonggi.ac.kr/www/selectBbsNttView.do?bbsNo=1&key=2&nttNo=5",
+        body="# 臾몄꽌?쒕ぉ ?섍컯?먯꽌\n\n## 蹂몃Ц\n\n臾몄쓽??sample@kgu.ac.kr ?먮뒗 031-249-9000?쇰줈 ?곕씫?⑸땲??\n",
+    )
+    abnormal = _write_source_markdown(
+        input_dir,
+        filename="abnormal.md",
+        doc_id="crawl-abnormal",
+        source_url="https://www.kyonggi.ac.kr/www/selectBbsNttView.do?bbsNo=1&key=2&nttNo=6",
+        body="# 비정상 비율 문서\n\n## 본문\n\n???????????????????????????????????????????????? 정상 문장도 일부 있습니다.\n",
+    )
+    csv_path = tmp_path / "classification.csv"
+    _write_classification_csv(
+        csv_path,
+        [
+            _classification_row(input_dir=input_dir, source_path=replacement, doc_id="crawl-replacement", source_url="https://www.kyonggi.ac.kr/www/selectBbsNttView.do?bbsNo=1&key=2&nttNo=4"),
+            _classification_row(input_dir=input_dir, source_path=known, doc_id="crawl-known", source_url="https://www.kyonggi.ac.kr/www/selectBbsNttView.do?bbsNo=1&key=2&nttNo=5"),
+            _classification_row(input_dir=input_dir, source_path=abnormal, doc_id="crawl-abnormal", source_url="https://www.kyonggi.ac.kr/www/selectBbsNttView.do?bbsNo=1&key=2&nttNo=6"),
+        ],
+    )
+
+    prepare_markdown(_options(input_dir, csv_path, tmp_path / "prepared"))
+
+    report = (tmp_path / "prepared" / "manifest" / "document_quality_report.csv").read_text(encoding="utf-8")
+    assert "UNICODE_REPLACEMENT_CHARACTER_FOUND" in report
+    assert "KNOWN_MOJIBAKE_PATTERN_FOUND" in report
+    assert "ABNORMAL_CHARACTER_RATIO" in report
+    assert _read_chunks(tmp_path / "prepared") == []
+
+
+def test_chunk_publication_policy_blocks_manual_attachment_only_and_oversized(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    input_dir = tmp_path / "new-md-data"
+    keep_path = _write_source_markdown(input_dir, filename="keep.md", doc_id="crawl-keep")
+    manual_path = _write_source_markdown(input_dir, filename="manual.md", doc_id="crawl-manual")
+    attachment_path = _write_source_markdown(
+        input_dir,
+        filename="attachment.md",
+        doc_id="crawl-attachment",
+        source_url="https://www.kyonggi.ac.kr/www/selectBbsNttView.do?bbsNo=1&key=2&nttNo=7",
+        body="# 신청서 자료\n\n첨부파일:\n- 신청서.pdf\n",
+        attachment_urls=["https://www.kyonggi.ac.kr/www/downloadBbsFile.do?atchmnflNo=1"],
+    )
+    oversized_path = _write_source_markdown(
+        input_dir,
+        filename="oversized.md",
+        doc_id="crawl-oversized",
+        source_url="https://www.kyonggi.ac.kr/www/selectBbsNttView.do?bbsNo=1&key=2&nttNo=8",
+        body="# 초과 토큰 문서\n\n## 안내\n\n" + "정상 문장입니다. " * 30,
+    )
+    csv_path = tmp_path / "classification.csv"
+    _write_classification_csv(
+        csv_path,
+        [
+            _classification_row(input_dir=input_dir, source_path=keep_path, doc_id="crawl-keep"),
+            _classification_row(input_dir=input_dir, source_path=manual_path, doc_id="crawl-manual", recommended_action="MANUAL_REVIEW"),
+            _classification_row(input_dir=input_dir, source_path=attachment_path, doc_id="crawl-attachment", source_url="https://www.kyonggi.ac.kr/www/selectBbsNttView.do?bbsNo=1&key=2&nttNo=7"),
+            _classification_row(input_dir=input_dir, source_path=oversized_path, doc_id="crawl-oversized", source_url="https://www.kyonggi.ac.kr/www/selectBbsNttView.do?bbsNo=1&key=2&nttNo=8"),
+        ],
+    )
+
+    original_token_count = prepare_module._token_count
+
+    def fake_token_count(text: str) -> int:
+        if "문서제목:" in text and "초과 토큰 문서" in text:
+            return prepare_module.MAX_EMBEDDING_TOKENS + 1
+        return original_token_count(text)
+
+    monkeypatch.setattr(prepare_module, "_token_count", fake_token_count)
+    prepare_markdown(_options(input_dir, csv_path, tmp_path / "prepared"))
+
+    chunks = _read_chunks(tmp_path / "prepared")
+    published_doc_ids = {chunk["doc_id"] for chunk in chunks}
+    manual_doc_ids = {"crawl-manual"}
+    blocked_attachment_doc_ids = {"crawl-attachment"}
+    assert published_doc_ids == {"crawl-keep"}
+    assert all(chunk["embedding_eligibility"] == "ELIGIBLE" for chunk in chunks)
+    assert manual_doc_ids.isdisjoint(published_doc_ids)
+    assert blocked_attachment_doc_ids.isdisjoint(published_doc_ids)
+    assert "crawl-oversized" not in published_doc_ids
+
+    quality_report = (tmp_path / "prepared" / "manifest" / "chunk_quality_report.csv").read_text(encoding="utf-8")
+    assert "ATTACHMENT_NAME_ONLY" in quality_report
+    assert "chunk exceeds max size" in quality_report
+    chunk_quality_rows = list(csv.DictReader((tmp_path / "prepared" / "manifest" / "chunk_quality_report.csv").open(encoding="utf-8")))
+    blocked_doc_ids = {
+        row["doc_id"]
+        for row in chunk_quality_rows
+        if row["chunk_quality_status"] not in {"PASSED", "WARNING"} or row["embedding_eligibility"] != "ELIGIBLE"
+    }
+    assert blocked_doc_ids.isdisjoint(published_doc_ids)
+
+
+def test_abnormal_character_ratio_blocks_embedding_by_quality(tmp_path: Path) -> None:
+    input_dir = tmp_path / "new-md-data"
+    abnormal = _write_source_markdown(
+        input_dir,
+        filename="abnormal.md",
+        doc_id="crawl-abnormal",
+        source_url="https://www.kyonggi.ac.kr/www/selectBbsNttView.do?bbsNo=1&key=2&nttNo=9",
+        body="# 비정상 비율 문서\n\n## 본문\n\n???????????????????????????????????????????????? 정상 문장도 일부 있습니다.\n",
+    )
+    csv_path = tmp_path / "classification.csv"
+    _write_classification_csv(
+        csv_path,
+        [
+            _classification_row(
+                input_dir=input_dir,
+                source_path=abnormal,
+                doc_id="crawl-abnormal",
+                source_url="https://www.kyonggi.ac.kr/www/selectBbsNttView.do?bbsNo=1&key=2&nttNo=9",
+            )
+        ],
+    )
+
+    prepare_markdown(_options(input_dir, csv_path, tmp_path / "prepared"))
+
+    document_quality = (tmp_path / "prepared" / "manifest" / "document_quality_report.csv").read_text(encoding="utf-8")
+    chunk_quality_rows = list(csv.DictReader((tmp_path / "prepared" / "manifest" / "chunk_quality_report.csv").open(encoding="utf-8")))
+    assert "ABNORMAL_CHARACTER_RATIO" in document_quality
+    assert chunk_quality_rows[0]["embedding_eligibility"] == "BLOCKED_BY_QUALITY"
+    assert _read_chunks(tmp_path / "prepared") == []
+
+
+def test_dry_run_dump_report_writes_mapping_summary_without_preprocessing(tmp_path: Path) -> None:
+    input_dir = tmp_path / "new-md-data"
+    source_path = _write_source_markdown(input_dir)
+    csv_path = tmp_path / "classification.csv"
+    _write_classification_csv(csv_path, [_classification_row(input_dir=input_dir, source_path=source_path)])
+
+    result = prepare_markdown(_options(input_dir, csv_path, tmp_path / "dry-run", dry_run=True, dump_report=True))
+
+    assert result["mapping_status_counts"] == {"MATCHED": 1}
+    assert (tmp_path / "dry-run" / "manifest" / "mapping_report.csv").exists()
+    assert (tmp_path / "dry-run" / "manifest" / "mapping_summary_by_source.csv").exists()
+    assert not (tmp_path / "dry-run" / "chunks").exists()
+
+
+def test_type_sample_outputs_expected_report_counts(tmp_path: Path) -> None:
+    input_dir = tmp_path / "new-md-data"
+    rows: list[dict[str, str]] = []
+    samples = [
+        ("keep", "KEEP", "# 유지 공지\n\n## 안내\n\n" + "정상 공지 내용입니다. " * 30, "NOTICE", ""),
+        ("manual", "MANUAL_REVIEW", "# 수동 검토 문서\n\n## 안내\n\n" + "검토가 필요한 문서입니다. " * 30, "NOTICE", ""),
+        ("long", "KEEP", "# 긴 공지\n\n## 상세\n\n" + "긴 공지 문장입니다. " * 220, "NOTICE", ""),
+        ("faq", "KEEP", "# FAQ\n\n## 문의\n\n이용 문의는 faq@kgu.ac.kr 또는 031-249-9000으로 연락합니다.", "FAQ", ""),
+        ("attachment", "KEEP", "# 첨부 의존 문서\n\n첨부파일:\n- 신청서.pdf\n", "MATERIAL", ""),
+        ("date", "KEEP", "# 날짜 충돌 문서\n\n## 안내\n\n" + "날짜 재확인이 필요한 문서입니다. " * 20, "NOTICE", "2026-06-10"),
+        ("table", "KEEP", "# 표 목록 문서\n\n## 지급 기준\n\n|구분|금액|\n|---|---|\n|A|100|\n|B|200|\n\n- 첫째\n- 둘째\n", "POLICY", ""),
+        ("short", "KEEP", "# 짧은 문서\n\n내용 없음\n", "NOTICE", ""),
+    ]
+    for index, (name, action, body, document_type, relevant_end_date) in enumerate(samples, start=1):
+        doc_id = f"crawl-{name}"
+        source_url = f"https://www.kyonggi.ac.kr/www/selectBbsNttView.do?bbsNo=1&key=2&nttNo={100 + index}"
+        source_path = _write_source_markdown(
+            input_dir,
+            filename=f"{name}.md",
+            doc_id=doc_id,
+            source_url=source_url,
+            body=body,
+            attachment_urls=["https://www.kyonggi.ac.kr/www/downloadBbsFile.do?atchmnflNo=99"] if name == "attachment" else [],
+        )
+        rows.append(
+            _classification_row(
+                input_dir=input_dir,
+                source_path=source_path,
+                doc_id=doc_id,
+                source_url=source_url,
+                recommended_action=action,
+                title=name,
+                document_type=document_type,
+                relevant_end_date=relevant_end_date,
+            )
+        )
+    csv_path = tmp_path / "classification.csv"
+    _write_classification_csv(csv_path, rows)
+
+    prepare_markdown(
+        _options(
+            input_dir,
+            csv_path,
+            tmp_path / "prepared",
+            classification_effective_date="2026-06-04",
+            processing_effective_date="2026-06-05",
+        )
+    )
+
+    chunks = _read_chunks(tmp_path / "prepared")
+    chunk_quality = (tmp_path / "prepared" / "manifest" / "chunk_quality_report.csv").read_text(encoding="utf-8")
+    processing = (tmp_path / "prepared" / "manifest" / "processing_report.csv").read_text(encoding="utf-8")
+    previews = list((tmp_path / "prepared" / "manual_review" / "chunk_preview").rglob("*.json"))
+
+    assert "crawl-manual" in processing
+    assert previews
+    assert {chunk["doc_id"] for chunk in chunks} == {"crawl-keep", "crawl-long", "crawl-faq"}
+    assert "BLOCKED_BY_ATTACHMENT" in chunk_quality
+    assert "BLOCKED_BY_QUALITY" in chunk_quality
+
+
+def test_semantic_chunking_splits_faq_questions_and_removes_board_noise(tmp_path: Path) -> None:
+    input_dir = tmp_path / "new-md-data"
+    body = (
+        "# FAQ - 장학지원팀\n\n"
+        "게시물 검색\n"
+        "총게시물 : _3_ 건 페이지 : _1_ / 1\n\n"
+        "장학금 신청 대상은 누구인가요?\n"
+        "직전학기 성적 기준을 충족한 재학생이 신청할 수 있습니다. "
+        "세부 기준은 장학 유형별로 다르며 신청 공지의 자격 조건을 확인해야 합니다. "
+        "문의는 scholarship@kgu.ac.kr 또는 031-249-9000으로 연락합니다.\n\n"
+        "신청 방법은 어떻게 되나요?\n"
+        "학생은 KUTIS에서 온라인 신청서를 작성한 뒤 제출 서류를 업로드해야 합니다. "
+        "제출 후 접수 상태를 확인하고 보완 요청이 있으면 마감 전까지 수정해야 합니다.\n\n"
+        "문의처\n"
+        "장학지원팀 031-249-9000\n"
+    )
+    source_path = _write_source_markdown(
+        input_dir,
+        filename="faq.md",
+        doc_id="crawl-faq-semantic",
+        source_url="https://www.kyonggi.ac.kr/www/selectBbsNttView.do?bbsNo=1&key=2&nttNo=30",
+        body=body,
+    )
+    csv_path = tmp_path / "classification.csv"
+    _write_classification_csv(
+        csv_path,
+        [
+            _classification_row(
+                input_dir=input_dir,
+                source_path=source_path,
+                doc_id="crawl-faq-semantic",
+                source_url="https://www.kyonggi.ac.kr/www/selectBbsNttView.do?bbsNo=1&key=2&nttNo=30",
+                document_type="FAQ",
+            )
+        ],
+    )
+
+    prepare_markdown(_options(input_dir, csv_path, tmp_path / "prepared"))
+
+    chunks = _read_chunks(tmp_path / "prepared")
+    joined_content = "\n".join(str(chunk["content"]) for chunk in chunks)
+    section_titles = {chunk["section_title"] for chunk in chunks}
+    assert "게시물 검색" not in joined_content
+    assert "총게시물" not in joined_content
+    assert "장학금 신청 대상은 누구인가요?" in section_titles
+    assert "신청 방법은 어떻게 되나요?" in section_titles
+
+
+def test_semantic_chunking_promotes_notice_labels(tmp_path: Path) -> None:
+    input_dir = tmp_path / "new-md-data"
+    body = (
+        "# 장학금 신청 안내\n\n"
+        "작성자: 장학지원팀\n\n"
+        "신청 대상\n"
+        "재학생 중 직전학기 성적 기준을 충족한 학생이 신청할 수 있습니다. "
+        "휴학생과 초과학기생은 신청 대상에서 제외됩니다.\n\n"
+        "제출 서류\n"
+        "- 신청서\n"
+        "- 성적증명서\n"
+        "- 개인정보 제공 동의서\n\n"
+        "유의사항\n"
+        "마감 이후 제출된 서류는 접수하지 않습니다. "
+        "허위 서류 제출 시 선발이 취소될 수 있습니다.\n\n"
+        "문의처\n"
+        "장학지원팀 031-249-9000\n"
+    )
+    source_path = _write_source_markdown(
+        input_dir,
+        filename="notice.md",
+        doc_id="crawl-notice-semantic",
+        source_url="https://www.kyonggi.ac.kr/www/selectBbsNttView.do?bbsNo=1&key=2&nttNo=31",
+        body=body,
+    )
+    csv_path = tmp_path / "classification.csv"
+    _write_classification_csv(
+        csv_path,
+        [
+            _classification_row(
+                input_dir=input_dir,
+                source_path=source_path,
+                doc_id="crawl-notice-semantic",
+                source_url="https://www.kyonggi.ac.kr/www/selectBbsNttView.do?bbsNo=1&key=2&nttNo=31",
+            )
+        ],
+    )
+
+    prepare_markdown(_options(input_dir, csv_path, tmp_path / "prepared"))
+
+    chunks = _read_chunks(tmp_path / "prepared")
+    section_titles = {chunk["section_title"] for chunk in chunks}
+    assert {"신청 대상", "제출 서류", "유의사항", "문의처"}.issubset(section_titles)
+
+
+def test_prepare_markdown_removes_pagination_noise_from_published_chunks(tmp_path: Path) -> None:
+    input_dir = tmp_path / "new-md-data"
+    body = (
+        "# Payroll FAQ\n\n"
+        "When is payroll paid?\n"
+        "Payroll is paid on the designated monthly payment date. Contact the finance team for details. "
+        "The schedule can change depending on internal accounting work, and any change is announced separately. "
+        "Students or staff who need supporting documents should contact the responsible office.\n"
+        "처음 페이지이전 10 페이지이전 페이지 다음 페이지 다음 10 페이지끝 페이지\n"
+    )
+    source_path = _write_source_markdown(
+        input_dir,
+        filename="pagination.md",
+        doc_id="crawl-pagination",
+        source_url="https://www.kyonggi.ac.kr/www/selectBbsNttView.do?bbsNo=1&key=2&nttNo=40",
+        body=body,
+    )
+    csv_path = tmp_path / "classification.csv"
+    _write_classification_csv(
+        csv_path,
+        [
+            _classification_row(
+                input_dir=input_dir,
+                source_path=source_path,
+                doc_id="crawl-pagination",
+                source_url="https://www.kyonggi.ac.kr/www/selectBbsNttView.do?bbsNo=1&key=2&nttNo=40",
+                document_type="FAQ",
+            )
+        ],
+    )
+
+    prepare_markdown(_options(input_dir, csv_path, tmp_path / "prepared"))
+
+    chunks = _read_chunks(tmp_path / "prepared")
+    assert chunks
+    joined = "\n".join(str(chunk["embedding_text"]) for chunk in chunks)
+    assert "처음 페이지" not in joined
+    assert "다음 10 페이지" not in joined
+    assert "Payroll is paid" in joined
+
+
+def test_prepare_markdown_excludes_attachment_number_placeholders_from_embedding_text(tmp_path: Path) -> None:
+    input_dir = tmp_path / "new-md-data"
+    body = (
+        "# 학생증 사진 변경방법\n\n"
+        "학생증 사진 변경은 소속 단과대학 교학팀에 요청합니다.\n\n"
+        "첨부파일:\n"
+        "- 첨부파일-982458\n"
+    )
+    source_path = _write_source_markdown(
+        input_dir,
+        filename="attachment-placeholder.md",
+        doc_id="crawl-attachment-placeholder",
+        source_url="https://www.kyonggi.ac.kr/www/selectBbsNttView.do?bbsNo=1&key=2&nttNo=41",
+        body=body,
+        attachment_urls=["https://www.kyonggi.ac.kr/www/downloadBbsFile.do?atchmnflNo=982458"],
+    )
+    csv_path = tmp_path / "classification.csv"
+    _write_classification_csv(
+        csv_path,
+        [
+            _classification_row(
+                input_dir=input_dir,
+                source_path=source_path,
+                doc_id="crawl-attachment-placeholder",
+                source_url="https://www.kyonggi.ac.kr/www/selectBbsNttView.do?bbsNo=1&key=2&nttNo=41",
+            )
+        ],
+    )
+
+    prepare_markdown(_options(input_dir, csv_path, tmp_path / "prepared"))
+
+    chunks = _read_chunks(tmp_path / "prepared")
+    assert chunks
+    joined = "\n".join(str(chunk["embedding_text"]) for chunk in chunks)
+    assert "첨부파일-982458" not in joined
+    assert "downloadBbsFile" not in joined
+
+
+def test_prepare_markdown_drops_expired_time_sensitive_chunk_but_keeps_reference_chunk(tmp_path: Path) -> None:
+    input_dir = tmp_path / "new-md-data"
+    body = (
+        "# 학석사 연계과정 운영 안내\n\n"
+        "제도 개요\n"
+        "학석사 연계과정은 학부와 대학원 과정을 연계하여 이수하는 제도입니다. "
+        "지원 자격과 이수 기준은 학사 공지를 참고합니다. "
+        "이 제도는 대학원 진학을 준비하는 학생에게 학업 연계 기회를 제공하며, "
+        "세부 이수 기준과 신청 자격은 학과와 대학원 기준을 함께 확인해야 합니다.\n\n"
+        "신청 기간\n"
+        "2022. 6. 8 ~ 2022. 6. 17까지 신청합니다.\n"
+    )
+    source_path = _write_source_markdown(
+        input_dir,
+        filename="expired-section.md",
+        doc_id="crawl-expired-section",
+        source_url="https://www.kyonggi.ac.kr/www/selectBbsNttView.do?bbsNo=1&key=2&nttNo=42",
+        body=body,
+    )
+    csv_path = tmp_path / "classification.csv"
+    _write_classification_csv(
+        csv_path,
+        [
+            _classification_row(
+                input_dir=input_dir,
+                source_path=source_path,
+                doc_id="crawl-expired-section",
+                source_url="https://www.kyonggi.ac.kr/www/selectBbsNttView.do?bbsNo=1&key=2&nttNo=42",
+                relevant_end_date="2022-07-27",
+            )
+        ],
+    )
+
+    prepare_markdown(
+        _options(
+            input_dir,
+            csv_path,
+            tmp_path / "prepared",
+            classification_effective_date="2026-06-04",
+            processing_effective_date="2026-06-04",
+        )
+    )
+
+    chunks = _read_chunks(tmp_path / "prepared")
+    assert chunks
+    joined = "\n".join(str(chunk["embedding_text"]) for chunk in chunks)
+    assert "제도 개요" in joined
+    assert "2022. 6. 8" not in joined

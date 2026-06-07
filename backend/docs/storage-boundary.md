@@ -4,7 +4,7 @@ This project should treat PostgreSQL as the canonical data store and Chroma as t
 
 ## Current State
 
-- Ingest currently crawls documents, deduplicates them, chunks them, stores source/document/chunk/attachment/report rows in PostgreSQL when `--store-db` is provided, optionally embeds chunks, and writes embedded chunks to Chroma only when `--store-vectors` is provided.
+- Current ingest preparation is split into explicit stages: Crawl4AI writes Markdown dumps, `prepare_markdown.py` cleans and chunks approved Markdown, and DB/vector persistence is still a separate next step.
 - The API search path reads from Chroma through `app/db/vector_store.py` and `app/services/search_service.py`.
 - PostgreSQL is already used for structured campus data such as places and contacts.
 - Alembic owns PostgreSQL schema migrations. The initial revision creates campus DB tables and crawler storage tables.
@@ -51,8 +51,8 @@ The current first cut stores these crawler tables:
 - `crawler_attachments`
 - `crawler_ingest_runs`
 
-`run_ingest.py --store-db` now uses this flow:
+The new local pipeline should use this flow:
 
 ```text
-crawl -> deduplicate -> chunk -> upsert source/documents/chunks/attachments/report to PostgreSQL -> embed -> upsert vectors to Chroma
+Crawl4AI Markdown dump -> classification/review -> prepare_markdown chunks -> PostgreSQL persistence -> embedding -> Chroma upsert
 ```

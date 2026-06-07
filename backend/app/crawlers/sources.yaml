@@ -176,6 +176,8 @@ sources:
 
   - name: graduation_requirements
     <<: *recent_documents
+    page_type: SINGLE_PAGE
+    recommended_action: KEEP
     domain: graduation
     department: university
     seed_urls:

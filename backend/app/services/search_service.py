@@ -293,6 +293,7 @@ def search_documents(
             primary_rows,
             effective_domain,
             top_k,
+            query=query,
             source_scope=policy.source_scope,
             low_confidence_threshold=low_confidence_threshold,
             enable_parent_expansion=enable_parent_expansion,
@@ -308,6 +309,7 @@ def search_documents(
             primary_rows,
             effective_domain,
             top_k,
+            query=query,
             source_scope=policy.source_scope,
             low_confidence_threshold=low_confidence_threshold,
             enable_parent_expansion=enable_parent_expansion,
@@ -342,6 +344,7 @@ def search_documents(
         merged_rows,
         effective_domain,
         top_k,
+        query=query,
         source_scope=policy.source_scope,
         low_confidence_threshold=low_confidence_threshold,
         enable_parent_expansion=enable_parent_expansion,
@@ -453,6 +456,7 @@ def rerank_candidate_rows(
         )
         ranked_row = dict(row)
         ranked_row["score"] = round(score, 6)
+        query_anchor_match = _row_matches_any_anchor(row, _query_anchor_terms(query))
         ranked_row["score_breakdown"] = {
             "semantic": round(semantic, 6),
             "lexical": round(lexical, 6),
@@ -463,9 +467,11 @@ def rerank_candidate_rows(
             "detail": round(detail_boost, 6),
             "scope": round(scope_boost, 6),
             "canonical": round(canonical_boost, 6),
+            "source_scope_adjustment": round(scope_boost + canonical_boost, 6),
             "exact": round(exact, 6),
             "source_penalty": round(source_penalty, 6),
             "fallback_penalty": round(fallback_penalty, 6),
+            "query_anchor_match": 1.0 if query_anchor_match else 0.0,
             "confidence": round(_confidence_score(score=score, lexical=lexical, title=title, source_penalty=source_penalty), 6),
             "fallback_used": 1.0 if row.get("fallback_used") else 0.0,
         }
@@ -491,6 +497,7 @@ def _finalize_rows(
     domain: str | None,
     top_k: int,
     *,
+    query: str = "",
     source_scope: str | None = None,
     low_confidence_threshold: float = LOW_CONFIDENCE_THRESHOLD,
     enable_parent_expansion: bool = True,
@@ -508,9 +515,58 @@ def _finalize_rows(
         reverse=True,
     )
     marked = [_mark_low_confidence(row, low_confidence_threshold) for row in ranked]
+    anchors = _query_anchor_terms(query)
+    if anchors:
+        aligned = [row for row in marked if _row_matches_any_anchor(row, anchors)]
+        unaligned = [row for row in marked if row not in aligned]
+        unaligned_have_domain = all(row.get("domain") or row.get("category") for row in unaligned)
+        if aligned and (len(aligned) >= min(top_k, len(marked)) or unaligned_have_domain):
+            marked = aligned
     confident = [row for row in marked if not row.get("low_confidence")]
     selected = (confident or marked)[:top_k]
     return _expand_parent_chunks(selected, top_k=top_k, enabled=enable_parent_expansion)
+
+
+def _query_anchor_terms(query: str) -> list[str]:
+    tokens = _tokenize(query)
+    if not tokens:
+        tokens = [
+            token.casefold()
+            for token in re.findall(r"[0-9A-Za-z\uac00-\ud7a3]+", query)
+            if len(token) >= 2
+        ]
+    generic_stopwords = {
+        "about",
+        "how",
+        "info",
+        "please",
+        "tell",
+        "what",
+        "when",
+        "where",
+    }
+    return [
+        token
+        for token in dict.fromkeys(tokens)
+        if token not in QUERY_ANCHOR_STOPWORDS and token not in generic_stopwords
+    ][:6]
+
+
+def _row_matches_any_anchor(row: dict[str, Any], anchors: list[str]) -> bool:
+    if not anchors:
+        return True
+    haystack = _normalize_text(
+        " ".join(
+            str(row.get(key) or "")
+            for key in ("title", "text", "source_url", "department", "domain", "category")
+        )
+    )
+    for anchor in anchors:
+        if anchor in haystack:
+            return True
+        if anchor == "교직이수" and "교직과정" in haystack and "이수" in haystack:
+            return True
+    return False
 
 
 def _dedupe_canonical_rows(rows: list[dict[str, Any]], domain: str | None) -> list[dict[str, Any]]:
@@ -743,6 +799,10 @@ def _query_adjacent_chunk_rows(anchors: list[dict[str, Any]], *, window: int) ->
                 "retrieval_sources": {"parent"},
                 "domain": chunk_domain,
                 "department": department,
+                "source_name": chunk.source_name,
+                "section_title": chunk.section_title,
+                "section_kind": chunk.section_kind,
+                "vector_point_id": chunk.vector_point_id,
                 "published_at": published_at.isoformat() if published_at else None,
             }
         )
@@ -928,6 +988,10 @@ def _row_to_search_result(row: Dict[str, Any]) -> SearchResult:
         domain=domain,
         category=domain,
         department=row.get("department"),
+        source_name=row.get("source_name"),
+        section_title=row.get("section_title"),
+        section_kind=row.get("section_kind"),
+        vector_point_id=row.get("vector_point_id"),
         published_at=row.get("published_at"),
         score_breakdown=row.get("score_breakdown", {}),
     )

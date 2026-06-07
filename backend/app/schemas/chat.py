@@ -13,6 +13,15 @@ class ChatSource(BaseModel):
     title: str
     source_url: str | None = None
     score: float | None = None
+    source_number: int | None = None
+    chunk_id: str | None = None
+    doc_id: str | None = None
+    domain: str | None = None
+    department: str | None = None
+    source_name: str | None = None
+    section_title: str | None = None
+    section_kind: str | None = None
+    vector_point_id: str | None = None
 
 
 class RagIntentScore(BaseModel):

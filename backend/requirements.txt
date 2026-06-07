@@ -8,6 +8,7 @@ pydantic-settings
 # HTTP clients
 requests
 httpx
+beautifulsoup4
 
 # AI / RAG runtime
 chromadb

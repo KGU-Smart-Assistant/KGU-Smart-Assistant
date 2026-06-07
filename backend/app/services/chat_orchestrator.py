@@ -21,6 +21,7 @@ from app.services.rag_domain_classifier import classify_rag_domains_with_klue_be
 from app.services.langchain_rag_service import answer_with_langchain_rag
 from app.services.search_service import LOW_CONFIDENCE_THRESHOLD, RetrievalPolicy, search_documents
 from app.services.weather_service import get_weather_response
+from app.services.domain_taxonomy import infer_detail, infer_domain
 
 ChatRoute = Literal["llm", "relational_db", "rag", "weather"]
 AtomicChatRoute = ChatRoute
@@ -59,6 +60,14 @@ class ChatSource:
     source_url: str | None = None
     score: float | None = None
     source_number: int | None = None
+    chunk_id: str | None = None
+    doc_id: str | None = None
+    domain: str | None = None
+    department: str | None = None
+    source_name: str | None = None
+    section_title: str | None = None
+    section_kind: str | None = None
+    vector_point_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -350,7 +359,8 @@ def _answer_from_rag(user_input: str, decision: ChatDecision) -> ChatResult:
     answer_status: Literal["answered", "partial", "insufficient"] = "answered"
     unverified: tuple[str, ...] = ()
     reply = rag_result.reply
-    if _is_generation_failure_reply(reply):
+    generation_failed = _is_generation_failure_reply(reply)
+    if generation_failed:
         answer_status = "partial"
         unverified = ("답변 생성 실패로 검색 근거 요약",)
         reply = _extractive_rag_fallback_reply(rag_result.documents)
@@ -360,9 +370,10 @@ def _answer_from_rag(user_input: str, decision: ChatDecision) -> ChatResult:
         reply = _partial_rag_reply(decision, rag_result.reply)
     if rag_result.low_confidence or _is_unanswered_rag_reply(rag_result.reply):
         answer_status = "insufficient"
-        unverified = (_unverified_reason(decision),)
+        unverified = ("답변 생성 실패",) if generation_failed else (_unverified_reason(decision),)
         reply = _insufficient_rag_reply(decision)
-        sources = []
+        if not (generation_failed and "Gemini" in rag_result.reply):
+            sources = []
 
     sources = _filter_sources_by_reply_citations(sources, reply)
 
@@ -614,7 +625,7 @@ def _classify_rag_query(normalized_text: str) -> RagClassification | None:
 
 
 def _model_rag_intent_scores(normalized_text: str) -> list[RagIntentScore]:
-    return [
+    model_scores = [
         RagIntentScore(
             domain=prediction.domain,
             score=prediction.score,
@@ -622,6 +633,12 @@ def _model_rag_intent_scores(normalized_text: str) -> list[RagIntentScore]:
         )
         for prediction in classify_rag_domains_with_klue_bert(normalized_text)
     ]
+    if model_scores:
+        return model_scores
+    fallback_domain = infer_domain(normalized_text, fallback="unknown")
+    if fallback_domain == "unknown":
+        return []
+    return [RagIntentScore(domain=fallback_domain, score=0.62, matched_keywords=())]
 
 
 def _classify_rag_details(
@@ -643,6 +660,10 @@ def _classify_rag_detail_predictions(normalized_text: str) -> tuple[RagDetailSco
         if prediction.detail == "unknown" or any(detail.detail == prediction.detail for detail in details):
             continue
         details.append(RagDetailScore(detail=prediction.detail, score=prediction.score))
+    if not details:
+        fallback_detail = infer_detail(normalized_text, fallback="unknown")
+        if fallback_detail != "unknown":
+            details.append(RagDetailScore(detail=fallback_detail, score=0.58))
     return tuple(details)
 
 
@@ -898,6 +919,14 @@ def _chat_sources_from_documents(documents) -> list[ChatSource]:
                 source_url=source_url,
                 score=float(metadata.get("score") or metadata.get("confidence") or 0.0),
                 source_number=int(metadata.get("source_number") or len(sources) + 1),
+                chunk_id=metadata.get("chunk_id"),
+                doc_id=metadata.get("doc_id"),
+                domain=metadata.get("domain"),
+                department=metadata.get("department"),
+                source_name=metadata.get("source_name"),
+                section_title=metadata.get("section_title"),
+                section_kind=metadata.get("section_kind"),
+                vector_point_id=metadata.get("vector_point_id"),
             )
         )
     return sources
@@ -947,11 +976,16 @@ def _is_partial_rag_decision(decision: ChatDecision) -> bool:
 def _is_unanswered_rag_reply(reply: str) -> bool:
     markers = (
         "답변을 생성하지 못했습니다",
+        "응답을 생성하지 못했습니다",
         "관련 자료를 충분히 찾지 못했습니다",
         "검색된 자료를 바탕으로 답변을 생성하지 못했습니다",
         "현재 답변을 생성하지 못했습니다",
     )
     return any(marker in reply for marker in markers)
+
+
+def _is_generation_failure_reply(reply: str) -> bool:
+    return _is_unanswered_rag_reply(reply)
 
 
 def _clarification_rag_reply(decision: ChatDecision) -> str:

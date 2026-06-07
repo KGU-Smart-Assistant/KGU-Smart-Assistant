@@ -481,7 +481,7 @@ def test_decide_chat_route_parses_llm_json_when_heuristic_is_general(monkeypatch
 
     assert decision.route == "rag"
     assert decision.db_intent == "unknown"
-    assert decision.rag_domain == "unknown"
+    assert decision.rag_domain == "career_support"
     assert decision.rag_detail == "unknown"
 
 

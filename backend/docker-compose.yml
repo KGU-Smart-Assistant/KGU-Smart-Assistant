@@ -1,23 +1,42 @@
 services:
   frontend:
     build:
-      context: ../frontend/frontend-app
+      context: ../frontend
       dockerfile: Dockerfile
     container_name: next-frontend
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     environment:
-      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+      BACKEND_API_BASE_URL: http://backend:8000
       NEXT_PUBLIC_KAKAOMAP_KEY: ${NEXT_PUBLIC_KAKAOMAP_KEY:-replace_with_your_kakao_javascript_key}
       NEXT_TELEMETRY_DISABLED: 1
       WATCHPACK_POLLING: true
     volumes:
-      - ../frontend/frontend-app:/app
+      - ../frontend:/app
       - frontend_node_modules:/app/node_modules
       - frontend_next:/app/.next
     depends_on:
       backend:
         condition: service_healthy
+
+  crawler:
+    build:
+      context: .
+      args:
+        INSTALL_CRAWLER_DEPS: "true"
+    container_name: kgu-crawler
+    profiles:
+      - crawler
+    volumes:
+      - .:/app
+      - crawler_crawl4ai:/app/.crawl4ai-data
+    env_file:
+      - .env
+    environment:
+      VECTOR_STORE_MODE: http
+      VECTOR_STORE_HOST: chroma
+      VECTOR_STORE_PORT: 8000
+    command: ["sh", "-c", "tail -f /dev/null"]
 
   backend:
     build: .
@@ -48,32 +67,6 @@ services:
       timeout: 5s
       retries: 12
       start_period: 20s
-
-  crawler:
-    profiles: ["crawler"]
-    build:
-      context: .
-      dockerfile: Dockerfile.crawler
-    container_name: crawler
-    volumes:
-      - .:/app
-    env_file:
-      - .env
-    environment:
-      VECTOR_STORE_MODE: http
-      VECTOR_STORE_HOST: chroma
-      VECTOR_STORE_PORT: 8000
-      CRAWLER_INGEST_ARGS: ${CRAWLER_INGEST_ARGS:---store-db --store-vectors}
-      CRAWLER_LOCK_NAME: ${CRAWLER_LOCK_NAME:-kgu-smart-assistant:crawler-ingest}
-      CRAWLER_KEEP_ALIVE: "true"
-    depends_on:
-      db:
-        condition: service_healthy
-      chroma:
-        condition: service_started
-    command: >
-      sh -c "alembic upgrade head &&
-      python -m app.crawlers.run_once"
 
   db:
     image: postgres:15
@@ -109,3 +102,4 @@ volumes:
   chroma_data:
   frontend_node_modules:
   frontend_next:
+  crawler_crawl4ai:
